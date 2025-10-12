@@ -1,22 +1,15 @@
-// background.js - Service worker pour la logique de polling et notifications
-
-// Configuration des API
 const CONFIG = {
-  TWITCH_CLIENT_ID: 'c045ge8cvqpo91s6og7bo8eygb7upi', // À remplacer par votre Client ID
-  YOUTUBE_API_KEY: 'AIzaSyA6jyZjzCFcglEUWl_EBME88svlWGiQfWQ',   // À remplacer par votre clé API
-  CHECK_INTERVAL: 5 * 60 * 1000, // 5 minutes
-  RECENT_LIVE_THRESHOLD: 12 * 60 * 60 * 1000 // 12 heures
+  TWITCH_CLIENT_ID: 'c045ge8cvqpo91s6og7bo8eygb7upi',
+  YOUTUBE_API_KEY: 'AIzaSyA6jyZjzCFcglEUWl_EBME88svlWGiQfWQ',
+  CHECK_INTERVAL: 5 * 60 * 1000,
+  RECENT_LIVE_THRESHOLD: 12 * 60 * 60 * 1000
 };
 
-// État des streamers en cache
 let streamersCache = {};
 let checkInterval = null;
-
-// Installation de l'extension
 chrome.runtime.onInstalled.addListener(async () => {
   console.log('Nowtify installé !');
   
-  // Initialiser le stockage
   const { streamers } = await chrome.storage.sync.get('streamers');
   if (!streamers) {
     await chrome.storage.sync.set({ 
@@ -29,21 +22,17 @@ chrome.runtime.onInstalled.addListener(async () => {
     });
   }
 
-  // Configurer l'alarme pour le polling
   chrome.alarms.create('checkStreams', { periodInMinutes: 5 });
   
-  // Première vérification
   checkAllStreamers();
 });
 
-// Écouter les alarmes
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'checkStreams') {
     checkAllStreamers();
   }
 });
 
-// Écouter les messages de la popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'checkNow') {
     checkAllStreamers().then(() => sendResponse({ success: true }));
@@ -56,7 +45,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === 'settingsUpdated') {
-    // Mettre à jour la configuration locale
     if (request.apiKeys) {
       if (request.apiKeys.twitchClientId) {
         CONFIG.TWITCH_CLIENT_ID = request.apiKeys.twitchClientId;
@@ -70,7 +58,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === 'updateAlarm') {
-    // Mettre à jour l'alarme avec le nouvel intervalle
     chrome.alarms.clear('checkStreams', () => {
       chrome.alarms.create('checkStreams', { 
         periodInMinutes: request.minutes 
@@ -81,7 +68,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// Vérifier tous les streamers
 async function checkAllStreamers() {
   try {
     const { streamers = [], settings = {} } = await chrome.storage.sync.get(['streamers', 'settings']);
@@ -98,7 +84,6 @@ async function checkAllStreamers() {
       const data = await checkStreamerStatus(streamer);
       const updated = { ...streamer, ...data };
       
-      // Vérifier si nouveau live
       if (data.isLive && !streamer.isLive && settings.notifications !== false) {
         sendNotification(updated);
       }
@@ -111,10 +96,8 @@ async function checkAllStreamers() {
       streamersCache[streamer.id] = updated;
     }
 
-    // Mettre à jour le badge
     updateBadge(hasLiveStreamer);
 
-    // Sauvegarder les mises à jour
     await chrome.storage.sync.set({ streamers: updatedStreamers });
 
   } catch (error) {
@@ -122,7 +105,6 @@ async function checkAllStreamers() {
   }
 }
 
-// Vérifier le statut d'un streamer selon sa plateforme
 async function checkStreamerStatus(streamer) {
   try {
     switch (streamer.platform) {
@@ -141,10 +123,8 @@ async function checkStreamerStatus(streamer) {
   }
 }
 
-// Vérifier Twitch via Helix API
 async function checkTwitchStatus(username) {
   try {
-    // Obtenir le token d'accès (à implémenter avec OAuth)
     const token = await getTwitchToken();
     
     const response = await fetch(`https://api.twitch.tv/helix/streams?user_login=${username}`, {
@@ -179,17 +159,13 @@ async function checkTwitchStatus(username) {
   }
 }
 
-// Obtenir un token Twitch (OAuth simplifié)
 async function getTwitchToken() {
-  // Pour une vraie implémentation, utiliser OAuth 2.0
-  // Ici, un placeholder qui devra être remplacé
   const { twitchToken } = await chrome.storage.local.get('twitchToken');
   
   if (twitchToken && twitchToken.expiresAt > Date.now()) {
     return twitchToken.access_token;
   }
 
-  // Obtenir un nouveau token (App Access Token)
   try {
     const response = await fetch('https://id.twitch.tv/oauth2/token', {
       method: 'POST',
@@ -213,13 +189,10 @@ async function getTwitchToken() {
   }
 }
 
-// Vérifier YouTube via Data API v3
 async function checkYouTubeStatus(username) {
   try {
-    // Rechercher la chaîne
     let channelId = username;
     
-    // Si c'est un handle (@username), rechercher d'abord
     if (username.startsWith('@')) {
       const searchResponse = await fetch(
         `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(username)}&key=${CONFIG.YOUTUBE_API_KEY}`
@@ -231,7 +204,6 @@ async function checkYouTubeStatus(username) {
       }
     }
 
-    // Vérifier si en live
     const response = await fetch(
       `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&eventType=live&type=video&key=${CONFIG.YOUTUBE_API_KEY}`
     );
@@ -245,7 +217,6 @@ async function checkYouTubeStatus(username) {
     if (data.items && data.items.length > 0) {
       const video = data.items[0];
       
-      // Récupérer les détails du live
       const detailsResponse = await fetch(
         `https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails,snippet&id=${video.id.videoId}&key=${CONFIG.YOUTUBE_API_KEY}`
       );
@@ -268,10 +239,8 @@ async function checkYouTubeStatus(username) {
   }
 }
 
-// Vérifier Kick (API non officielle)
 async function checkKickStatus(username) {
   try {
-    // Kick n'a pas d'API officielle, on scrape ou utilise des endpoints non documentés
     const response = await fetch(`https://kick.com/api/v2/channels/${username}`);
     
     if (!response.ok) {
@@ -297,7 +266,6 @@ async function checkKickStatus(username) {
   }
 }
 
-// Obtenir les avatars des streamers
 async function getStreamerAvatar(streamer) {
   try {
     switch (streamer.platform) {
@@ -313,7 +281,6 @@ async function getStreamerAvatar(streamer) {
         return data.data[0]?.profile_image_url || '';
         
       case 'youtube':
-        // L'avatar est récupéré via l'API lors du check
         return streamer.avatar || '';
         
       case 'kick':
@@ -329,22 +296,18 @@ async function getStreamerAvatar(streamer) {
   }
 }
 
-// Obtenir les données enrichies des streamers
 async function getStreamersWithData() {
   const { streamers = [] } = await chrome.storage.sync.get('streamers');
   
   const enriched = await Promise.all(streamers.map(async (streamer) => {
-    // Utiliser le cache si disponible
     if (streamersCache[streamer.id]) {
       return streamersCache[streamer.id];
     }
 
-    // Sinon, récupérer l'avatar au minimum
     if (!streamer.avatar) {
       streamer.avatar = await getStreamerAvatar(streamer);
     }
 
-    // Vérifier si était en live récemment
     if (streamer.lastLiveDate) {
       const timeSince = Date.now() - streamer.lastLiveDate;
       streamer.wasLiveRecently = timeSince < CONFIG.RECENT_LIVE_THRESHOLD;
@@ -356,7 +319,6 @@ async function getStreamersWithData() {
   return enriched;
 }
 
-// Envoyer une notification
 function sendNotification(streamer) {
   const notificationId = `live-${streamer.id}-${Date.now()}`;
   
@@ -369,7 +331,6 @@ function sendNotification(streamer) {
     requireInteraction: false
   });
 
-  // Ouvrir le stream au clic
   chrome.notifications.onClicked.addListener((clickedId) => {
     if (clickedId === notificationId) {
       let url;
@@ -390,11 +351,9 @@ function sendNotification(streamer) {
     }
   });
 
-  // Sauvegarder dans l'historique
   saveToHistory(streamer);
 }
 
-// Sauvegarder dans l'historique
 async function saveToHistory(streamer) {
   const { history = [] } = await chrome.storage.local.get('history');
   
@@ -406,13 +365,11 @@ async function saveToHistory(streamer) {
     timestamp: Date.now()
   });
 
-  // Garder seulement les 50 derniers
   const trimmed = history.slice(0, 50);
   
   await chrome.storage.local.set({ history: trimmed });
 }
 
-// Mettre à jour le badge de l'extension
 function updateBadge(hasLive) {
   if (hasLive) {
     chrome.action.setBadgeText({ text: '🔴' });
@@ -422,5 +379,4 @@ function updateBadge(hasLive) {
   }
 }
 
-// Démarrage initial
 checkAllStreamers();
