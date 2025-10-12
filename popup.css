@@ -17,7 +17,6 @@ body {
   padding: 16px;
 }
 
-/* Header */
 .header {
   display: flex;
   justify-content: space-between;
@@ -67,7 +66,6 @@ h1 {
   transform: scale(1.05);
 }
 
-/* Add Section */
 .add-section {
   display: flex;
   gap: 8px;
@@ -118,10 +116,9 @@ h1 {
 }
 
 .btn-primary:active {
-  transform: translateY(0);
+  transform: translateY(-2px);
 }
 
-/* Error Message */
 .error-message {
   display: none;
   background: rgba(255, 82, 82, 0.1);
@@ -149,7 +146,6 @@ h1 {
   }
 }
 
-/* Streamers List */
 .streamers-list {
   display: flex;
   flex-direction: column;
@@ -294,7 +290,6 @@ h1 {
   transform: scale(1.1);
 }
 
-/* Empty State */
 .empty-state {
   text-align: center;
   padding: 40px 20px;
@@ -321,7 +316,6 @@ h1 {
   display: none;
 }
 
-/* Loading State */
 .loading-state {
   text-align: center;
   padding: 40px 20px;
@@ -348,7 +342,6 @@ h1 {
   font-size: 13px;
 }
 
-/* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
 }
