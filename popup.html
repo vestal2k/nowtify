@@ -11,49 +11,47 @@
 </head>
 <body>
   <div class="container">
+    <!-- Header -->
     <header class="header">
       <div class="logo-section">
-        <img src="icons/logo.png" alt="Nowtify Logo" class="logo">
+        <img src="assets/logo.png" alt="Nowtify Logo" class="logo">
         <h1>Nowtify</h1>
       </div>
       <button class="icon-btn settings-btn" id="settingsBtn" title="Paramètres">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="3"></circle>
-          <path d="M12 1v6m0 6v6m7.071-13.071l-4.243 4.243m-5.656 5.656l-4.243 4.243m16.97-1.414l-6-6m-6-6l-6-6m16.97 16.97l-6-6m-6-6l-6-6"></path>
-        </svg>
+        ⚙️
       </button>
     </header>
 
+    <!-- Add Streamer Section -->
     <div class="add-section" id="addSection">
       <input 
         type="text" 
         id="streamerInput" 
-        placeholder="URL ou nom du streamer (Twitch, YouTube, Kick)"
+        placeholder="Rechercher un streamer..."
         class="input-field"
+        autocomplete="off"
       >
       <button class="btn-primary" id="addBtn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-        Ajouter
+        ➕ Ajouter
       </button>
     </div>
 
+    <!-- Error Message -->
     <div class="error-message" id="errorMessage"></div>
 
+    <!-- Streamers List -->
     <div class="streamers-list" id="streamersList">
+      <!-- Les streamers seront injectés ici dynamiquement -->
     </div>
 
+    <!-- Empty State -->
     <div class="empty-state" id="emptyState">
-      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path d="M23 7l-7 5 7 5V7z"></path>
-        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-      </svg>
+      <div style="font-size: 48px; margin-bottom: 16px;">📺</div>
       <h3>Aucun streamer ajouté</h3>
       <p>Ajoutez vos streamers favoris pour être notifié de leurs lives !</p>
     </div>
 
+    <!-- Loading State -->
     <div class="loading-state" id="loadingState" style="display: none;">
       <div class="spinner"></div>
       <p>Chargement...</p>

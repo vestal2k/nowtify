@@ -1,27 +1,28 @@
 // background.js - Service worker pour la logique de polling et notifications
 
 // Configuration des API (chargées dynamiquement depuis le storage)
+// IMPORTANT: Les clés Twitch s'obtiennent sur https://dev.twitch.tv/console/apps
+// - Client ID: Identifiant public de votre application
+// - Client Secret: Clé secrète pour générer les tokens OAuth (NE PAS partager)
+// Ces deux clés permettent de générer automatiquement un "App Access Token"
 let CONFIG = {
   TWITCH_CLIENT_ID: '',
   TWITCH_CLIENT_SECRET: '',
   YOUTUBE_API_KEY: '',
-  CHECK_INTERVAL: 5 * 60 * 1000, // 5 minutes
-  RECENT_LIVE_THRESHOLD: 12 * 60 * 60 * 1000 // 12 heures
+  CHECK_INTERVAL: 5 * 60 * 1000,
+  RECENT_LIVE_THRESHOLD: 12 * 60 * 60 * 1000
 };
 
 // État des streamers en cache
 let streamersCache = {};
-let checkInterval = null;
 let isChecking = false;
 
 // Installation de l'extension
 chrome.runtime.onInstalled.addListener(async () => {
   console.log('Nowtify installé !');
   
-  // Charger les clés API
   await loadApiKeys();
   
-  // Initialiser le stockage
   const { streamers } = await chrome.storage.sync.get('streamers');
   if (!streamers) {
     await chrome.storage.sync.set({ 
@@ -35,10 +36,7 @@ chrome.runtime.onInstalled.addListener(async () => {
     });
   }
 
-  // Configurer l'alarme pour le polling
   chrome.alarms.create('checkStreams', { periodInMinutes: 5 });
-  
-  // Première vérification
   setTimeout(() => checkAllStreamers(), 2000);
 });
 
@@ -55,10 +53,6 @@ async function loadApiKeys() {
     CONFIG.TWITCH_CLIENT_ID = apiKeys.twitchClientId || '';
     CONFIG.TWITCH_CLIENT_SECRET = apiKeys.twitchClientSecret || '';
     CONFIG.YOUTUBE_API_KEY = apiKeys.youtubeApiKey || '';
-    console.log('Clés API chargées', {
-      hasTwitchId: !!CONFIG.TWITCH_CLIENT_ID,
-      hasYoutubeKey: !!CONFIG.YOUTUBE_API_KEY
-    });
   } catch (error) {
     console.error('Erreur chargement clés API:', error);
   }
@@ -84,23 +78,244 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === 'settingsUpdated') {
-    // Mettre à jour la configuration locale
-    (async () => {
-      if (request.apiKeys) {
-        if (request.apiKeys.twitchClientId) {
-          CONFIG.TWITCH_CLIENT_ID = request.apiKeys.twitchClientId;
+    if (request.apiKeys) {
+      CONFIG.TWITCH_CLIENT_ID = request.apiKeys.twitchClientId || '';
+      CONFIG.TWITCH_CLIENT_SECRET = request.apiKeys.twitchClientSecret || '';
+      CONFIG.YOUTUBE_API_KEY = request.apiKeys.youtubeApiKey || '';
+      // Supprimer le token pour forcer le refresh
+      chrome.storage.local.remove('twitchToken');
+    }
+    sendResponse({ success: true });
+    return true;
+  }
+
+  if (request.action === 'updateAlarm') {
+    chrome.alarms.clear('checkStreams', () => {
+      chrome.alarms.create('checkStreams', { 
+        periodInMinutes: request.minutes 
+      });
+    });
+    sendResponse({ success: true });
+    return true;
+  }
+
+  if (request.action === 'searchStreamers') {
+    searchStreamers(request.query).then(results => {
+      sendResponse({ results });
+    }).catch(error => {
+      console.error('Erreur searchStreamers:', error);
+      sendResponse({ results: [] });
+    });
+    return true;
+  }
+});
+
+// Vérifier tous les streamers
+async function checkAllStreamers() {
+  if (isChecking) {
+    return;
+  }
+
+  try {
+    isChecking = true;
+    await loadApiKeys();
+    
+    const { streamers = [], settings = {} } = await chrome.storage.sync.get(['streamers', 'settings']);
+    
+    if (streamers.length === 0) {
+      updateBadgeAndIcon(false, 0);
+      isChecking = false;
+      return;
+    }
+
+    const updatedStreamers = [];
+    let liveCount = 0;
+
+    for (const streamer of streamers) {
+      try {
+        const data = await checkStreamerStatus(streamer);
+        
+        // Récupérer l'avatar si manquant
+        if (!data.avatar || data.avatar === '') {
+          data.avatar = await getStreamerAvatar(streamer.platform, streamer.username);
         }
-        if (request.apiKeys.twitchClientSecret) {
-          CONFIG.TWITCH_CLIENT_SECRET = request.apiKeys.twitchClientSecret;
+        
+        const updated = { ...streamer, ...data };
+        
+        // Vérifier si nouveau live
+        if (data.isLive && !streamer.isLive && settings.notifications !== false) {
+          sendNotification(updated);
         }
-        if (request.apiKeys.youtubeApiKey) {
-          CONFIG.YOUTUBE_API_KEY = request.apiKeys.youtubeApiKey;
+        
+        if (data.isLive) {
+          liveCount++;
         }
-        // Supprimer le token Twitch pour forcer le refresh
+        
+        updatedStreamers.push(updated);
+        streamersCache[streamer.id] = updated;
+      } catch (error) {
+        console.error(`Erreur pour ${streamer.name}:`, error);
+        updatedStreamers.push(streamer);
+      }
+    }
+
+    updateBadgeAndIcon(liveCount > 0, liveCount);
+    await chrome.storage.sync.set({ streamers: updatedStreamers });
+
+  } catch (error) {
+    console.error('Erreur lors de la vérification:', error);
+  } finally {
+    isChecking = false;
+  }
+}
+
+// Vérifier le statut d'un streamer selon sa plateforme
+async function checkStreamerStatus(streamer) {
+  try {
+    switch (streamer.platform) {
+      case 'twitch':
+        return await checkTwitchStatus(streamer.username);
+      case 'youtube':
+        return await checkYouTubeStatus(streamer.username);
+      case 'kick':
+        return await checkKickStatus(streamer.username);
+      default:
+        return { isLive: false };
+    }
+  } catch (error) {
+    console.error(`Erreur pour ${streamer.name}:`, error);
+    return { isLive: false, error: true };
+  }
+}
+
+// Vérifier Twitch via Helix API
+async function checkTwitchStatus(username) {
+  try {
+    if (!CONFIG.TWITCH_CLIENT_ID) {
+      return { isLive: false, error: true };
+    }
+
+    const token = await getTwitchToken();
+    if (!token) {
+      return { isLive: false, error: true };
+    }
+
+    const response = await fetch(`https://api.twitch.tv/helix/streams?user_login=${username}`, {
+      headers: {
+        'Client-ID': CONFIG.TWITCH_CLIENT_ID,
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
         await chrome.storage.local.remove('twitchToken');
       }
-      sendResponse({ success: true });
-    })();
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    const stream = data.data[0];
+
+    if (stream) {
+      return {
+        isLive: true,
+        title: stream.title,
+        game: stream.game_name,
+        viewerCount: stream.viewer_count,
+        thumbnail: stream.thumbnail_url.replace('{width}', '320').replace('{height}', '180'),
+        startedAt: new Date(stream.started_at).getTime(),
+        lastLiveDate: Date.now()
+      };
+    }
+
+    return { isLive: false };
+  } catch (error) {
+    console.error('Erreur Twitch:', error);
+    return { isLive: false, error: true };
+  }
+}
+
+// Obtenir un token Twitch (App Access Token)
+// Utilise le Client ID + Client Secret pour générer un token OAuth automatiquement
+async function getTwitchToken() {
+  try {
+    const { twitchToken } = await chrome.storage.local.get('twitchToken');
+    
+    if (twitchToken && twitchToken.expiresAt > Date.now() + 60000) {
+      return twitchToken.access_token;
+    }
+
+    if (!CONFIG.TWITCH_CLIENT_SECRET) {
+      console.warn('Client Secret Twitch manquant');
+      return null;
+    }
+
+    const response = await fetch('https://id.twitch.tv/oauth2/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `client_id=${CONFIG.TWITCH_CLIENT_ID}&client_secret=${CONFIG.TWITCH_CLIENT_SECRET}&grant_type=client_credentials`
+    });
+
+    if (!response.ok) {
+      console.error('Erreur obtention token:', response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    
+    await chrome.storage.local.set({
+      twitchToken: {
+        access_token: data.access_token,
+        expiresAt: Date.now() + (data.expires_in * 1000)
+      }
+    });
+
+    return data.access_token;
+  } catch (error) {
+    console.error('Erreur obtention token Twitch:', error);
+    return null;
+  }
+}
+
+// Écouter les alarmes
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === 'checkStreams') {
+    checkAllStreamers();
+  }
+});
+
+// Écouter les messages de la popup
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'checkNow') {
+    checkAllStreamers().then(() => sendResponse({ success: true }));
+    return true;
+  }
+  
+  if (request.action === 'getStreamersData') {
+    getStreamersWithData().then(data => sendResponse({ streamers: data }));
+    return true;
+  }
+
+  if (request.action === 'settingsUpdated') {
+    // Mettre à jour la configuration locale
+    if (request.apiKeys) {
+      if (request.apiKeys.twitchClientId) {
+        CONFIG.TWITCH_CLIENT_ID = request.apiKeys.twitchClientId;
+      }
+      if (request.apiKeys.twitchClientSecret) {
+        CONFIG.TWITCH_CLIENT_SECRET = request.apiKeys.twitchClientSecret;
+      }
+      if (request.apiKeys.youtubeApiKey) {
+        CONFIG.YOUTUBE_API_KEY = request.apiKeys.youtubeApiKey;
+      }
+      // Supprimer le token Twitch pour forcer le refresh
+      chrome.storage.local.remove('twitchToken').then(() => {
+        sendResponse({ success: true });
+      });
+      return true;
+    }
+    sendResponse({ success: true });
     return true;
   }
 
