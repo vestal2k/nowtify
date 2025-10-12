@@ -1,8 +1,8 @@
 <div align="center">
   
   <img src="icons/logo.png" alt="Project Logo" width="72" height="72" />
-  <h1>🧠 Project Name</h1>
-  <p><em>Short tagline or description</em></p>
+  <h1>🔔 Nowtify</h1>
+  <p><em>Never miss a live stream from your favorite creators</em></p>
 
   <!-- Header buttons -->
   <p>
@@ -32,17 +32,33 @@
 
 ### 🎨 Design
 
+Modern and clean interface
+Elegant Manrope font
+Smooth animations
+Responsive design
+Native dark mode
+
 </td>
 <td>
 
 ### ⚙️ Technical
 
+Chrome Extension Manifest V3
+Twitch, YouTube & Kick APIs
+Performant Service Worker
+Native notifications
+Secure local storage
 
 </td>
 <td>
 
 ### 🌟 Experience
 
+Instant notifications
+Multi-platform (Twitch, YouTube, Kick)
+Customizable settings
+Intuitive interface
+Zero latency
 
 </td>
 </tr>
@@ -54,7 +70,7 @@
 ## 🧰 Tech Stack
 
 <p align="center">
-  <img src="https://skillicons.dev/icons?i=" />
+  <img src="https://skillicons.dev/icons?i=js,html,css,chrome" />
 </p>
 
 ---
@@ -81,11 +97,11 @@ This project is under the **[MIT license](LICENSE)** – free to use with attrib
 > 📊 Follow the evolution of the project over time
 
 <div align="center">
-<a href="https://star-history.com/#vestal2k/repo&Timeline">
+<a href="https://star-history.com/#vestal2k/nowtify&Timeline">
   <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=vestal2k/repo&type=Timeline&theme=dark" />
-  <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=vestal2k/repo&type=Timeline" />
-  <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=vestal2k/repo&type=Timeline" />
+  <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=vestal2k/nowtify&type=Timeline&theme=dark" />
+  <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=vestal2k/nowtify&type=Timeline" />
+  <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=vestal2k/nowtify&type=Timeline" />
   </picture>
 </a>
 </div>
