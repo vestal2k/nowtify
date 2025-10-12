@@ -90,11 +90,9 @@ function showAutocomplete(results) {
     const item = document.createElement('div');
     item.className = 'autocomplete-item';
     
-    const platformEmoji = result.platform === 'twitch' ? '💜' : 
-                         result.platform === 'youtube' ? '❤️' : '💚';
+    const platformIcon = getPlatformIcon(result.platform);
     
     item.innerHTML = `
-      ${platformEmoji}
       <img 
         src="${result.avatar || 'icons/icon48.png'}" 
         alt="${result.name}"
@@ -104,7 +102,10 @@ function showAutocomplete(results) {
       <div class="autocomplete-info">
         <div class="autocomplete-name">${escapeHtml(result.name)}</div>
         <div class="autocomplete-meta">
-          <span class="platform-badge platform-${result.platform}">${result.platform}</span>
+          <span class="platform-badge platform-${result.platform}">
+            ${platformIcon}
+            ${result.platform}
+          </span>
           ${result.isLive ? '<span class="live-badge">🔴 Live</span>' : ''}
         </div>
       </div>
@@ -116,6 +117,16 @@ function showAutocomplete(results) {
 
     autocompleteList.appendChild(item);
   });
+}
+
+// Obtenir l'icône de plateforme
+function getPlatformIcon(platform) {
+  const icons = {
+    twitch: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2H3v16h5v4l4-4h5l4-4V2zm-10 9V7m5 4V7"></path></svg>',
+    youtube: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg>',
+    kick: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"></path><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>'
+  };
+  return icons[platform] || '';
 }
 
 // Ajouter un streamer depuis l'auto-complétion
@@ -409,12 +420,8 @@ function parseStreamerInput(input) {
   return null;
 }
 
-// Supprimer un streamer
+// Supprimer un streamer (SANS CONFIRMATION)
 async function deleteStreamer(id, cardElement) {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer ce streamer ?')) {
-    return;
-  }
-
   try {
     // Animation de sortie
     cardElement.style.transition = 'all 0.3s ease';

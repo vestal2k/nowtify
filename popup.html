@@ -14,11 +14,14 @@
     <!-- Header -->
     <header class="header">
       <div class="logo-section">
-        <img src="assets/logo.png" alt="Nowtify Logo" class="logo">
+        <img src="icons/logo.png" alt="Nowtify Logo" class="logo">
         <h1>Nowtify</h1>
       </div>
       <button class="icon-btn settings-btn" id="settingsBtn" title="Paramètres">
-        ⚙️
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M12 1v6m0 6v6m5.5-13L14 9m-4 4L6.5 16.5m11-11L14 9m-4 4L6.5 7.5"></path>
+        </svg>
       </button>
     </header>
 
@@ -32,7 +35,11 @@
         autocomplete="off"
       >
       <button class="btn-primary" id="addBtn">
-        ➕ Ajouter
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Ajouter
       </button>
     </div>
 
@@ -46,7 +53,10 @@
 
     <!-- Empty State -->
     <div class="empty-state" id="emptyState">
-      <div style="font-size: 48px; margin-bottom: 16px;">📺</div>
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 7l-7 5 7 5V7z"></path>
+        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+      </svg>
       <h3>Aucun streamer ajouté</h3>
       <p>Ajoutez vos streamers favoris pour être notifié de leurs lives !</p>
     </div>
