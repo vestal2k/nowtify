@@ -16,7 +16,8 @@
       "32": "icons/icon32.png",
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
-    }
+    },
+    "default_title": "Nowtify - Vos streamers favoris"
   },
   "background": {
     "service_worker": "background.js"
@@ -28,7 +29,8 @@
   ],
   "host_permissions": [
     "https://api.twitch.tv/*",
-    "https://www.googleapis.com/youtube/v3/*",
+    "https://id.twitch.tv/*",
+    "https://www.googleapis.com/*",
     "https://kick.com/*"
   ],
   "options_page": "options.html"

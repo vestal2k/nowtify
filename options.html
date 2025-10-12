@@ -11,9 +11,10 @@
 </head>
 <body>
   <div class="container">
+    <!-- Header -->
     <header class="header">
       <div class="logo-section">
-        <img src="icons/logo.png" alt="Nowtify Logo" class="logo">
+        <img src="assets/logo.png" alt="Nowtify Logo" class="logo">
         <div>
           <h1>Nowtify</h1>
           <p class="subtitle">Paramètres de l'extension</p>
@@ -21,7 +22,9 @@
       </div>
     </header>
 
+    <!-- Main Content -->
     <main class="content">
+      <!-- Notifications Section -->
       <section class="section">
         <div class="section-header">
           <h2>🔔 Notifications</h2>
@@ -64,6 +67,7 @@
         </div>
       </section>
 
+      <!-- Refresh Section -->
       <section class="section">
         <div class="section-header">
           <h2>🔄 Rafraîchissement</h2>
@@ -98,30 +102,40 @@
         </div>
       </section>
 
+      <!-- API Keys Section -->
       <section class="section">
         <div class="section-header">
-          <h2>🔑 Clés API</h2>
+          <h2>🔑 Clés API (OBLIGATOIRE)</h2>
           <p>Configurez vos clés API pour les différentes plateformes</p>
         </div>
         
         <div class="settings-group">
+          <div class="api-info-box">
+            <div style="font-size: 24px; margin-bottom: 8px;">ℹ️</div>
+            <p><strong>Pour obtenir vos clés Twitch :</strong></p>
+            <ol>
+              <li>Rendez-vous sur <a href="https://dev.twitch.tv/console/apps" target="_blank">dev.twitch.tv/console/apps</a></li>
+              <li>Cliquez sur "Register Your Application"</li>
+              <li>Nom : "Nowtify" | OAuth Redirect : http://localhost</li>
+              <li>Catégorie : "Application Integration"</li>
+              <li>Copiez le <strong>Client ID</strong> (identifiant public)</li>
+              <li>Cliquez sur "New Secret" pour générer le <strong>Client Secret</strong> (clé confidentielle)</li>
+            </ol>
+            <p style="margin-top: 12px;">Ces deux clés permettent de générer automatiquement un token OAuth.</p>
+          </div>
+
           <div class="api-field">
-            <label for="twitchClientId">Twitch Client ID</label>
+            <label for="twitchClientId">💜 Twitch Client ID</label>
             <input 
               type="text" 
               id="twitchClientId" 
               class="input-field"
               placeholder="Votre Client ID Twitch"
             >
-            <small>
-              <a href="https://dev.twitch.tv/console/apps" target="_blank">
-                Obtenir une clé API Twitch →
-              </a>
-            </small>
           </div>
 
           <div class="api-field">
-            <label for="twitchClientSecret">Twitch Client Secret</label>
+            <label for="twitchClientSecret">💜 Twitch Client Secret</label>
             <input 
               type="password" 
               id="twitchClientSecret" 
@@ -131,7 +145,7 @@
           </div>
 
           <div class="api-field">
-            <label for="youtubeApiKey">YouTube API Key</label>
+            <label for="youtubeApiKey">❤️ YouTube API Key</label>
             <input 
               type="text" 
               id="youtubeApiKey" 
@@ -147,6 +161,7 @@
         </div>
       </section>
 
+      <!-- History Section -->
       <section class="section">
         <div class="section-header">
           <h2>📜 Historique</h2>
@@ -154,13 +169,15 @@
         </div>
         
         <div class="history-list" id="historyList">
+          <!-- Historique injecté dynamiquement -->
         </div>
 
         <button class="btn-secondary" id="clearHistoryBtn">
-          Effacer l'historique
+          🗑️ Effacer l'historique
         </button>
       </section>
 
+      <!-- About Section -->
       <section class="section">
         <div class="section-header">
           <h2>ℹ️ À propos</h2>
@@ -170,21 +187,19 @@
           <p><strong>Nowtify</strong> v1.0.0</p>
           <p>Extension Chrome pour suivre vos streamers favoris sur Twitch, YouTube et Kick.</p>
           <div class="about-links">
-            <a href="#" class="link">Documentation</a>
+            <a href="#" class="link">📖 Documentation</a>
             <span>•</span>
-            <a href="#" class="link">Signaler un bug</a>
+            <a href="#" class="link">🐛 Signaler un bug</a>
             <span>•</span>
-            <a href="#" class="link">Nous soutenir</a>
+            <a href="#" class="link">💖 Nous soutenir</a>
           </div>
         </div>
       </section>
 
+      <!-- Save Button -->
       <div class="save-section">
         <button class="btn-primary" id="saveBtn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="20 6 9 17 4 12"></polyline>
-          </svg>
-          Enregistrer les paramètres
+          ✓ Enregistrer les paramètres
         </button>
         <div class="save-message" id="saveMessage">✓ Paramètres enregistrés !</div>
       </div>

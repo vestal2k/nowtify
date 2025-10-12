@@ -24,13 +24,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 function setupEventListeners() {
   addBtn.addEventListener('click', handleAddStreamer);
   streamerInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') handleAddStreamer();
+    if (e.key === 'Enter') {
+      hideAutocomplete();
+      handleAddStreamer();
+    }
   });
   
   // Auto-complétion
   streamerInput.addEventListener('input', handleAutocomplete);
+  streamerInput.addEventListener('focus', handleAutocomplete);
   streamerInput.addEventListener('blur', () => {
-    setTimeout(() => hideAutocomplete(), 200);
+    setTimeout(() => hideAutocomplete(), 250);
   });
   
   settingsBtn.addEventListener('click', () => {
@@ -48,7 +52,7 @@ function createAutocompleteList() {
 
 // Gérer l'auto-complétion
 function handleAutocomplete(e) {
-  const query = e.target.value.trim();
+  const query = streamerInput.value.trim();
   
   clearTimeout(autocompleteTimeout);
   
@@ -58,19 +62,15 @@ function handleAutocomplete(e) {
   }
 
   // Délai de 300ms avant la recherche
-  autocompleteTimeout = setTimeout(async () => {
-    // Détecter la plateforme
-    let platform = 'twitch';
-    if (query.includes('youtube') || query.includes('yt')) {
-      platform = 'youtube';
-    } else if (query.includes('kick')) {
-      platform = 'kick';
-    }
-
-    // Rechercher
+  autocompleteTimeout = setTimeout(() => {
     chrome.runtime.sendMessage(
-      { action: 'searchStreamers', query: query, platform: platform },
+      { action: 'searchStreamers', query: query },
       (response) => {
+        if (chrome.runtime.lastError) {
+          console.error('Erreur recherche:', chrome.runtime.lastError);
+          return;
+        }
+        
         if (response && response.results && response.results.length > 0) {
           showAutocomplete(response.results);
         } else {
@@ -89,7 +89,12 @@ function showAutocomplete(results) {
   results.forEach(result => {
     const item = document.createElement('div');
     item.className = 'autocomplete-item';
+    
+    const platformEmoji = result.platform === 'twitch' ? '💜' : 
+                         result.platform === 'youtube' ? '❤️' : '💚';
+    
     item.innerHTML = `
+      ${platformEmoji}
       <img 
         src="${result.avatar || 'icons/icon48.png'}" 
         alt="${result.name}"
@@ -106,13 +111,61 @@ function showAutocomplete(results) {
     `;
 
     item.addEventListener('click', () => {
-      streamerInput.value = result.username;
-      hideAutocomplete();
-      handleAddStreamer();
+      addStreamerFromAutocomplete(result);
     });
 
     autocompleteList.appendChild(item);
   });
+}
+
+// Ajouter un streamer depuis l'auto-complétion
+async function addStreamerFromAutocomplete(result) {
+  hideAutocomplete();
+  streamerInput.value = '';
+  
+  try {
+    addBtn.disabled = true;
+    addBtn.textContent = '➕ Ajout...';
+
+    const { streamers = [] } = await chrome.storage.sync.get('streamers');
+    
+    // Vérifier si déjà ajouté
+    const exists = streamers.some(s => 
+      s.platform === result.platform && s.username === result.username
+    );
+    
+    if (exists) {
+      showError('Ce streamer est déjà dans votre liste');
+      return;
+    }
+
+    const newStreamer = {
+      id: Date.now().toString(),
+      name: result.name,
+      username: result.username,
+      platform: result.platform,
+      avatar: result.avatar || '',
+      isLive: result.isLive || false,
+      wasLiveRecently: false,
+      addedDate: Date.now()
+    };
+
+    streamers.push(newStreamer);
+    await chrome.storage.sync.set({ streamers });
+
+    hideError();
+    await loadStreamers();
+
+    // Déclencher une vérification immédiate
+    chrome.runtime.sendMessage({ action: 'checkNow' });
+
+  } catch (error) {
+    console.error('Erreur lors de l\'ajout:', error);
+    showError('Erreur lors de l\'ajout du streamer');
+  } finally {
+    addBtn.disabled = false;
+    addBtn.textContent = '➕ Ajouter';
+  }
 }
 
 // Masquer l'auto-complétion
@@ -163,13 +216,23 @@ async function loadStreamers() {
 function renderStreamerCard(streamer) {
   const card = document.createElement('div');
   card.className = `streamer-card ${streamer.isLive ? 'live' : ''}`;
+  card.style.opacity = '0';
+  card.style.transform = 'translateX(-20px)';
   
   const statusText = getStatusText(streamer);
   const statusClass = streamer.isLive ? 'live' : (streamer.wasLiveRecently ? 'recent' : 'offline');
   
+  // Emoji de plateforme
+  const platformEmoji = streamer.platform === 'twitch' ? '💜' : 
+                       streamer.platform === 'youtube' ? '❤️' : '💚';
+  
+  // Avatar avec fallback
+  const avatarUrl = streamer.avatar && streamer.avatar !== '' ? streamer.avatar : 'icons/icon48.png';
+  
   card.innerHTML = `
+    <div style="font-size: 20px; margin-right: -4px;">${platformEmoji}</div>
     <img 
-      src="${streamer.avatar || 'icons/icon48.png'}" 
+      src="${avatarUrl}" 
       alt="${streamer.name}" 
       class="streamer-avatar"
       onerror="this.src='icons/icon48.png'"
@@ -183,14 +246,19 @@ function renderStreamerCard(streamer) {
           ${statusText}
         </span>
       </div>
+      ${streamer.title ? `<div class="streamer-title">${escapeHtml(streamer.title)}</div>` : ''}
     </div>
     <button class="delete-btn" data-id="${streamer.id}" title="Supprimer">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="18" y1="6" x2="6" y2="18"></line>
-        <line x1="6" y1="6" x2="18" y2="18"></line>
-      </svg>
+      ❌
     </button>
   `;
+
+  // Animation d'entrée
+  setTimeout(() => {
+    card.style.transition = 'all 0.3s ease';
+    card.style.opacity = '1';
+    card.style.transform = 'translateX(0)';
+  }, 50);
 
   // Ouvrir le stream au clic sur la carte
   card.addEventListener('click', (e) => {
@@ -202,7 +270,7 @@ function renderStreamerCard(streamer) {
   // Supprimer le streamer
   card.querySelector('.delete-btn').addEventListener('click', (e) => {
     e.stopPropagation();
-    deleteStreamer(streamer.id);
+    deleteStreamer(streamer.id, card);
   });
 
   streamersList.appendChild(card);
@@ -342,16 +410,23 @@ function parseStreamerInput(input) {
 }
 
 // Supprimer un streamer
-async function deleteStreamer(id) {
+async function deleteStreamer(id, cardElement) {
   if (!confirm('Êtes-vous sûr de vouloir supprimer ce streamer ?')) {
     return;
   }
 
   try {
-    const { streamers = [] } = await chrome.storage.sync.get('streamers');
-    const filtered = streamers.filter(s => s.id !== id);
-    await chrome.storage.sync.set({ streamers: filtered });
-    await loadStreamers();
+    // Animation de sortie
+    cardElement.style.transition = 'all 0.3s ease';
+    cardElement.style.opacity = '0';
+    cardElement.style.transform = 'translateX(20px)';
+    
+    setTimeout(async () => {
+      const { streamers = [] } = await chrome.storage.sync.get('streamers');
+      const filtered = streamers.filter(s => s.id !== id);
+      await chrome.storage.sync.set({ streamers: filtered });
+      await loadStreamers();
+    }, 300);
   } catch (error) {
     console.error('Erreur lors de la suppression:', error);
     showError('Erreur lors de la suppression');
