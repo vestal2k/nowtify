@@ -1,6 +1,3 @@
-// options.js - Gestion de la page des paramètres
-
-// Éléments du DOM
 const notificationsEnabled = document.getElementById('notificationsEnabled');
 const notificationSound = document.getElementById('notificationSound');
 const persistentNotifications = document.getElementById('persistentNotifications');
@@ -14,47 +11,39 @@ const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 const saveBtn = document.getElementById('saveBtn');
 const saveMessage = document.getElementById('saveMessage');
 
-// Charger les paramètres au démarrage
 document.addEventListener('DOMContentLoaded', async () => {
   await loadSettings();
   await loadHistory();
   setupEventListeners();
 });
 
-// Configuration des écouteurs d'événements
 function setupEventListeners() {
   saveBtn.addEventListener('click', saveSettings);
   clearHistoryBtn.addEventListener('click', clearHistory);
 
-  // Sauvegarder automatiquement les toggles
   [notificationsEnabled, notificationSound, persistentNotifications, autoRefresh].forEach(toggle => {
     toggle.addEventListener('change', () => {
-      saveSettings(false); // Sauvegarder sans message
+      saveSettings(false);
     });
   });
 
-  // Sauvegarder automatiquement le select
   refreshInterval.addEventListener('change', () => {
     saveSettings(false);
     updateAlarm();
   });
 }
 
-// Charger les paramètres depuis le storage
 async function loadSettings() {
   try {
     const { settings = {}, apiKeys = {} } = await chrome.storage.sync.get(['settings', 'apiKeys']);
 
-    // Paramètres de notifications
     notificationsEnabled.checked = settings.notifications !== false;
     notificationSound.checked = settings.notificationSound === true;
     persistentNotifications.checked = settings.persistentNotifications === true;
 
-    // Paramètres de rafraîchissement
     autoRefresh.checked = settings.autoRefresh !== false;
     refreshInterval.value = settings.refreshInterval || '5';
 
-    // Clés API
     twitchClientId.value = apiKeys.twitchClientId || '';
     twitchClientSecret.value = apiKeys.twitchClientSecret || '';
     youtubeApiKey.value = apiKeys.youtubeApiKey || '';
@@ -64,7 +53,6 @@ async function loadSettings() {
   }
 }
 
-// Sauvegarder les paramètres
 async function saveSettings(showMessage = true) {
   try {
     const settings = {
@@ -83,7 +71,6 @@ async function saveSettings(showMessage = true) {
 
     await chrome.storage.sync.set({ settings, apiKeys });
 
-    // Informer le background script des changements
     chrome.runtime.sendMessage({ 
       action: 'settingsUpdated',
       settings,
@@ -103,7 +90,6 @@ async function saveSettings(showMessage = true) {
   }
 }
 
-// Mettre à jour l'alarme de vérification
 function updateAlarm() {
   const minutes = parseInt(refreshInterval.value);
   chrome.runtime.sendMessage({
@@ -112,7 +98,6 @@ function updateAlarm() {
   });
 }
 
-// Charger l'historique
 async function loadHistory() {
   try {
     const { history = [] } = await chrome.storage.local.get('history');
@@ -164,7 +149,6 @@ async function loadHistory() {
   }
 }
 
-// Effacer l'historique
 async function clearHistory() {
   if (!confirm('Êtes-vous sûr de vouloir effacer tout l\'historique ?')) {
     return;
@@ -179,7 +163,6 @@ async function clearHistory() {
   }
 }
 
-// Calculer le temps écoulé
 function getTimeAgo(timestamp) {
   const now = Date.now();
   const diff = now - timestamp;
@@ -200,14 +183,12 @@ function getTimeAgo(timestamp) {
   });
 }
 
-// Échapper le HTML
 function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
 }
 
-// Écouter les messages du background
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'historyUpdated') {
     loadHistory();

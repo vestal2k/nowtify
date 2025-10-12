@@ -1,6 +1,3 @@
-// popup.js - Gestion de l'interface utilisateur de la popup
-
-// Éléments du DOM
 const streamerInput = document.getElementById('streamerInput');
 const addBtn = document.getElementById('addBtn');
 const settingsBtn = document.getElementById('settingsBtn');
@@ -9,13 +6,11 @@ const emptyState = document.getElementById('emptyState');
 const errorMessage = document.getElementById('errorMessage');
 const loadingState = document.getElementById('loadingState');
 
-// Initialisation au chargement de la popup
 document.addEventListener('DOMContentLoaded', async () => {
   await loadStreamers();
   setupEventListeners();
 });
 
-// Configuration des écouteurs d'événements
 function setupEventListeners() {
   addBtn.addEventListener('click', handleAddStreamer);
   streamerInput.addEventListener('keypress', (e) => {
@@ -26,7 +21,6 @@ function setupEventListeners() {
   });
 }
 
-// Charger et afficher tous les streamers
 async function loadStreamers() {
   try {
     showLoading(true);
@@ -41,7 +35,6 @@ async function loadStreamers() {
     showEmptyState(false);
     streamersList.innerHTML = '';
 
-    // Récupérer les données des streamers depuis le background
     chrome.runtime.sendMessage({ action: 'getStreamersData' }, (response) => {
       showLoading(false);
       
@@ -50,7 +43,6 @@ async function loadStreamers() {
           renderStreamerCard(streamer);
         });
       } else {
-        // Afficher les streamers basiques si pas de données
         streamers.forEach(streamer => {
           renderStreamerCard(streamer);
         });
@@ -63,7 +55,6 @@ async function loadStreamers() {
   }
 }
 
-// Afficher une carte de streamer
 function renderStreamerCard(streamer) {
   const card = document.createElement('div');
   card.className = `streamer-card ${streamer.isLive ? 'live' : ''}`;
@@ -96,14 +87,12 @@ function renderStreamerCard(streamer) {
     </button>
   `;
 
-  // Ouvrir le stream au clic sur la carte
   card.addEventListener('click', (e) => {
     if (!e.target.closest('.delete-btn')) {
       openStream(streamer);
     }
   });
 
-  // Supprimer le streamer
   card.querySelector('.delete-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     deleteStreamer(streamer.id);
@@ -112,7 +101,6 @@ function renderStreamerCard(streamer) {
   streamersList.appendChild(card);
 }
 
-// Obtenir le texte de statut
 function getStatusText(streamer) {
   if (streamer.isLive) {
     return streamer.viewerCount ? `🟢 Live - ${formatViewers(streamer.viewerCount)} viewers` : '🟢 Live';
@@ -124,7 +112,6 @@ function getStatusText(streamer) {
   return '⚪ Offline';
 }
 
-// Formater le nombre de viewers
 function formatViewers(count) {
   if (count >= 1000) {
     return (count / 1000).toFixed(1) + 'K';
@@ -132,7 +119,6 @@ function formatViewers(count) {
   return count.toString();
 }
 
-// Gérer l'ajout d'un streamer
 async function handleAddStreamer() {
   const input = streamerInput.value.trim();
   
@@ -145,7 +131,6 @@ async function handleAddStreamer() {
     addBtn.disabled = true;
     addBtn.textContent = 'Ajout...';
 
-    // Détecter la plateforme et extraire l'identifiant
     const streamerData = parseStreamerInput(input);
     
     if (!streamerData) {
@@ -153,10 +138,8 @@ async function handleAddStreamer() {
       return;
     }
 
-    // Ajouter le streamer
     const { streamers = [] } = await chrome.storage.sync.get('streamers');
     
-    // Vérifier si déjà ajouté
     const exists = streamers.some(s => 
       s.platform === streamerData.platform && s.username === streamerData.username
     );
@@ -180,12 +163,10 @@ async function handleAddStreamer() {
     streamers.push(newStreamer);
     await chrome.storage.sync.set({ streamers });
 
-    // Recharger la liste
     streamerInput.value = '';
     hideError();
     await loadStreamers();
 
-    // Déclencher une vérification immédiate
     chrome.runtime.sendMessage({ action: 'checkNow' });
 
   } catch (error) {
@@ -203,11 +184,9 @@ async function handleAddStreamer() {
   }
 }
 
-// Parser l'input pour détecter la plateforme
 function parseStreamerInput(input) {
   input = input.trim().toLowerCase();
 
-  // Twitch
   if (input.includes('twitch.tv/')) {
     const match = input.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
     if (match) return { platform: 'twitch', username: match[1] };
@@ -216,7 +195,6 @@ function parseStreamerInput(input) {
     if (username) return { platform: 'twitch', username };
   }
 
-  // YouTube
   if (input.includes('youtube.com/') || input.includes('youtu.be/')) {
     const match = input.match(/youtube\.com\/@([a-zA-Z0-9_-]+)|youtube\.com\/channel\/([a-zA-Z0-9_-]+)|youtube\.com\/c\/([a-zA-Z0-9_-]+)/);
     if (match) {
@@ -228,7 +206,6 @@ function parseStreamerInput(input) {
     if (username) return { platform: 'youtube', username };
   }
 
-  // Kick
   if (input.includes('kick.com/')) {
     const match = input.match(/kick\.com\/([a-zA-Z0-9_-]+)/);
     if (match) return { platform: 'kick', username: match[1] };
@@ -237,7 +214,6 @@ function parseStreamerInput(input) {
     if (username) return { platform: 'kick', username };
   }
 
-  // Par défaut, supposer Twitch si c'est juste un nom
   if (/^[a-zA-Z0-9_]+$/.test(input)) {
     return { platform: 'twitch', username: input };
   }
@@ -245,7 +221,6 @@ function parseStreamerInput(input) {
   return null;
 }
 
-// Supprimer un streamer
 async function deleteStreamer(id) {
   if (!confirm('Êtes-vous sûr de vouloir supprimer ce streamer ?')) {
     return;
@@ -262,7 +237,6 @@ async function deleteStreamer(id) {
   }
 }
 
-// Ouvrir le stream
 function openStream(streamer) {
   let url;
   switch (streamer.platform) {
@@ -282,31 +256,26 @@ function openStream(streamer) {
   }
 }
 
-// Afficher/masquer l'état vide
 function showEmptyState(show) {
   emptyState.classList.toggle('hidden', !show);
   streamersList.style.display = show ? 'none' : 'flex';
 }
 
-// Afficher/masquer le chargement
 function showLoading(show) {
   loadingState.style.display = show ? 'block' : 'none';
   streamersList.style.display = show ? 'none' : 'flex';
 }
 
-// Afficher une erreur
 function showError(message) {
   errorMessage.textContent = message;
   errorMessage.classList.add('show');
   setTimeout(() => hideError(), 5000);
 }
 
-// Masquer l'erreur
 function hideError() {
   errorMessage.classList.remove('show');
 }
 
-// Échapper le HTML
 function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
