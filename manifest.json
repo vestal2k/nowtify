@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Nowtify",
+  "version": "1.0.0",
+  "description": "Soyez notifié instantanément quand vos streamers favoris passent en live sur Twitch, YouTube et Kick",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "notifications",
+    "storage",
+    "alarms"
+  ],
+  "host_permissions": [
+    "https://api.twitch.tv/*",
+    "https://www.googleapis.com/youtube/v3/*",
+    "https://kick.com/*"
+  ],
+  "options_page": "options.html"
+}
