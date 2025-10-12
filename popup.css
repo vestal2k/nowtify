@@ -58,8 +58,11 @@ h1 {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 18px;
   transition: all 0.3s ease;
+}
+
+.icon-btn svg {
+  color: #7B5CFF;
 }
 
 .icon-btn:hover {
@@ -163,7 +166,7 @@ h1 {
   border-radius: 12px;
   padding: 12px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   transition: all 0.3s ease;
   cursor: pointer;
@@ -178,16 +181,16 @@ h1 {
 
 .streamer-card.live {
   border-color: rgba(92, 255, 224, 0.5);
-  box-shadow: 0 0 20px rgba(92, 255, 224, 0.3), 0 0 40px rgba(92, 255, 224, 0.1);
-  animation: liveGlow 2s ease-in-out infinite;
+  box-shadow: 0 0 20px rgba(92, 255, 224, 0.25), 0 0 40px rgba(123, 92, 255, 0.15);
+  animation: liveGlow 3s ease-in-out infinite;
 }
 
 @keyframes liveGlow {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(92, 255, 224, 0.3), 0 0 40px rgba(92, 255, 224, 0.1);
+    box-shadow: 0 0 20px rgba(92, 255, 224, 0.25), 0 0 40px rgba(123, 92, 255, 0.15);
   }
   50% {
-    box-shadow: 0 0 30px rgba(92, 255, 224, 0.5), 0 0 60px rgba(92, 255, 224, 0.2);
+    box-shadow: 0 0 30px rgba(92, 255, 224, 0.4), 0 0 60px rgba(123, 92, 255, 0.25);
   }
 }
 
@@ -198,6 +201,7 @@ h1 {
   object-fit: cover;
   border: 2px solid transparent;
   transition: border-color 0.3s ease;
+  flex-shrink: 0;
 }
 
 .streamer-card.live .streamer-avatar {
@@ -208,33 +212,33 @@ h1 {
 .streamer-info {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.streamer-main-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
 }
 
 .streamer-name {
   font-weight: 600;
   font-size: 14px;
   color: #E8E8E8;
-  margin-bottom: 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.streamer-title {
-  font-size: 11px;
-  color: rgba(232, 232, 232, 0.5);
-  margin-top: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex-shrink: 1;
 }
 
 .streamer-meta {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
-  color: rgba(232, 232, 232, 0.6);
+  flex-shrink: 0;
 }
 
 .platform-badge {
@@ -243,10 +247,23 @@ h1 {
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.platform-badge svg {
+  width: 12px;
+  height: 12px;
 }
 
 .platform-twitch {
   background: rgba(145, 70, 255, 0.2);
+  color: #9146FF;
+}
+
+.platform-twitch svg {
   color: #9146FF;
 }
 
@@ -255,8 +272,16 @@ h1 {
   color: #FF0000;
 }
 
+.platform-youtube svg {
+  color: #FF0000;
+}
+
 .platform-kick {
   background: rgba(83, 255, 26, 0.2);
+  color: #53FF1A;
+}
+
+.platform-kick svg {
   color: #53FF1A;
 }
 
@@ -265,6 +290,8 @@ h1 {
   align-items: center;
   gap: 4px;
   font-size: 11px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .status-dot {
@@ -272,6 +299,7 @@ h1 {
   height: 8px;
   border-radius: 50%;
   animation: pulse 2s infinite;
+  flex-shrink: 0;
 }
 
 .status-dot.live {
@@ -295,6 +323,15 @@ h1 {
   }
 }
 
+.streamer-title {
+  font-size: 11px;
+  color: rgba(232, 232, 232, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
 .delete-btn {
   background: rgba(255, 82, 82, 0.1);
   border: none;
@@ -305,9 +342,18 @@ h1 {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 14px;
   transition: all 0.3s ease;
   opacity: 0;
+  flex-shrink: 0;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.delete-btn svg {
+  width: 14px;
+  height: 14px;
+  color: #FF5252;
 }
 
 .streamer-card:hover .delete-btn {
@@ -324,6 +370,11 @@ h1 {
   text-align: center;
   padding: 40px 20px;
   color: rgba(232, 232, 232, 0.5);
+}
+
+.empty-state svg {
+  opacity: 0.3;
+  margin-bottom: 16px;
 }
 
 .empty-state h3 {
@@ -411,7 +462,6 @@ h1 {
   cursor: pointer;
   transition: all 0.2s ease;
   border-bottom: 1px solid rgba(123, 92, 255, 0.1);
-  font-size: 16px;
 }
 
 .autocomplete-item:last-child {
