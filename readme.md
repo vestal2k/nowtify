@@ -1,15 +1,15 @@
 <div align="center">
   
-  <img src="" alt="Project Logo" width="72" height="72" />
+  <img src="icons/logo.png" alt="Project Logo" width="72" height="72" />
   <h1>🧠 Project Name</h1>
   <p><em>Short tagline or description</em></p>
 
   <!-- Header buttons -->
   <p>
     <a href="">
-      <img src="https://img.shields.io/badge/🌐 (Website Name)-000?style=for-the-badge" alt="Live Demo"/>
+      <img src="https://img.shields.io/badge/🌐 Nowtify-000?style=for-the-badge" alt="Live Demo"/>
     </a>
-    <a href="https://github.com/username/repo">
+    <a href="https://github.com/vestal2k/nowtify">
       <img src="https://img.shields.io/badge/📂 Repository-000?style=for-the-badge&logo=github" alt="Repository"/>
     </a>
   </p>
