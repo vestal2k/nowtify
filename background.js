@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nowtify - Paramètres</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo-section">
+        <img src="assets/logo.png" alt="Nowtify Logo" class="logo">
+        <div>
+          <h1>Nowtify</h1>
+          <p class="subtitle">Paramètres de l'extension</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="content">
+      <!-- Notifications Section -->
+      <section class="section">
+        <div class="section-header">
+          <h2>🔔 Notifications</h2>
+          <p>Configurez vos préférences de notifications</p>
+        </div>
+        
+        <div class="settings-group">
+          <div class="setting-item">
+            <div class="setting-info">
+              <h3>Activer les notifications</h3>
+              <p>Recevoir une notification lorsqu'un streamer passe en live</p>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="notificationsEnabled" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <h3>Son des notifications</h3>
+              <p>Jouer un son lors de l'apparition d'une notification</p>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="notificationSound">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <h3>Notifications persistantes</h3>
+              <p>Les notifications restent affichées jusqu'à ce que vous les fermiez</p>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="persistentNotifications">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- Refresh Section -->
+      <section class="section">
+        <div class="section-header">
+          <h2>🔄 Rafraîchissement</h2>
+          <p>Contrôlez la fréquence de vérification des streams</p>
+        </div>
+        
+        <div class="settings-group">
+          <div class="setting-item">
+            <div class="setting-info">
+              <h3>Rafraîchissement automatique</h3>
+              <p>Vérifier automatiquement le statut des streamers</p>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="autoRefresh" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <h3>Intervalle de rafraîchissement</h3>
+              <p>Fréquence de vérification (en minutes)</p>
+            </div>
+            <select id="refreshInterval" class="select-field">
+              <option value="1">1 minute</option>
+              <option value="3">3 minutes</option>
+              <option value="5" selected>5 minutes</option>
+              <option value="10">10 minutes</option>
+              <option value="15">15 minutes</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- API Keys Section -->
+      <section class="section">
+        <div class="section-header">
+          <h2>🔑 Clés API</h2>
+          <p>Configurez vos clés API pour les différentes plateformes</p>
+        </div>
+        
+        <div class="settings-group">
+          <div class="api-field">
+            <label for="twitchClientId">Twitch Client ID</label>
+            <input 
+              type="text" 
+              id="twitchClientId" 
+              class="input-field"
+              placeholder="Votre Client ID Twitch"
+            >
+            <small>
+              <a href="https://dev.twitch.tv/console/apps" target="_blank">
+                Obtenir une clé API Twitch →
+              </a>
+            </small>
+          </div>
+
+          <div class="api-field">
+            <label for="twitchClientSecret">Twitch Client Secret</label>
+            <input 
+              type="password" 
+              id="twitchClientSecret" 
+              class="input-field"
+              placeholder="Votre Client Secret Twitch"
+            >
+          </div>
+
+          <div class="api-field">
+            <label for="youtubeApiKey">YouTube API Key</label>
+            <input 
+              type="text" 
+              id="youtubeApiKey" 
+              class="input-field"
+              placeholder="Votre clé API YouTube Data v3"
+            >
+            <small>
+              <a href="https://console.cloud.google.com/apis/credentials" target="_blank">
+                Obtenir une clé API YouTube →
+              </a>
+            </small>
+          </div>
+        </div>
+      </section>
+
+      <!-- History Section -->
+      <section class="section">
+        <div class="section-header">
+          <h2>📜 Historique</h2>
+          <p>Les 10 derniers lives détectés</p>
+        </div>
+        
+        <div class="history-list" id="historyList">
+          <!-- Historique injecté dynamiquement -->
+        </div>
+
+        <button class="btn-secondary" id="clearHistoryBtn">
+          Effacer l'historique
+        </button>
+      </section>
+
+      <!-- About Section -->
+      <section class="section">
+        <div class="section-header">
+          <h2>ℹ️ À propos</h2>
+        </div>
+        
+        <div class="about-content">
+          <p><strong>Nowtify</strong> v1.0.0</p>
+          <p>Extension Chrome pour suivre vos streamers favoris sur Twitch, YouTube et Kick.</p>
+          <div class="about-links">
+            <a href="#" class="link">Documentation</a>
+            <span>•</span>
+            <a href="#" class="link">Signaler un bug</a>
+            <span>•</span>
+            <a href="#" class="link">Nous soutenir</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Save Button -->
+      <div class="save-section">
+        <button class="btn-primary" id="saveBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          Enregistrer les paramètres
+        </button>
+        <div class="save-message" id="saveMessage">✓ Paramètres enregistrés !</div>
+      </div>
+    </main>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
