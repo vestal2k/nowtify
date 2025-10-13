@@ -265,7 +265,17 @@ async function checkAllStreamers() {
         
         lastCheck[streamer.id] = Date.now();
         
-        updatedStreamers.push(updated);
+        const streamersData = { ...updated };
+        delete streamersData.avatar;
+        delete streamersData.thumbnail;
+        delete streamersData.teamLogo;
+        
+        updatedStreamers.push(streamersData);
+        
+        if (updated.avatar) {
+          await chrome.storage.local.set({ [`avatar_${updated.id}`]: updated.avatar });
+        }
+        
         streamersCache[streamer.id] = updated;
       } catch (error) {
         updatedStreamers.push(streamer);
@@ -635,8 +645,14 @@ async function getStreamersWithData() {
       return cached;
     }
 
-    if (!streamer.avatar) {
+    const avatarCache = await chrome.storage.local.get(`avatar_${streamer.id}`);
+    if (avatarCache[`avatar_${streamer.id}`]) {
+      streamer.avatar = avatarCache[`avatar_${streamer.id}`];
+    } else if (!streamer.avatar) {
       streamer.avatar = await getStreamerAvatar(streamer.platform, streamer.username);
+      if (streamer.avatar) {
+        await chrome.storage.local.set({ [`avatar_${streamer.id}`]: streamer.avatar });
+      }
     }
 
     if (streamer.team && !streamer.teamLogo) {
