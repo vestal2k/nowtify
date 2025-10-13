@@ -229,7 +229,7 @@ async function checkAllStreamers() {
     const { streamers = [], settings = {} } = await chrome.storage.sync.get(['streamers', 'settings']);
     
     if (streamers.length === 0) {
-      updateBadgeAndIcon(false, 0);
+      updateBadge(0);
       isChecking = false;
       return;
     }
@@ -282,7 +282,7 @@ async function checkAllStreamers() {
       }
     }
 
-    updateBadgeAndIcon(liveCount > 0, liveCount);
+    updateBadge(liveCount);
     await chrome.storage.sync.set({ streamers: updatedStreamers });
 
   } catch (error) {
@@ -678,8 +678,8 @@ async function getStreamersWithData() {
   return enriched;
 }
 
-function updateBadgeAndIcon(hasLive, liveCount = 0) {
-  if (hasLive && liveCount > 0) {
+function updateBadge(liveCount) {
+  if (liveCount > 0) {
     chrome.action.setBadgeText({ text: liveCount.toString() });
     chrome.action.setBadgeBackgroundColor({ color: '#5CFFE0' });
   } else {
