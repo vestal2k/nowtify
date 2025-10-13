@@ -49,7 +49,6 @@ async function loadSettings() {
     youtubeApiKey.value = apiKeys.youtubeApiKey || '';
 
   } catch (error) {
-    console.error('Erreur lors du chargement des paramètres:', error);
   }
 }
 
@@ -85,7 +84,6 @@ async function saveSettings(showMessage = true) {
     }
 
   } catch (error) {
-    console.error('Erreur lors de la sauvegarde:', error);
     alert('Erreur lors de la sauvegarde des paramètres');
   }
 }
@@ -140,7 +138,6 @@ async function loadHistory() {
     });
 
   } catch (error) {
-    console.error('Erreur lors du chargement de l\'historique:', error);
     historyList.innerHTML = `
       <div class="empty-history">
         <p>Erreur lors du chargement de l'historique</p>
@@ -158,7 +155,6 @@ async function clearHistory() {
     await chrome.storage.local.set({ history: [] });
     await loadHistory();
   } catch (error) {
-    console.error('Erreur lors de l\'effacement:', error);
     alert('Erreur lors de l\'effacement de l\'historique');
   }
 }
