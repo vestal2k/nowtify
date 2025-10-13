@@ -1,1 +1,7 @@
 .agents/
+release/
+*.rar
+*.zip
+nowtify-v*.rar
+nowtify-v*.zip
+create-realease.ps1
