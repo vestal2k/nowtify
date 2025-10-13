@@ -15,6 +15,15 @@ let adaptiveTimers = {};
 let lastCheck = {};
 
 chrome.runtime.onInstalled.addListener(async () => {
+  chrome.action.setIcon({
+    path: {
+      16: 'icons/logo.png',
+      32: 'icons/logo.png',
+      48: 'icons/logo.png',
+      128: 'icons/logo.png'
+    }
+  });
+
   await loadApiKeys();
   
   const { streamers } = await chrome.storage.sync.get('streamers');
@@ -35,6 +44,15 @@ chrome.runtime.onInstalled.addListener(async () => {
 });
 
 chrome.runtime.onStartup.addListener(async () => {
+  chrome.action.setIcon({
+    path: {
+      16: 'icons/logo.png',
+      32: 'icons/logo.png',
+      48: 'icons/logo.png',
+      128: 'icons/logo.png'
+    }
+  });
+
   await loadApiKeys();
   checkAllStreamers();
 });
