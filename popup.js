@@ -62,7 +62,6 @@ async function loadStreamers() {
       showLoading(false);
       
       if (chrome.runtime.lastError) {
-        console.error('Erreur:', chrome.runtime.lastError);
         streamers.forEach(streamer => renderStreamerCard(streamer));
         return;
       }
@@ -75,7 +74,6 @@ async function loadStreamers() {
       }
     });
   } catch (error) {
-    console.error('Erreur chargement:', error);
     showError('Erreur lors du chargement');
     showLoading(false);
   }
@@ -98,7 +96,6 @@ function handleAutocomplete(e) {
         { action: 'searchTeams', query: teamQuery },
         (response) => {
           if (chrome.runtime.lastError) {
-            console.error('Erreur recherche teams:', chrome.runtime.lastError);
             return;
           }
           
@@ -118,7 +115,6 @@ function handleAutocomplete(e) {
       { action: 'searchStreamers', query: query },
       (response) => {
         if (chrome.runtime.lastError) {
-          console.error('Erreur recherche:', chrome.runtime.lastError);
           return;
         }
         
@@ -287,7 +283,6 @@ async function addStreamerFromAutocomplete(result) {
     chrome.runtime.sendMessage({ action: 'checkNow' });
 
   } catch (error) {
-    console.error('Erreur ajout:', error);
     showError('Erreur lors de l\'ajout du streamer');
   } finally {
     addBtn.disabled = false;
