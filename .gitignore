@@ -4,4 +4,7 @@ release/
 *.zip
 nowtify-v*.rar
 nowtify-v*.zip
+Nowtify-v*.zip
 create-realease.ps1
+temp-build-*
+build-release.ps1
