@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nowtify — Never Miss a Stream Again</title>
+    <link rel="icon" type="image/x-icon" href="/icons/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cyan: #5CFFE0;
+            --purple: #7B5CFF;
+            --pink: #FF4F8B;
+            --red: #FF3366;
+            --bg: #161618;
+            --text-primary: #F5F5F5;
+            --text-secondary: #B7B7B7;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--cyan), var(--purple), var(--red));
+            border-radius: 10px;
+            transition: box-shadow 0.3s ease;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            box-shadow: 0 0 12px rgba(92, 255, 224, 0.5);
+        }
+
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--purple) var(--bg);
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        #three-canvas {
+            width: 100%;
+            height: 100%;
+            opacity: 0.6;
+        }
+
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            border-radius: 50%;
+            opacity: 0;
+            animation: particleFloat 20s infinite ease-in-out;
+        }
+
+        @keyframes particleFloat {
+            0% {
+                opacity: 0;
+                transform: translateY(100vh) translateX(0);
+            }
+            15% {
+                opacity: 0.4;
+            }
+            85% {
+                opacity: 0.2;
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-100vh) translateX(80px);
+            }
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 60px 24px;
+        }
+
+        .logo-wrapper {
+            position: relative;
+            margin-bottom: 48px;
+            animation: floatLogo 6s ease-in-out infinite;
+        }
+
+        @keyframes floatLogo {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-12px);
+            }
+        }
+
+        .logo-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 280px;
+            height: 280px;
+            background: radial-gradient(circle, rgba(92, 255, 224, 0.15), rgba(123, 92, 255, 0.12), transparent 65%);
+            filter: blur(50px);
+            animation: pulseGlow 6s ease-in-out infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% {
+                opacity: 0.5;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            50% {
+                opacity: 0.8;
+                transform: translate(-50%, -50%) scale(1.15);
+            }
+        }
+
+        .logo {
+            position: relative;
+            width: 160px;
+            height: auto;
+            filter: drop-shadow(0 0 20px rgba(92, 255, 224, 0.4));
+        }
+
+        .title-main {
+            font-size: 4.5rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, var(--cyan), var(--purple), var(--pink), var(--red));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientFlow 8s ease infinite;
+            background-size: 200% 100%;
+            letter-spacing: -0.02em;
+            line-height: 1;
+        }
+
+        @keyframes gradientFlow {
+            0%, 100% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .title-sub {
+            font-size: 1.5rem;
+            font-weight: 400;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            letter-spacing: 0.02em;
+        }
+
+        .title-desc {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-bottom: 48px;
+            max-width: 560px;
+            line-height: 1.5;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 18px 40px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(12px);
+            border: 2px solid transparent;
+            border-radius: 14px;
+            color: var(--text-primary);
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 14px;
+            padding: 2px;
+            background: linear-gradient(90deg, var(--cyan), var(--purple), var(--pink), var(--red));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            animation: borderRotate 4s linear infinite;
+            background-size: 200% 100%;
+        }
+
+        @keyframes borderRotate {
+            0% {
+                background-position: 0% 50%;
+            }
+            100% {
+                background-position: 200% 50%;
+            }
+        }
+
+        .btn-primary::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(92, 255, 224, 0.15), transparent 60%);
+            opacity: 0;
+            transition: opacity 0.4s;
+            border-radius: 14px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(92, 255, 224, 0.25);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .btn-primary:hover::after {
+            opacity: 1;
+        }
+
+        .features {
+            padding: 120px 24px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 28px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 20px;
+            padding: 36px 32px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(92, 255, 224, 0.06), transparent 70%);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .feature-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(92, 255, 224, 0.15);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(92, 255, 224, 0.12);
+        }
+
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+
+        .feature-icon {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .feature-icon svg {
+            width: 44px;
+            height: 44px;
+            stroke-width: 1.8;
+        }
+
+        .feature-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+
+        .feature-desc {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .cta {
+            padding: 100px 24px 120px;
+            text-align: center;
+        }
+
+        .cta-text {
+            font-size: 1.6rem;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .cta-subtext {
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            margin-bottom: 44px;
+        }
+
+        footer {
+            padding: 44px 24px;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 24px;
+            position: relative;
+        }
+
+        footer::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(92, 255, 224, 0.03), rgba(123, 92, 255, 0.03), transparent);
+            animation: footerGlow 12s linear infinite;
+        }
+
+        @keyframes footerGlow {
+            0% {
+                transform: translateX(-100%);
+            }
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        footer p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        footer .heart {
+            display: inline-block;
+            animation: heartBeat 2.5s ease-in-out infinite;
+            color: var(--pink);
+        }
+
+        @keyframes heartBeat {
+            0%, 100% {
+                transform: scale(1);
+            }
+            12%, 32% {
+                transform: scale(1.08);
+            }
+            22%, 42% {
+                transform: scale(1);
+            }
+        }
+
+        .github-icon {
+            width: 22px;
+            height: 22px;
+            opacity: 0.6;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 1;
+        }
+
+        .github-icon:hover {
+            opacity: 1;
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 8px var(--cyan));
+        }
+
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 1024px) {
+            .features-grid {
+                max-width: 700px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .title-main {
+                font-size: 3rem;
+            }
+
+            .title-sub {
+                font-size: 1.2rem;
+            }
+
+            .title-desc {
+                font-size: 1rem;
+            }
+
+            .logo {
+                width: 120px;
+            }
+
+            .features {
+                padding: 80px 24px;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .feature-card {
+                padding: 28px 24px;
+            }
+
+            .cta {
+                padding: 80px 24px 100px;
+            }
+
+            .cta-text {
+                font-size: 1.3rem;
+            }
+
+            footer {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            #canvas-container {
+                opacity: 0.4;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .title-main {
+                font-size: 2.5rem;
+            }
+
+            .hero {
+                padding: 40px 20px;
+            }
+
+            .container {
+                padding: 0 20px;
+            }
+        }
+
+        @media (hover: none) {
+            #canvas-container {
+                opacity: 0.3;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container">
+        <canvas id="three-canvas"></canvas>
+    </div>
+
+    <div class="particles" id="particles"></div>
+
+    <div class="container">
+        <section class="hero">
+            <div class="logo-wrapper fade-in">
+                <img src="/icons/logo.png" alt="Nowtify Logo" class="logo">
+            </div>
+            <h1 class="title-main fade-in">Nowtify</h1>
+            <p class="title-sub fade-in">Never miss a stream again</p>
+            <p class="title-desc fade-in">Track your favorite Twitch, YouTube & Kick streamers in real time.</p>
+            <a href="https://github.com/vestal2k/nowtify/releases/tag/V1" class="btn-primary fade-in">
+                📦 Download on GitHub
+            </a>
+        </section>
+
+        <section class="features">
+            <div class="features-grid">
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="url(#grad1)" stroke-linecap="round" stroke-linejoin="round">
+                            <defs><linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#5CFFE0;stop-opacity:1" /><stop offset="100%" style="stop-color:#7B5CFF;stop-opacity:1" /></linearGradient></defs>
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Real-time detection</h3>
+                    <p class="feature-desc">Instantly know when your streamer goes live.</p>
+                </div>
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="url(#grad2)" stroke-linecap="round" stroke-linejoin="round">
+                            <defs><linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#7B5CFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#FF4F8B;stop-opacity:1" /></linearGradient></defs>
+                            <path d="M12 8V4H8"></path><rect width="16" height="12" x="4" y="8" rx="2"></rect><path d="M2 14h2"></path><path d="M20 14h2"></path><path d="M15 13v2"></path><path d="M9 13v2"></path>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Smart refresh</h3>
+                    <p class="feature-desc">Updates intelligently, no reloads needed.</p>
+                </div>
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="url(#grad3)" stroke-linecap="round" stroke-linejoin="round">
+                            <defs><linearGradient id="grad3" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#FF4F8B;stop-opacity:1" /><stop offset="100%" style="stop-color:#FF3366;stop-opacity:1" /></linearGradient></defs>
+                            <path d="M10 2v3a4 4 0 0 0 4 4h3"></path><path d="M18 2h-3a5 5 0 0 0-5 5v3"></path><rect width="8" height="8" x="2" y="14" rx="2"></rect><path d="M17 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-3"></path>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Persistent storage</h3>
+                    <p class="feature-desc">Keep your list after restart.</p>
+                </div>
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="url(#grad4)" stroke-linecap="round" stroke-linejoin="round">
+                            <defs><linearGradient id="grad4" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#5CFFE0;stop-opacity:1" /><stop offset="100%" style="stop-color:#FF3366;stop-opacity:1" /></linearGradient></defs>
+                            <path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"></path><path d="M8.5 8.5v.01"></path><path d="M16 15.5v.01"></path><path d="M12 12v.01"></path><path d="M11 17v.01"></path><path d="M7 14v.01"></path>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Clean dark UI</h3>
+                    <p class="feature-desc">Inspired by the Nowtify gradient palette.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="cta fade-in">
+            <p class="cta-text">Nowtify is open-source and ready to use.</p>
+            <p class="cta-subtext">Get it now on GitHub.</p>
+            <a href="https://github.com/vestal2k/nowtify/releases/tag/V1" class="btn-primary">
+                ⭐ View Release
+            </a>
+        </section>
+    </div>
+
+    <footer>
+        <p>Made with <span class="heart">❤️</span> by Vestal — 2025</p>
+        <a href="https://github.com/vestal2k/nowtify" target="_blank">
+            <svg class="github-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path fill="var(--text-secondary)" d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            </svg>
+        </a>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        const isMobile = window.innerWidth < 769;
+
+        if (!isMobile) {
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ 
+                canvas: document.getElementById('three-canvas'),
+                alpha: true,
+                antialias: true
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            const geometry = new THREE.IcosahedronGeometry(8, 1);
+            const material = new THREE.MeshBasicMaterial({
+                color: 0x5CFFE0,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.12
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particlesCount = 800;
+            const posArray = new Float32Array(particlesCount * 3);
+
+            for(let i = 0; i < particlesCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 80;
+            }
+
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            const particlesMaterial = new THREE.PointsMaterial({
+                size: 0.06,
+                color: 0x7B5CFF,
+                transparent: true,
+                opacity: 0.25
+            });
+            const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particlesMesh);
+
+            camera.position.set(0, 0, 25);
+
+            const colors = [0x5CFFE0, 0x7B5CFF, 0xFF4F8B, 0xFF3366];
+            let colorIndex = 0;
+            let colorProgress = 0;
+            let time = 0;
+
+            function animate() {
+                requestAnimationFrame(animate);
+
+                time += 0.01;
+
+                mesh.rotation.x += 0.0008;
+                mesh.rotation.y += 0.0015;
+                mesh.rotation.z += 0.0005;
+
+                const breathScale = 1 + Math.sin(time * 0.5) * 0.08;
+                mesh.scale.set(breathScale, breathScale, breathScale);
+
+                particlesMesh.rotation.y += 0.0004;
+                particlesMesh.rotation.x = Math.sin(time * 0.3) * 0.1;
+
+                camera.position.x = Math.sin(time * 0.15) * 1.2;
+                camera.position.y = Math.cos(time * 0.12) * 0.8;
+                camera.lookAt(0, 0, 0);
+
+                colorProgress += 0.0015;
+                if (colorProgress >= 1) {
+                    colorProgress = 0;
+                    colorIndex = (colorIndex + 1) % colors.length;
+                }
+
+                const nextColor = new THREE.Color(colors[(colorIndex + 1) % colors.length]);
+                material.color.lerp(nextColor, colorProgress * 0.05);
+
+                const pulseOpacity = 0.12 + Math.sin(time * 0.8) * 0.03;
+                material.opacity = pulseOpacity;
+
+                renderer.render(scene, camera);
+            }
+
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        const particlesContainer = document.getElementById('particles');
+        for (let i = 0; i < 25; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            const colors = ['#5CFFE0', '#7B5CFF', '#FF4F8B', '#FF3366'];
+            particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 20 + 's';
+            particle.style.animationDuration = (Math.random() * 15 + 15) + 's';
+            particlesContainer.appendChild(particle);
+        }
+
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -80px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.fade-in').forEach((el, index) => {
+            el.style.transitionDelay = `${index * 0.1}s`;
+            observer.observe(el);
+        });
+
+        document.querySelectorAll('.feature-card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = ((e.clientX - rect.left) / rect.width) * 100;
+                const y = ((e.clientY - rect.top) / rect.height) * 100;
+                card.style.setProperty('--mouse-x', x + '%');
+                card.style.setProperty('--mouse-y', y + '%');
+            });
+        });
+
+        document.querySelectorAll('.btn-primary').forEach(btn => {
+            btn.addEventListener('mousemove', (e) => {
+                const rect = btn.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                btn.style.setProperty('--x', (x / rect.width * 100) + '%');
+                btn.style.setProperty('--y', (y / rect.height * 100) + '%');
+            });
+        });
+    </script>
+</body>
+</html>
