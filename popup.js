@@ -8,7 +8,6 @@ const loadingState = document.getElementById('loadingState');
 
 let autocompleteTimeout = null;
 let autocompleteList = null;
-let currentStreamers = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
   await loadStreamers();
@@ -47,7 +46,6 @@ async function loadStreamers() {
   try {
     showLoading(true);
     const { streamers = [] } = await chrome.storage.sync.get('streamers');
-    currentStreamers = streamers;
     
     if (streamers.length === 0) {
       showEmptyState(true);
@@ -67,7 +65,6 @@ async function loadStreamers() {
       }
       
       if (response && response.streamers) {
-        currentStreamers = response.streamers;
         response.streamers.forEach(streamer => renderStreamerCard(streamer));
       } else {
         streamers.forEach(streamer => renderStreamerCard(streamer));
@@ -275,7 +272,6 @@ async function addStreamerFromAutocomplete(result) {
 
     streamers.push(newStreamer);
     await chrome.storage.sync.set({ streamers });
-    currentStreamers = streamers;
 
     hideError();
     await loadStreamers();
@@ -342,7 +338,6 @@ async function handleAddStreamer() {
 
     streamers.push(newStreamer);
     await chrome.storage.sync.set({ streamers });
-    currentStreamers = streamers;
 
     streamerInput.value = '';
     hideError();
@@ -540,7 +535,6 @@ async function deleteStreamer(id, cardElement) {
       const { streamers = [] } = await chrome.storage.sync.get('streamers');
       const filtered = streamers.filter(s => s.id !== id);
       await chrome.storage.sync.set({ streamers: filtered });
-      currentStreamers = filtered;
       await loadStreamers();
     }, 300);
   } catch (error) {
@@ -553,7 +547,6 @@ async function deleteTeam(teamName) {
     const { streamers = [] } = await chrome.storage.sync.get('streamers');
     const filtered = streamers.filter(s => s.team !== teamName);
     await chrome.storage.sync.set({ streamers: filtered });
-    currentStreamers = filtered;
     await loadStreamers();
   } catch (error) {
     showError('Erreur lors de la suppression de la team');
