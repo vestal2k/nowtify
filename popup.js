@@ -351,7 +351,6 @@ async function handleAddStreamer() {
     chrome.runtime.sendMessage({ action: 'checkNow' });
 
   } catch (error) {
-    console.error('Erreur ajout:', error);
     showError('Erreur lors de l\'ajout');
   } finally {
     addBtn.disabled = false;
@@ -536,7 +535,6 @@ async function deleteStreamer(id, cardElement) {
       await loadStreamers();
     }, 300);
   } catch (error) {
-    console.error('Erreur suppression:', error);
     showError('Erreur lors de la suppression');
   }
 }
@@ -549,7 +547,6 @@ async function deleteTeam(teamName) {
     currentStreamers = filtered;
     await loadStreamers();
   } catch (error) {
-    console.error('Erreur suppression team:', error);
     showError('Erreur lors de la suppression de la team');
   }
 }
