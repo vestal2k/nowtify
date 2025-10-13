@@ -1,6 +1,7 @@
 const notificationsEnabled = document.getElementById('notificationsEnabled');
 const notificationSound = document.getElementById('notificationSound');
 const persistentNotifications = document.getElementById('persistentNotifications');
+const confirmDelete = document.getElementById('confirmDelete');
 const autoRefresh = document.getElementById('autoRefresh');
 const refreshInterval = document.getElementById('refreshInterval');
 const twitchClientId = document.getElementById('twitchClientId');
@@ -13,6 +14,7 @@ const saveMessage = document.getElementById('saveMessage');
 
 document.addEventListener('DOMContentLoaded', async () => {
   await loadSettings();
+  await loadTeamsManagement();
   await loadHistory();
   setupEventListeners();
 });
@@ -21,7 +23,7 @@ function setupEventListeners() {
   saveBtn.addEventListener('click', saveSettings);
   clearHistoryBtn.addEventListener('click', clearHistory);
 
-  [notificationsEnabled, notificationSound, persistentNotifications, autoRefresh].forEach(toggle => {
+  [notificationsEnabled, notificationSound, persistentNotifications, confirmDelete, autoRefresh].forEach(toggle => {
     toggle.addEventListener('change', () => {
       saveSettings(false);
     });
@@ -40,6 +42,7 @@ async function loadSettings() {
     notificationsEnabled.checked = settings.notifications !== false;
     notificationSound.checked = settings.notificationSound === true;
     persistentNotifications.checked = settings.persistentNotifications === true;
+    confirmDelete.checked = settings.confirmDelete !== false;
 
     autoRefresh.checked = settings.autoRefresh !== false;
     refreshInterval.value = settings.refreshInterval || '5';
@@ -58,6 +61,7 @@ async function saveSettings(showMessage = true) {
       notifications: notificationsEnabled.checked,
       notificationSound: notificationSound.checked,
       persistentNotifications: persistentNotifications.checked,
+      confirmDelete: confirmDelete.checked,
       autoRefresh: autoRefresh.checked,
       refreshInterval: refreshInterval.value
     };
@@ -183,6 +187,105 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+async function loadTeamsManagement() {
+  try {
+    const { streamers = [] } = await chrome.storage.sync.get('streamers');
+    const teamsMap = {};
+    
+    streamers.forEach(streamer => {
+      if (streamer.team) {
+        if (!teamsMap[streamer.team]) {
+          teamsMap[streamer.team] = [];
+        }
+        teamsMap[streamer.team].push(streamer);
+      }
+    });
+
+    const teamsManagement = document.getElementById('teamsManagement');
+    
+    if (Object.keys(teamsMap).length === 0) {
+      teamsManagement.innerHTML = '<p style="color: rgba(232, 232, 232, 0.5); padding: 20px; text-align: center;">Aucune team ajoutée</p>';
+      return;
+    }
+
+    teamsManagement.innerHTML = '';
+    
+    Object.keys(teamsMap).sort().forEach(teamName => {
+      const members = teamsMap[teamName];
+      const teamCard = document.createElement('div');
+      teamCard.className = 'team-card';
+      teamCard.style.cssText = 'background: rgba(30, 30, 40, 0.6); border-radius: 8px; padding: 16px; margin-bottom: 12px;';
+      
+      const teamHeader = document.createElement('div');
+      teamHeader.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;';
+      teamHeader.innerHTML = `
+        <h3 style="margin: 0; font-size: 16px; color: rgba(92, 255, 224, 0.9);">${capitalizeTeamName(teamName)} (${members.length})</h3>
+        <button class="btn-danger-small" data-team="${teamName}" style="padding: 6px 12px; font-size: 12px; background: rgba(255, 82, 82, 0.2); color: #ff5252; border: 1px solid rgba(255, 82, 82, 0.3); border-radius: 6px; cursor: pointer;">
+          Supprimer la team
+        </button>
+      `;
+      
+      const membersList = document.createElement('div');
+      membersList.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;';
+      
+      members.forEach(member => {
+        const memberItem = document.createElement('div');
+        memberItem.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(20, 20, 30, 0.4); border-radius: 6px;';
+        memberItem.innerHTML = `
+          <span style="font-size: 13px; color: rgba(232, 232, 232, 0.9);">${escapeHtml(member.name)}</span>
+          <button class="delete-member-btn" data-id="${member.id}" style="background: none; border: none; color: rgba(255, 82, 82, 0.6); cursor: pointer; padding: 4px; font-size: 16px;">×</button>
+        `;
+        membersList.appendChild(memberItem);
+      });
+      
+      teamCard.appendChild(teamHeader);
+      teamCard.appendChild(membersList);
+      teamsManagement.appendChild(teamCard);
+    });
+
+    document.querySelectorAll('.btn-danger-small').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const teamName = e.target.dataset.team;
+        if (confirm(`Supprimer tous les membres de ${teamName} ?`)) {
+          await deleteTeamFromSettings(teamName);
+        }
+      });
+    });
+
+    document.querySelectorAll('.delete-member-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const streamerId = e.target.dataset.id;
+        await deleteMemberFromSettings(streamerId);
+      });
+    });
+
+  } catch (error) {}
+}
+
+async function deleteTeamFromSettings(teamName) {
+  try {
+    const { streamers = [] } = await chrome.storage.sync.get('streamers');
+    const filtered = streamers.filter(s => s.team !== teamName);
+    await chrome.storage.sync.set({ streamers: filtered });
+    await chrome.storage.local.remove(`teamLogo_${teamName.toLowerCase()}`);
+    await loadTeamsManagement();
+  } catch (error) {}
+}
+
+async function deleteMemberFromSettings(streamerId) {
+  try {
+    const { streamers = [] } = await chrome.storage.sync.get('streamers');
+    const filtered = streamers.filter(s => s.id !== streamerId);
+    await chrome.storage.sync.set({ streamers: filtered });
+    await chrome.storage.local.remove(`avatar_${streamerId}`);
+    await loadTeamsManagement();
+  } catch (error) {}
+}
+
+function capitalizeTeamName(teamName) {
+  return teamName.charAt(0).toUpperCase() + teamName.slice(1).toLowerCase();
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {

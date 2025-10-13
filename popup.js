@@ -422,13 +422,10 @@ function renderStreamerCard(streamer) {
   
   const mainLineHTML = `
     <div class="streamer-main-line">
-      <div class="streamer-name-wrapper">
-        <div class="streamer-name" title="${escapeHtml(streamer.name)}">${escapeHtml(streamer.name)}</div>
-      </div>
-      <span class="platform-badge platform-${streamer.platform}">
+      <span class="platform-icon platform-${streamer.platform}" title="${streamer.platform}">
         ${platformIcon}
-        ${streamer.platform}
       </span>
+      <div class="streamer-name" title="${escapeHtml(streamer.name)}">${escapeHtml(streamer.name)}</div>
       <span class="status-indicator">
         <span class="status-dot ${statusClass}"></span>
         ${statusText}
@@ -494,12 +491,17 @@ function renderStreamerCard(streamer) {
   deleteBtn.addEventListener('click', async (e) => {
     e.stopPropagation();
     
+    const { settings = {} } = await chrome.storage.sync.get('settings');
+    const shouldConfirm = settings.confirmDelete !== false;
+    
     if (streamer.team) {
-      if (confirm(`Supprimer tous les membres de la team ${streamer.team} ?`)) {
+      if (!shouldConfirm || confirm(`Supprimer tous les membres de la team ${streamer.team} ?`)) {
         await deleteTeam(streamer.team);
       }
     } else {
-      await deleteStreamer(streamer.id, card);
+      if (!shouldConfirm || confirm(`Supprimer ${streamer.name} ?`)) {
+        await deleteStreamer(streamer.id, card);
+      }
     }
   });
 
