@@ -447,7 +447,7 @@ function renderStreamerCard(streamer) {
     if (streamer.team) {
       secondaryLineHTML += `
         <div class="team-info">
-          <img src="${teamLogoUrl}" alt="${teamName}" class="team-logo" onerror="this.src='icons/teams/default.png'">
+          <img src="${teamLogoUrl}" alt="${teamName}" class="team-logo" data-fallback="icons/teams/default.png">
           <span class="team-name">${teamName}</span>
         </div>
       `;
@@ -457,6 +457,13 @@ function renderStreamerCard(streamer) {
   }
   
   infoDiv.innerHTML = mainLineHTML + secondaryLineHTML;
+  
+  const teamLogo = infoDiv.querySelector('.team-logo');
+  if (teamLogo) {
+    teamLogo.addEventListener('error', function() {
+      this.src = this.dataset.fallback;
+    });
+  }
   
   const deleteBtn = document.createElement('button');
   deleteBtn.className = 'delete-btn';
