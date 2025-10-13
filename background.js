@@ -108,7 +108,83 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
     return true;
   }
+
+  if (request.action === 'addTwitchTeam') {
+    addTwitchTeam(request.teamName).then(result => {
+      sendResponse(result);
+    }).catch(error => {
+      console.error('Erreur addTwitchTeam:', error);
+      sendResponse({ success: false, error: error.message });
+    });
+    return true;
+  }
 });
+
+async function addTwitchTeam(teamName) {
+  try {
+    const token = await getTwitchToken();
+    if (!token) {
+      return { success: false, error: 'Token Twitch manquant' };
+    }
+
+    const response = await fetch(`https://api.twitch.tv/helix/teams?name=${teamName}`, {
+      headers: {
+        'Client-ID': CONFIG.TWITCH_CLIENT_ID,
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      return { success: false, error: 'Team introuvable' };
+    }
+
+    const data = await response.json();
+    
+    if (!data.data || data.data.length === 0) {
+      return { success: false, error: 'Team introuvable' };
+    }
+
+    const team = data.data[0];
+    const teamUsers = team.users || [];
+
+    if (teamUsers.length === 0) {
+      return { success: false, error: 'Aucun membre dans cette team' };
+    }
+
+    const { streamers = [] } = await chrome.storage.sync.get('streamers');
+    let addedCount = 0;
+
+    for (const user of teamUsers) {
+      const exists = streamers.some(s => 
+        s.platform === 'twitch' && s.username.toLowerCase() === user.user_login.toLowerCase()
+      );
+
+      if (!exists) {
+        const newStreamer = {
+          id: `twitch_${user.user_login}_${Date.now()}_${addedCount}`,
+          name: user.user_name,
+          username: user.user_login,
+          platform: 'twitch',
+          avatar: user.thumbnail_url || '',
+          isLive: false,
+          wasLiveRecently: false,
+          team: teamName,
+          addedDate: Date.now()
+        };
+        streamers.push(newStreamer);
+        addedCount++;
+      }
+    }
+
+    await chrome.storage.sync.set({ streamers });
+    checkAllStreamers();
+
+    return { success: true, count: addedCount };
+  } catch (error) {
+    console.error('Erreur team:', error);
+    return { success: false, error: error.message };
+  }
+}
 
 // Vérifier tous les streamers
 async function checkAllStreamers() {
