@@ -9,13 +9,16 @@ let CONFIG = {
   TWITCH_CLIENT_ID: '',
   TWITCH_CLIENT_SECRET: '',
   YOUTUBE_API_KEY: '',
-  CHECK_INTERVAL: 5 * 60 * 1000,
+  CHECK_INTERVAL_FAST: 30 * 1000,
+  CHECK_INTERVAL_NORMAL: 3 * 60 * 1000,
+  CHECK_INTERVAL_SLOW: 5 * 60 * 1000,
   RECENT_LIVE_THRESHOLD: 12 * 60 * 60 * 1000
 };
 
-// État des streamers en cache
 let streamersCache = {};
 let isChecking = false;
+let adaptiveTimers = {};
+let lastCheck = {};
 
 // Installation de l'extension
 chrome.runtime.onInstalled.addListener(async () => {
@@ -36,7 +39,7 @@ chrome.runtime.onInstalled.addListener(async () => {
     });
   }
 
-  chrome.alarms.create('checkStreams', { periodInMinutes: 5 });
+  chrome.alarms.create('checkStreams', { periodInMinutes: 0.5 });
   setTimeout(() => checkAllStreamers(), 2000);
 });
 
@@ -273,14 +276,16 @@ async function checkAllStreamers() {
         if (data.isLive) {
           liveCount++;
           updated.priority = 'high';
-          scheduleAdaptiveCheck(updated.id, CONFIG.CHECK_INTERVAL_HIGH);
+          scheduleAdaptiveCheck(updated.id, CONFIG.CHECK_INTERVAL_FAST);
         } else if (streamer.wasLiveRecently) {
           updated.priority = 'medium';
-          scheduleAdaptiveCheck(updated.id, CONFIG.CHECK_INTERVAL_HIGH);
+          scheduleAdaptiveCheck(updated.id, CONFIG.CHECK_INTERVAL_NORMAL);
         } else {
           updated.priority = 'normal';
-          scheduleAdaptiveCheck(updated.id, CONFIG.CHECK_INTERVAL_NORMAL);
+          scheduleAdaptiveCheck(updated.id, CONFIG.CHECK_INTERVAL_SLOW);
         }
+        
+        lastCheck[streamer.id] = Date.now();
         
         updatedStreamers.push(updated);
         streamersCache[streamer.id] = updated;
@@ -301,12 +306,17 @@ async function checkAllStreamers() {
 }
 
 function scheduleAdaptiveCheck(streamerId, interval) {
-  if (checkTimeouts[streamerId]) {
-    clearTimeout(checkTimeouts[streamerId]);
+  if (adaptiveTimers[streamerId]) {
+    clearTimeout(adaptiveTimers[streamerId]);
   }
 
-  checkTimeouts[streamerId] = setTimeout(async () => {
-    const { streamers = [] } = await chrome.storage.sync.get('streamers');
+  const timeSinceLastCheck = lastCheck[streamerId] ? Date.now() - lastCheck[streamerId] : interval;
+  if (timeSinceLastCheck < interval * 0.5) {
+    return;
+  }
+
+  adaptiveTimers[streamerId] = setTimeout(async () => {
+    const { streamers = [], settings = {} } = await chrome.storage.sync.get(['streamers', 'settings']);
     const streamer = streamers.find(s => s.id === streamerId);
     
     if (streamer) {
@@ -314,12 +324,22 @@ function scheduleAdaptiveCheck(streamerId, interval) {
         const data = await checkStreamerStatus(streamer);
         const updated = { ...streamer, ...data };
         
+        if (data.isLive && !streamer.isLive && settings.notifications !== false) {
+          sendNotification(updated);
+        }
+        
         const index = streamers.findIndex(s => s.id === streamerId);
         if (index !== -1) {
           streamers[index] = updated;
           await chrome.storage.sync.set({ streamers });
           streamersCache[streamerId] = updated;
+          lastCheck[streamerId] = Date.now();
         }
+        
+        const nextInterval = data.isLive ? CONFIG.CHECK_INTERVAL_FAST : 
+                            updated.wasLiveRecently ? CONFIG.CHECK_INTERVAL_NORMAL : 
+                            CONFIG.CHECK_INTERVAL_SLOW;
+        scheduleAdaptiveCheck(streamerId, nextInterval);
       } catch (error) {
         console.error(`Erreur check adaptatif pour ${streamer.name}:`, error);
       }
