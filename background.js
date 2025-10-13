@@ -1,10 +1,3 @@
-// background.js - Service worker pour la logique de polling et notifications
-
-// Configuration des API (chargées dynamiquement depuis le storage)
-// IMPORTANT: Les clés Twitch s'obtiennent sur https://dev.twitch.tv/console/apps
-// - Client ID: Identifiant public de votre application
-// - Client Secret: Clé secrète pour générer les tokens OAuth (NE PAS partager)
-// Ces deux clés permettent de générer automatiquement un "App Access Token"
 let CONFIG = {
   TWITCH_CLIENT_ID: '',
   TWITCH_CLIENT_SECRET: '',
@@ -16,14 +9,12 @@ let CONFIG = {
 };
 
 let streamersCache = {};
+let teamLogosCache = {};
 let isChecking = false;
 let adaptiveTimers = {};
 let lastCheck = {};
 
-// Installation de l'extension
 chrome.runtime.onInstalled.addListener(async () => {
-  console.log('Nowtify installé !');
-  
   await loadApiKeys();
   
   const { streamers } = await chrome.storage.sync.get('streamers');
@@ -43,32 +34,25 @@ chrome.runtime.onInstalled.addListener(async () => {
   setTimeout(() => checkAllStreamers(), 2000);
 });
 
-// Démarrage du service worker
 chrome.runtime.onStartup.addListener(async () => {
   await loadApiKeys();
   checkAllStreamers();
 });
 
-// Charger les clés API depuis le storage
 async function loadApiKeys() {
   try {
     const { apiKeys = {} } = await chrome.storage.sync.get('apiKeys');
     CONFIG.TWITCH_CLIENT_ID = apiKeys.twitchClientId || '';
     CONFIG.TWITCH_CLIENT_SECRET = apiKeys.twitchClientSecret || '';
     CONFIG.YOUTUBE_API_KEY = apiKeys.youtubeApiKey || '';
-  } catch (error) {
-    console.error('Erreur chargement clés API:', error);
-  }
+  } catch (error) {}
 }
 
-// Écouter les alarmes
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'checkStreams') {
     checkAllStreamers();
   }
 });
-
-// Écouter les messages de la popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'checkNow') {
     checkAllStreamers().then(() => sendResponse({ success: true }));
@@ -625,6 +609,43 @@ async function searchStreamers(query) {
   }
 }
 
+async function getTeamLogo(teamName) {
+  if (!teamName) return null;
+
+  const cacheKey = teamName.toLowerCase();
+  if (teamLogosCache[cacheKey]) {
+    return teamLogosCache[cacheKey];
+  }
+
+  try {
+    const token = await getTwitchToken();
+    if (!token) return null;
+
+    const response = await fetch(`https://api.twitch.tv/helix/teams?name=${teamName}`, {
+      headers: {
+        'Client-ID': CONFIG.TWITCH_CLIENT_ID,
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.data && data.data[0]) {
+        const logoUrl = data.data[0].thumbnail_url || data.data[0].banner || null;
+        teamLogosCache[cacheKey] = logoUrl;
+        
+        if (logoUrl) {
+          await chrome.storage.local.set({ [`teamLogo_${cacheKey}`]: logoUrl });
+        }
+        
+        return logoUrl;
+      }
+    }
+  } catch (error) {}
+
+  return null;
+}
+
 async function getStreamersWithData() {
   const { streamers = [] } = await chrome.storage.sync.get('streamers');
   
@@ -636,6 +657,15 @@ async function getStreamersWithData() {
 
     if (!streamer.avatar) {
       streamer.avatar = await getStreamerAvatar(streamer.platform, streamer.username);
+    }
+
+    if (streamer.team && !streamer.teamLogo) {
+      const cachedLogo = await chrome.storage.local.get(`teamLogo_${streamer.team.toLowerCase()}`);
+      if (cachedLogo[`teamLogo_${streamer.team.toLowerCase()}`]) {
+        streamer.teamLogo = cachedLogo[`teamLogo_${streamer.team.toLowerCase()}`];
+      } else {
+        streamer.teamLogo = await getTeamLogo(streamer.team);
+      }
     }
 
     if (streamer.lastLiveDate) {
