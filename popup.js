@@ -1,5 +1,3 @@
-// popup.js - Gestion de l'interface utilisateur de la popup
-
 const streamerInput = document.getElementById('streamerInput');
 const addBtn = document.getElementById('addBtn');
 const settingsBtn = document.getElementById('settingsBtn');
@@ -414,7 +412,8 @@ function renderStreamerCard(streamer) {
   const platformIcon = getPlatformIcon(streamer.platform);
   const avatarUrl = streamer.avatar && streamer.avatar !== '' ? streamer.avatar : 'icons/icon48.png';
   
-  const teamBadge = streamer.team ? `<span class="team-badge" title="Team ${streamer.team}">👥 ${streamer.team}</span>` : '';
+  const teamName = streamer.team ? capitalizeTeamName(streamer.team) : '';
+  const teamLogoUrl = streamer.teamLogo || (streamer.team ? `icons/teams/${streamer.team.toLowerCase()}.png` : '');
   
   const img = document.createElement('img');
   img.src = avatarUrl;
@@ -426,9 +425,12 @@ function renderStreamerCard(streamer) {
   
   const infoDiv = document.createElement('div');
   infoDiv.className = 'streamer-info';
-  infoDiv.innerHTML = `
+  
+  const mainLineHTML = `
     <div class="streamer-main-line">
-      <div class="streamer-name">${escapeHtml(streamer.name)}</div>
+      <div class="streamer-name-wrapper">
+        <div class="streamer-name" title="${escapeHtml(streamer.name)}">${escapeHtml(streamer.name)}</div>
+      </div>
       <span class="platform-badge platform-${streamer.platform}">
         ${platformIcon}
         ${streamer.platform}
@@ -437,10 +439,30 @@ function renderStreamerCard(streamer) {
         <span class="status-dot ${statusClass}"></span>
         ${statusText}
       </span>
-      ${teamBadge}
     </div>
-    ${streamer.title ? `<div class="streamer-title">${escapeHtml(streamer.title)}</div>` : ''}
   `;
+  
+  let secondaryLineHTML = '';
+  if (streamer.title || streamer.team) {
+    secondaryLineHTML = '<div class="streamer-secondary-line">';
+    
+    if (streamer.title) {
+      secondaryLineHTML += `<div class="streamer-title" title="${escapeHtml(streamer.title)}">${escapeHtml(streamer.title)}</div>`;
+    }
+    
+    if (streamer.team) {
+      secondaryLineHTML += `
+        <div class="team-info">
+          <img src="${teamLogoUrl}" alt="${teamName}" class="team-logo" onerror="this.src='icons/teams/default.png'">
+          <span class="team-name">${teamName}</span>
+        </div>
+      `;
+    }
+    
+    secondaryLineHTML += '</div>';
+  }
+  
+  infoDiv.innerHTML = mainLineHTML + secondaryLineHTML;
   
   const deleteBtn = document.createElement('button');
   deleteBtn.className = 'delete-btn';
@@ -481,6 +503,10 @@ function renderStreamerCard(streamer) {
   });
 
   streamersList.appendChild(card);
+}
+
+function capitalizeTeamName(teamName) {
+  return teamName.charAt(0).toUpperCase() + teamName.slice(1).toLowerCase();
 }
 
 function getStatusText(streamer) {
