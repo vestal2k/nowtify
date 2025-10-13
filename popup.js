@@ -946,10 +946,6 @@ function renderStreamerCard(streamer) {
   const statusText = getStatusText(streamer);
   const statusClass = streamer.isLive ? 'live' : (streamer.wasLiveRecently ? 'recent' : 'offline');
   
-  // Emoji de plateforme
-  const platformEmoji = streamer.platform === 'twitch' ? '💜' : 
-                       streamer.platform === 'youtube' ? '❤️' : '💚';
-  
   // Avatar avec fallback
   const avatarUrl = streamer.avatar && streamer.avatar !== '' ? streamer.avatar : 'icons/icon48.png';
   
