@@ -170,11 +170,11 @@ function showAutocomplete(results) {
     const platformLabel = result.platform.charAt(0).toUpperCase() + result.platform.slice(1);
     
     const img = document.createElement('img');
-    img.src = result.avatar || 'icons/icon48.png';
+    img.src = result.avatar || 'icons/avatars/default.png';
     img.alt = result.name;
     img.className = 'autocomplete-avatar';
     img.addEventListener('error', () => {
-      img.src = 'icons/icon48.png';
+      img.src = 'icons/avatars/default.png';
     });
     
     const infoDiv = document.createElement('div');
@@ -401,17 +401,19 @@ function hideAutocomplete() {
 
 function renderStreamerCard(streamer) {
   const card = document.createElement('div');
-  card.className = `streamer-card ${streamer.isLive ? 'live' : ''}`;
+  const isRecent = streamer.wasLiveRecently && !streamer.isLive;
+  card.className = `streamer-card ${streamer.isLive ? 'live' : ''} ${isRecent ? 'ended' : ''}`;
   card.style.opacity = '0';
   card.style.transform = 'translateX(-20px)';
   
   const statusText = getStatusText(streamer);
   const statusClass = streamer.isLive ? 'live' : (streamer.wasLiveRecently ? 'recent' : 'offline');
+  const statusEmoji = streamer.isLive ? '🔴' : (streamer.wasLiveRecently ? '⚫' : '⚫');
   const platformIcon = getPlatformIcon(streamer.platform);
-  const avatarUrl = streamer.avatar && streamer.avatar !== '' ? streamer.avatar : 'icons/icon48.png';
+  const avatarUrl = streamer.avatar && streamer.avatar !== '' ? streamer.avatar : 'icons/avatars/default.png';
   
   const teamName = streamer.team ? capitalizeTeamName(streamer.team) : '—';
-  const teamLogoUrl = streamer.teamLogo || (streamer.team ? `icons/teams/${streamer.team.toLowerCase()}.png` : '');
+  const teamLogoUrl = streamer.teamLogo || (streamer.team ? `icons/teams/${streamer.team.toLowerCase()}.svg` : 'icons/teams/default.svg');
   
   const img = document.createElement('img');
   img.src = avatarUrl;
@@ -419,7 +421,7 @@ function renderStreamerCard(streamer) {
   img.className = 'streamer-avatar';
   img.onerror = null;
   img.addEventListener('error', () => {
-    img.src = 'icons/icon48.png';
+    img.src = 'icons/avatars/default.png';
   });
   
   const infoDiv = document.createElement('div');
@@ -431,8 +433,9 @@ function renderStreamerCard(streamer) {
         ${platformIcon}
       </span>
       <div class="streamer-name" title="${escapeHtml(streamer.name)}">${escapeHtml(streamer.name)}</div>
-      <span class="status-indicator">
+      <span class="status-indicator ${statusClass}">
         <span class="status-dot ${statusClass}"></span>
+        <span class="status-emoji">${statusEmoji}</span>
         ${statusText}
       </span>
     </div>
@@ -441,12 +444,13 @@ function renderStreamerCard(streamer) {
   let secondaryLineHTML = '<div class="streamer-secondary-line">';
   
   if (streamer.title) {
-    secondaryLineHTML += `<div class="streamer-title" title="${escapeHtml(streamer.title)}">${escapeHtml(streamer.title)}</div>`;
+    const titleClass = isRecent ? 'streamer-title ended' : 'streamer-title';
+    secondaryLineHTML += `<div class="${titleClass}" title="${escapeHtml(streamer.title)}">${escapeHtml(streamer.title)}</div>`;
   }
   
   secondaryLineHTML += `
     <div class="team-info">
-      ${streamer.team && teamLogoUrl ? `<img src="${teamLogoUrl}" alt="${teamName}" class="team-logo" onerror="this.style.display='none'">` : ''}
+      ${streamer.team ? `<img src="${teamLogoUrl}" alt="${teamName}" class="team-logo" onerror="this.src='icons/teams/default.svg'">` : ''}
       <span class="team-name ${!streamer.team ? 'no-team' : ''}">${teamName}</span>
     </div>
   `;
@@ -454,13 +458,6 @@ function renderStreamerCard(streamer) {
   secondaryLineHTML += '</div>';
   
   infoDiv.innerHTML = mainLineHTML + secondaryLineHTML;
-  
-  const teamLogo = infoDiv.querySelector('.team-logo');
-  if (teamLogo) {
-    teamLogo.addEventListener('error', function() {
-      this.src = this.dataset.fallback;
-    });
-  }
   
   const deleteBtn = document.createElement('button');
   deleteBtn.className = 'delete-btn';
@@ -514,19 +511,19 @@ function capitalizeTeamName(teamName) {
 
 function getStatusText(streamer) {
   if (streamer.isLive) {
-    return streamer.viewerCount ? `Live - ${formatViewers(streamer.viewerCount)}` : 'Live';
+    return streamer.viewerCount ? `En live - ${formatViewers(streamer.viewerCount)}` : 'En live';
   }
   if (streamer.lastLiveDate && !streamer.isLive) {
     const hoursSince = Math.floor((Date.now() - streamer.lastLiveDate) / (1000 * 60 * 60));
     if (hoursSince < 24) {
-      return hoursSince === 0 ? 'Live il y a moins d\'1h' : `Live il y a ${hoursSince}h`;
+      return hoursSince === 0 ? 'Terminé il y a moins d\'1h' : `Terminé il y a ${hoursSince}h`;
     }
   }
   if (streamer.wasLiveRecently && streamer.lastLiveDate) {
     const hoursSince = Math.floor((Date.now() - streamer.lastLiveDate) / (1000 * 60 * 60));
-    return hoursSince === 0 ? 'Live il y a moins d\'1h' : `Live il y a ${hoursSince}h`;
+    return hoursSince === 0 ? 'Terminé il y a moins d\'1h' : `Terminé il y a ${hoursSince}h`;
   }
-  return 'Offline';
+  return 'Hors ligne';
 }
 
 function formatViewers(count) {
