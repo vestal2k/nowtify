@@ -546,14 +546,16 @@ async function checkKickStatus(username) {
     const data = await response.json();
 
     if (data.livestream) {
+      const avatarUrl = data.user?.profile_pic || data.user?.avatar || data.livestream.thumbnail?.url || '';
       return {
         isLive: true,
         title: data.livestream.session_title || 'Sans titre',
-        thumbnail: data.livestream.thumbnail?.url || data.user?.profile_pic,
+        thumbnail: data.livestream.thumbnail?.url || avatarUrl,
         viewerCount: data.livestream.viewer_count || 0,
         startedAt: new Date(data.livestream.created_at).getTime(),
         lastLiveDate: Date.now(),
-        endedAt: null
+        endedAt: null,
+        avatar: avatarUrl
       };
     }
 
@@ -605,7 +607,10 @@ async function getStreamerAvatar(platform, username) {
         const kickResponse = await fetch(`https://kick.com/api/v1/channels/${username}`);
         if (kickResponse.ok) {
           const kickData = await kickResponse.json();
-          return kickData.user?.profile_pic || '';
+          const avatarUrl = kickData.user?.profile_pic || kickData.user?.avatar || kickData.profile_pic || '';
+          if (avatarUrl && !avatarUrl.includes('placeholder') && !avatarUrl.includes('default')) {
+            return avatarUrl;
+          }
         }
         return '';
         
@@ -715,13 +720,16 @@ async function searchKickChannels(query) {
     if (response.ok) {
       const data = await response.json();
       const channels = data.channels || [];
-      return channels.slice(0, 3).map(channel => ({
-        name: channel.username,
-        username: channel.slug || channel.username,
-        avatar: channel.user?.profile_pic || '',
-        platform: 'kick',
-        isLive: channel.is_live || false
-      }));
+      return channels.slice(0, 3).map(channel => {
+        const avatarUrl = channel.user?.profile_pic || channel.user?.avatar || channel.profile_pic || '';
+        return {
+          name: channel.username,
+          username: channel.slug || channel.username,
+          avatar: avatarUrl && !avatarUrl.includes('placeholder') ? avatarUrl : '',
+          platform: 'kick',
+          isLive: channel.is_live || false
+        };
+      });
     }
     
     return [];
