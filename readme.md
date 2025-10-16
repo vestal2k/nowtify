@@ -16,7 +16,7 @@
 
   <!-- Screenshot -->
   <p align="center">
-    <img alt="Project Screenshot" src="" width="100%" style="max-width:900px;border-radius:12px;box-shadow:0 0 15px rgba(0,0,0,0.3);">
+    <img alt="Project Screenshot" src="icons/screenshot.png" width="100%" style="max-width:900px;border-radius:12px;box-shadow:0 0 15px rgba(0,0,0,0.3);">
   </p>
   <br>
 </div>
