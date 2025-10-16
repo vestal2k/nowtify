@@ -170,11 +170,11 @@ function showAutocomplete(results) {
     const platformLabel = result.platform.charAt(0).toUpperCase() + result.platform.slice(1);
     
     const img = document.createElement('img');
-    img.src = result.avatar || 'icons/avatars/default.png';
+    img.src = result.avatar || 'icons/avatars/default.svg';
     img.alt = result.name;
     img.className = 'autocomplete-avatar';
     img.addEventListener('error', () => {
-      img.src = 'icons/avatars/default.png';
+      img.src = 'icons/avatars/default.svg';
     });
     
     const infoDiv = document.createElement('div');
@@ -410,7 +410,7 @@ function renderStreamerCard(streamer) {
   const statusClass = streamer.isLive ? 'live' : (streamer.wasLiveRecently ? 'recent' : 'offline');
   const statusEmoji = streamer.isLive ? '🔴' : (streamer.wasLiveRecently ? '⚫' : '⚫');
   const platformIcon = getPlatformIcon(streamer.platform);
-  const avatarUrl = streamer.avatar && streamer.avatar !== '' ? streamer.avatar : 'icons/avatars/default.png';
+  const avatarUrl = streamer.avatar && streamer.avatar !== '' ? streamer.avatar : 'icons/avatars/default.svg';
   
   const teamName = streamer.team ? capitalizeTeamName(streamer.team) : '—';
   const teamLogoUrl = streamer.teamLogo || (streamer.team ? `icons/teams/${streamer.team.toLowerCase()}.svg` : 'icons/teams/default.svg');
@@ -421,7 +421,7 @@ function renderStreamerCard(streamer) {
   img.className = 'streamer-avatar';
   img.onerror = null;
   img.addEventListener('error', () => {
-    img.src = 'icons/avatars/default.png';
+    img.src = 'icons/avatars/default.svg';
   });
   
   const infoDiv = document.createElement('div');
