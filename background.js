@@ -5,7 +5,8 @@ let CONFIG = {
   CHECK_INTERVAL_FAST: 30 * 1000,
   CHECK_INTERVAL_NORMAL: 3 * 60 * 1000,
   CHECK_INTERVAL_SLOW: 5 * 60 * 1000,
-  RECENT_LIVE_THRESHOLD: 12 * 60 * 60 * 1000
+  RECENT_LIVE_THRESHOLD: 12 * 60 * 60 * 1000,
+  AUTO_REFRESH_INTERVAL: 5 * 60 * 1000
 };
 
 let streamersCache = {};
@@ -39,7 +40,7 @@ chrome.runtime.onInstalled.addListener(async () => {
     });
   }
 
-  chrome.alarms.create('checkStreams', { periodInMinutes: 0.5 });
+  chrome.alarms.create('checkStreams', { periodInMinutes: 5 });
   setTimeout(() => checkAllStreamers(), 2000);
 });
 
@@ -204,11 +205,13 @@ async function addTwitchTeam(teamName) {
     let addedCount = 0;
 
     for (const user of teamUsers) {
-      const exists = streamers.some(s => 
+      const existingIndex = streamers.findIndex(s => 
         s.platform === 'twitch' && s.username.toLowerCase() === user.user_login.toLowerCase()
       );
 
-      if (!exists) {
+      if (existingIndex >= 0) {
+        streamers[existingIndex].team = teamName;
+      } else {
         const newStreamer = {
           id: `twitch_${user.user_login}_${Date.now()}_${addedCount}`,
           name: user.user_name,
@@ -265,6 +268,24 @@ async function checkAllStreamers() {
         
         const updated = { ...streamer, ...data };
         
+        if (streamer.platform === 'twitch' && !updated.team) {
+          const teamName = await getStreamerTeam(streamer.username);
+          if (teamName) {
+            updated.team = teamName;
+          }
+        }
+        
+        if (data.isLive) {
+          updated.lastLiveDate = Date.now();
+          updated.endedAt = null;
+        } else if (!data.isLive && streamer.isLive) {
+          updated.lastLiveDate = streamer.lastLiveDate || Date.now();
+          updated.endedAt = Date.now();
+        } else if (updated.lastLiveDate) {
+          const timeSince = Date.now() - updated.lastLiveDate;
+          updated.wasLiveRecently = timeSince < CONFIG.RECENT_LIVE_THRESHOLD;
+        }
+        
         if (data.isLive && !streamer.isLive && settings.notifications !== false) {
           sendNotification(updated);
         }
@@ -273,7 +294,7 @@ async function checkAllStreamers() {
           liveCount++;
           updated.priority = 'high';
           scheduleAdaptiveCheck(updated.id, CONFIG.CHECK_INTERVAL_FAST);
-        } else if (streamer.wasLiveRecently) {
+        } else if (updated.wasLiveRecently) {
           updated.priority = 'medium';
           scheduleAdaptiveCheck(updated.id, CONFIG.CHECK_INTERVAL_NORMAL);
         } else {
@@ -403,11 +424,15 @@ async function checkTwitchStatus(username) {
         viewerCount: stream.viewer_count,
         thumbnail: stream.thumbnail_url.replace('{width}', '320').replace('{height}', '180'),
         startedAt: new Date(stream.started_at).getTime(),
-        lastLiveDate: Date.now()
+        lastLiveDate: Date.now(),
+        endedAt: null
       };
     }
 
-    return { isLive: false };
+    return { 
+      isLive: false,
+      endedAt: Date.now()
+    };
   } catch (error) {
     return { isLive: false, error: true };
   }
@@ -496,11 +521,15 @@ async function checkYouTubeStatus(username) {
         thumbnail: details.snippet.thumbnails.medium.url,
         viewerCount: parseInt(details.liveStreamingDetails.concurrentViewers || 0),
         startedAt: new Date(details.liveStreamingDetails.actualStartTime).getTime(),
-        lastLiveDate: Date.now()
+        lastLiveDate: Date.now(),
+        endedAt: null
       };
     }
 
-    return { isLive: false };
+    return { 
+      isLive: false,
+      endedAt: Date.now()
+    };
   } catch (error) {
     return { isLive: false, error: true };
   }
@@ -523,11 +552,15 @@ async function checkKickStatus(username) {
         thumbnail: data.livestream.thumbnail?.url || data.user?.profile_pic,
         viewerCount: data.livestream.viewer_count || 0,
         startedAt: new Date(data.livestream.created_at).getTime(),
-        lastLiveDate: Date.now()
+        lastLiveDate: Date.now(),
+        endedAt: null
       };
     }
 
-    return { isLive: false };
+    return { 
+      isLive: false,
+      endedAt: Date.now()
+    };
   } catch (error) {
     return { isLive: false, error: true };
   }
@@ -549,7 +582,8 @@ async function getStreamerAvatar(platform, username) {
         
         if (response.ok) {
           const data = await response.json();
-          return data.data[0]?.profile_image_url || '';
+          const avatarUrl = data.data[0]?.profile_image_url || '';
+          return avatarUrl;
         }
         return '';
         
@@ -587,11 +621,32 @@ async function searchStreamers(query) {
   if (!query || query.length < 2) return [];
 
   try {
+    const results = [];
+    
+    const twitchResults = await searchTwitchStreamers(query);
+    results.push(...twitchResults);
+    
+    if (CONFIG.YOUTUBE_API_KEY) {
+      const youtubeResults = await searchYouTubeChannels(query);
+      results.push(...youtubeResults);
+    }
+    
+    const kickResults = await searchKickChannels(query);
+    results.push(...kickResults);
+    
+    return results;
+  } catch (error) {
+    return [];
+  }
+}
+
+async function searchTwitchStreamers(query) {
+  try {
     const token = await getTwitchToken();
     if (!token) return [];
 
     const response = await fetch(
-      `https://api.twitch.tv/helix/search/channels?query=${encodeURIComponent(query)}&first=5`,
+      `https://api.twitch.tv/helix/search/channels?query=${encodeURIComponent(query)}&first=10`,
       {
         headers: {
           'Client-ID': CONFIG.TWITCH_CLIENT_ID,
@@ -602,12 +657,70 @@ async function searchStreamers(query) {
 
     if (response.ok) {
       const data = await response.json();
-      return data.data.map(channel => ({
-        name: channel.display_name,
-        username: channel.broadcaster_login,
-        avatar: channel.thumbnail_url,
-        platform: 'twitch',
-        isLive: channel.is_live
+      return data.data
+        .sort((a, b) => {
+          if (a.is_live !== b.is_live) return b.is_live - a.is_live;
+          if (a.broadcaster_type !== b.broadcaster_type) {
+            const priority = { partner: 3, affiliate: 2, '': 1 };
+            return (priority[b.broadcaster_type] || 0) - (priority[a.broadcaster_type] || 0);
+          }
+          return 0;
+        })
+        .slice(0, 5)
+        .map(channel => ({
+          name: channel.display_name,
+          username: channel.broadcaster_login,
+          avatar: channel.thumbnail_url,
+          platform: 'twitch',
+          isLive: channel.is_live,
+          isPartner: channel.broadcaster_type === 'partner'
+        }));
+    }
+    
+    return [];
+  } catch (error) {
+    return [];
+  }
+}
+
+async function searchYouTubeChannels(query) {
+  try {
+    if (!CONFIG.YOUTUBE_API_KEY) return [];
+
+    const response = await fetch(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(query)}&maxResults=3&key=${CONFIG.YOUTUBE_API_KEY}`
+    );
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.items.map(item => ({
+        name: item.snippet.title,
+        username: item.snippet.channelId,
+        avatar: item.snippet.thumbnails.default?.url || '',
+        platform: 'youtube',
+        isLive: false
+      }));
+    }
+    
+    return [];
+  } catch (error) {
+    return [];
+  }
+}
+
+async function searchKickChannels(query) {
+  try {
+    const response = await fetch(`https://kick.com/api/search?searched_word=${encodeURIComponent(query)}`);
+    
+    if (response.ok) {
+      const data = await response.json();
+      const channels = data.channels || [];
+      return channels.slice(0, 3).map(channel => ({
+        name: channel.username,
+        username: channel.slug || channel.username,
+        avatar: channel.user?.profile_pic || '',
+        platform: 'kick',
+        isLive: channel.is_live || false
       }));
     }
     
@@ -654,6 +767,45 @@ async function getTeamLogo(teamName) {
   return null;
 }
 
+async function getStreamerTeam(username) {
+  try {
+    const token = await getTwitchToken();
+    if (!token) return null;
+
+    const userResponse = await fetch(`https://api.twitch.tv/helix/users?login=${username}`, {
+      headers: {
+        'Client-ID': CONFIG.TWITCH_CLIENT_ID,
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!userResponse.ok) return null;
+
+    const userData = await userResponse.json();
+    if (!userData.data || userData.data.length === 0) return null;
+
+    const userId = userData.data[0].id;
+
+    const teamsResponse = await fetch(`https://api.twitch.tv/helix/teams/channel?broadcaster_id=${userId}`, {
+      headers: {
+        'Client-ID': CONFIG.TWITCH_CLIENT_ID,
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!teamsResponse.ok) return null;
+
+    const teamsData = await teamsResponse.json();
+    if (teamsData.data && teamsData.data.length > 0) {
+      return teamsData.data[0].team_name;
+    }
+
+    return null;
+  } catch (error) {
+    return null;
+  }
+}
+
 async function getStreamersWithData() {
   const { streamers = [] } = await chrome.storage.sync.get('streamers');
   
@@ -670,6 +822,13 @@ async function getStreamersWithData() {
       streamer.avatar = await getStreamerAvatar(streamer.platform, streamer.username);
       if (streamer.avatar) {
         await chrome.storage.local.set({ [`avatar_${streamer.id}`]: streamer.avatar });
+      }
+    }
+
+    if (streamer.platform === 'twitch' && !streamer.team) {
+      const teamName = await getStreamerTeam(streamer.username);
+      if (teamName) {
+        streamer.team = teamName;
       }
     }
 
@@ -699,7 +858,7 @@ async function getStreamersWithData() {
 function updateBadge(liveCount) {
   if (liveCount > 0) {
     chrome.action.setBadgeText({ text: liveCount.toString() });
-    chrome.action.setBadgeBackgroundColor({ color: '#5CFFE0' });
+    chrome.action.setBadgeBackgroundColor({ color: '#7B5CFF' });
   } else {
     chrome.action.setBadgeText({ text: '' });
   }
