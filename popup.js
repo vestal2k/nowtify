@@ -167,6 +167,8 @@ function showAutocomplete(results) {
     item.className = 'autocomplete-item';
     
     const platformIcon = getPlatformIcon(result.platform);
+    const platformLabel = result.platform.charAt(0).toUpperCase() + result.platform.slice(1);
+    
     const img = document.createElement('img');
     img.src = result.avatar || 'icons/icon48.png';
     img.alt = result.name;
@@ -177,14 +179,19 @@ function showAutocomplete(results) {
     
     const infoDiv = document.createElement('div');
     infoDiv.className = 'autocomplete-info';
+    
+    let badges = `<span class="platform-badge-small platform-${result.platform}">${platformLabel}</span>`;
+    if (result.isLive) {
+      badges += '<span class="live-badge">🔴 Live</span>';
+    }
+    if (result.isPartner) {
+      badges += '<span class="partner-badge">✓ Partner</span>';
+    }
+    
     infoDiv.innerHTML = `
       <div class="autocomplete-name">${escapeHtml(result.name)}</div>
       <div class="autocomplete-meta">
-        <span class="platform-badge platform-${result.platform}">
-          ${platformIcon}
-          ${result.platform}
-        </span>
-        ${result.isLive ? '<span class="live-badge">🔴 Live</span>' : ''}
+        ${badges}
       </div>
     `;
 
@@ -266,6 +273,7 @@ async function addStreamerFromAutocomplete(result) {
       avatar: result.avatar || '',
       isLive: result.isLive || false,
       wasLiveRecently: false,
+      team: null,
       addedDate: Date.now(),
       priority: 'high'
     };
@@ -332,6 +340,7 @@ async function handleAddStreamer() {
       avatar: '',
       isLive: false,
       wasLiveRecently: false,
+      team: null,
       addedDate: Date.now(),
       priority: 'high'
     };
@@ -401,13 +410,14 @@ function renderStreamerCard(streamer) {
   const platformIcon = getPlatformIcon(streamer.platform);
   const avatarUrl = streamer.avatar && streamer.avatar !== '' ? streamer.avatar : 'icons/icon48.png';
   
-  const teamName = streamer.team ? capitalizeTeamName(streamer.team) : '';
+  const teamName = streamer.team ? capitalizeTeamName(streamer.team) : '—';
   const teamLogoUrl = streamer.teamLogo || (streamer.team ? `icons/teams/${streamer.team.toLowerCase()}.png` : '');
   
   const img = document.createElement('img');
   img.src = avatarUrl;
   img.alt = streamer.name;
   img.className = 'streamer-avatar';
+  img.onerror = null;
   img.addEventListener('error', () => {
     img.src = 'icons/icon48.png';
   });
@@ -428,25 +438,20 @@ function renderStreamerCard(streamer) {
     </div>
   `;
   
-  let secondaryLineHTML = '';
-  if (streamer.title || streamer.team) {
-    secondaryLineHTML = '<div class="streamer-secondary-line">';
-    
-    if (streamer.title) {
-      secondaryLineHTML += `<div class="streamer-title" title="${escapeHtml(streamer.title)}">${escapeHtml(streamer.title)}</div>`;
-    }
-    
-    if (streamer.team) {
-      secondaryLineHTML += `
-        <div class="team-info">
-          <img src="${teamLogoUrl}" alt="${teamName}" class="team-logo" data-fallback="icons/teams/default.png">
-          <span class="team-name">${teamName}</span>
-        </div>
-      `;
-    }
-    
-    secondaryLineHTML += '</div>';
+  let secondaryLineHTML = '<div class="streamer-secondary-line">';
+  
+  if (streamer.title) {
+    secondaryLineHTML += `<div class="streamer-title" title="${escapeHtml(streamer.title)}">${escapeHtml(streamer.title)}</div>`;
   }
+  
+  secondaryLineHTML += `
+    <div class="team-info">
+      ${streamer.team && teamLogoUrl ? `<img src="${teamLogoUrl}" alt="${teamName}" class="team-logo" onerror="this.style.display='none'">` : ''}
+      <span class="team-name ${!streamer.team ? 'no-team' : ''}">${teamName}</span>
+    </div>
+  `;
+  
+  secondaryLineHTML += '</div>';
   
   infoDiv.innerHTML = mainLineHTML + secondaryLineHTML;
   
@@ -511,9 +516,15 @@ function getStatusText(streamer) {
   if (streamer.isLive) {
     return streamer.viewerCount ? `Live - ${formatViewers(streamer.viewerCount)}` : 'Live';
   }
-  if (streamer.wasLiveRecently) {
-    const hours = Math.floor((Date.now() - streamer.lastLiveDate) / (1000 * 60 * 60));
-    return `Live il y a ${hours}h`;
+  if (streamer.lastLiveDate && !streamer.isLive) {
+    const hoursSince = Math.floor((Date.now() - streamer.lastLiveDate) / (1000 * 60 * 60));
+    if (hoursSince < 24) {
+      return hoursSince === 0 ? 'Live il y a moins d\'1h' : `Live il y a ${hoursSince}h`;
+    }
+  }
+  if (streamer.wasLiveRecently && streamer.lastLiveDate) {
+    const hoursSince = Math.floor((Date.now() - streamer.lastLiveDate) / (1000 * 60 * 60));
+    return hoursSince === 0 ? 'Live il y a moins d\'1h' : `Live il y a ${hoursSince}h`;
   }
   return 'Offline';
 }
@@ -605,4 +616,4 @@ setInterval(() => {
   if (document.visibilityState === 'visible') {
     loadStreamers();
   }
-}, 30000);
+}, 15000);
