@@ -17,7 +17,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadTeamsManagement();
   await loadHistory();
   setupEventListeners();
+  setupMouseFollowEffect();
 });
+
+function setupMouseFollowEffect() {
+  document.querySelectorAll('.section').forEach(section => {
+    section.addEventListener('mousemove', (e) => {
+      const rect = section.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      section.style.setProperty('--mouse-x', x + '%');
+      section.style.setProperty('--mouse-y', y + '%');
+    });
+  });
+}
 
 function setupEventListeners() {
   saveBtn.addEventListener('click', saveSettings);
