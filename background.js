@@ -924,143 +924,16 @@ async function getStreamersWithData() {
 }
 
 async function updateBadge(liveCount) {
-  // Clear badge text - we now show the count on the icon itself
-  chrome.action.setBadgeText({ text: '' });
-
   if (liveCount > 0) {
-    await setLiveIcon(liveCount);
+    // Show count in native Chrome badge (more visible)
+    const badgeText = liveCount > 99 ? '99+' : liveCount.toString();
+    chrome.action.setBadgeText({ text: badgeText });
+    chrome.action.setBadgeBackgroundColor({ color: '#10B981' });
+    chrome.action.setBadgeTextColor({ color: '#FFFFFF' });
   } else {
-    // Use static default icon when no one is live
-    chrome.action.setIcon({
-      path: {
-        16: 'icons/logo.png',
-        32: 'icons/logo.png',
-        48: 'icons/logo.png',
-        128: 'icons/logo.png'
-      }
-    });
+    // Clear badge when no one is live
+    chrome.action.setBadgeText({ text: '' });
   }
-}
-
-async function setLiveIcon(liveCount) {
-  const sizes = [16, 32, 48, 128];
-  const imageData = {};
-
-  for (const size of sizes) {
-    const canvas = new OffscreenCanvas(size, size);
-    const ctx = canvas.getContext('2d');
-
-    // Draw rounded rectangle background with gradient
-    const gradient = ctx.createLinearGradient(0, 0, size, size);
-    gradient.addColorStop(0, '#10B981');
-    gradient.addColorStop(0.25, '#3B82F6');
-    gradient.addColorStop(0.5, '#7B5CFF');
-    gradient.addColorStop(0.75, '#EC4899');
-    gradient.addColorStop(1, '#EF4444');
-
-    const radius = size * 0.22;
-    ctx.beginPath();
-    ctx.roundRect(0, 0, size, size, radius);
-    ctx.fillStyle = gradient;
-    ctx.fill();
-
-    // Draw notification bell/video icon shape
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-
-    ctx.beginPath();
-    // Simplified video/notification shape
-    const offsetX = size * 0.19;
-    const offsetY = size * 0.22;
-    const iconWidth = size * 0.62;
-    const iconHeight = size * 0.5;
-
-    ctx.roundRect(offsetX, offsetY, iconWidth, iconHeight, size * 0.08);
-    ctx.fill();
-
-    // Draw "eyes"
-    ctx.fillStyle = '#7B5CFF';
-    const eyeRadius = size * 0.06;
-    const eyeY = offsetY + iconHeight * 0.5;
-    ctx.beginPath();
-    ctx.arc(offsetX + iconWidth * 0.3, eyeY, eyeRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(offsetX + iconWidth * 0.7, eyeY, eyeRadius, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Draw live count badge if streamers are live
-    if (liveCount > 0) {
-      const badgeX = size * 0.72;
-      const badgeY = size * 0.72;
-
-      // Format the count (99+ for large numbers)
-      const countText = liveCount > 99 ? '99+' : liveCount.toString();
-
-      // Calculate badge size based on text length
-      const isLargeNumber = countText.length > 1;
-      const badgeRadius = size * (isLargeNumber ? 0.20 : 0.16);
-      const badgeWidth = isLargeNumber ? badgeRadius * 2.2 : badgeRadius * 2;
-      const badgeHeight = badgeRadius * 2;
-
-      // Dark border/shadow
-      ctx.fillStyle = '#161618';
-      if (isLargeNumber) {
-        ctx.beginPath();
-        ctx.roundRect(
-          badgeX - badgeWidth / 2 - size * 0.025,
-          badgeY - badgeHeight / 2 - size * 0.025,
-          badgeWidth + size * 0.05,
-          badgeHeight + size * 0.05,
-          badgeRadius
-        );
-        ctx.fill();
-      } else {
-        ctx.beginPath();
-        ctx.arc(badgeX, badgeY, badgeRadius + size * 0.025, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // Badge background with gradient
-      const badgeGradient = ctx.createRadialGradient(
-        badgeX, badgeY, 0,
-        badgeX, badgeY, badgeRadius * 1.5
-      );
-      badgeGradient.addColorStop(0, '#5CFFE0');
-      badgeGradient.addColorStop(1, '#00DD88');
-
-      ctx.fillStyle = badgeGradient;
-      if (isLargeNumber) {
-        ctx.beginPath();
-        ctx.roundRect(
-          badgeX - badgeWidth / 2,
-          badgeY - badgeHeight / 2,
-          badgeWidth,
-          badgeHeight,
-          badgeRadius
-        );
-        ctx.fill();
-      } else {
-        ctx.beginPath();
-        ctx.arc(badgeX, badgeY, badgeRadius, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // Draw the count number
-      ctx.fillStyle = '#161618';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      // Adjust font size based on icon size and number length
-      const fontSize = size * (isLargeNumber ? 0.18 : 0.22);
-      ctx.font = `bold ${fontSize}px Arial, sans-serif`;
-
-      ctx.fillText(countText, badgeX, badgeY + size * 0.01);
-    }
-
-    imageData[size] = ctx.getImageData(0, 0, size, size);
-  }
-
-  chrome.action.setIcon({ imageData });
 }
 
 const notificationHandlers = new Map();
