@@ -308,6 +308,7 @@ h1 {
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .team-logo {
@@ -371,10 +372,6 @@ h1 {
   color: #9E9E9E;
 }
 
-.status-emoji {
-  margin-right: 2px;
-  font-size: 10px;
-}
 
 .streamer-card.ended .streamer-avatar {
   opacity: 0.8;
