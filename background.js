@@ -863,51 +863,154 @@ async function getStreamersWithData() {
   return enriched;
 }
 
-function updateBadge(liveCount) {
+async function updateBadge(liveCount) {
   if (liveCount > 0) {
     chrome.action.setBadgeText({ text: liveCount.toString() });
-    chrome.action.setBadgeBackgroundColor({ color: '#7B5CFF' });
+    chrome.action.setBadgeBackgroundColor({ color: '#5CFFE0' });
+    await setLiveIcon(true);
   } else {
     chrome.action.setBadgeText({ text: '' });
+    await setLiveIcon(false);
   }
 }
 
+async function setLiveIcon(isLive) {
+  const sizes = [16, 32, 48, 128];
+  const imageData = {};
+
+  for (const size of sizes) {
+    const canvas = new OffscreenCanvas(size, size);
+    const ctx = canvas.getContext('2d');
+
+    // Draw rounded rectangle background with gradient
+    const gradient = ctx.createLinearGradient(0, 0, size, size);
+    gradient.addColorStop(0, '#10B981');
+    gradient.addColorStop(0.25, '#3B82F6');
+    gradient.addColorStop(0.5, '#7B5CFF');
+    gradient.addColorStop(0.75, '#EC4899');
+    gradient.addColorStop(1, '#EF4444');
+
+    const radius = size * 0.22;
+    ctx.beginPath();
+    ctx.roundRect(0, 0, size, size, radius);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    // Draw notification bell/video icon shape
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    const iconScale = size / 128;
+
+    ctx.beginPath();
+    // Simplified video/notification shape
+    const offsetX = size * 0.19;
+    const offsetY = size * 0.22;
+    const iconWidth = size * 0.62;
+    const iconHeight = size * 0.5;
+
+    ctx.roundRect(offsetX, offsetY, iconWidth, iconHeight, size * 0.08);
+    ctx.fill();
+
+    // Draw "eyes"
+    ctx.fillStyle = '#7B5CFF';
+    const eyeRadius = size * 0.06;
+    const eyeY = offsetY + iconHeight * 0.5;
+    ctx.beginPath();
+    ctx.arc(offsetX + iconWidth * 0.3, eyeY, eyeRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(offsetX + iconWidth * 0.7, eyeY, eyeRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw live indicator if live
+    if (isLive) {
+      const indicatorRadius = size * 0.14;
+      const indicatorX = size * 0.78;
+      const indicatorY = size * 0.78;
+
+      // Dark border
+      ctx.fillStyle = '#161618';
+      ctx.beginPath();
+      ctx.arc(indicatorX, indicatorY, indicatorRadius + size * 0.03, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Glowing live dot
+      const liveGradient = ctx.createRadialGradient(
+        indicatorX, indicatorY, 0,
+        indicatorX, indicatorY, indicatorRadius
+      );
+      liveGradient.addColorStop(0, '#5CFFE0');
+      liveGradient.addColorStop(1, '#00DD88');
+
+      ctx.fillStyle = liveGradient;
+      ctx.beginPath();
+      ctx.arc(indicatorX, indicatorY, indicatorRadius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    imageData[size] = ctx.getImageData(0, 0, size, size);
+  }
+
+  chrome.action.setIcon({ imageData });
+}
+
+const notificationHandlers = new Map();
+
 function sendNotification(streamer) {
   const notificationId = `live-${streamer.id}-${Date.now()}`;
-  
+
+  // Store streamer URL for click handler
+  let url;
+  switch (streamer.platform) {
+    case 'twitch':
+      url = `https://twitch.tv/${streamer.username}`;
+      break;
+    case 'youtube':
+      url = `https://youtube.com/@${streamer.username}/live`;
+      break;
+    case 'kick':
+      url = `https://kick.com/${streamer.username}`;
+      break;
+  }
+
+  if (url) {
+    notificationHandlers.set(notificationId, url);
+  }
+
+  // Use logo.png as fallback (icon128.png doesn't exist)
+  const iconUrl = streamer.avatar && streamer.avatar.startsWith('http')
+    ? streamer.avatar
+    : 'icons/logo.png';
+
   chrome.notifications.create(notificationId, {
     type: 'basic',
-    iconUrl: streamer.avatar || 'icons/icon128.png',
-    title: `🔴 ${streamer.name} est en live !`,
+    iconUrl: iconUrl,
+    title: `${streamer.name} est en live !`,
     message: streamer.title || `${streamer.name} vient de commencer un stream sur ${streamer.platform}`,
     priority: 2,
     requireInteraction: false
+  }, (createdId) => {
+    if (chrome.runtime.lastError) {
+      console.error('Notification error:', chrome.runtime.lastError.message);
+    }
   });
 
-  const clickHandler = (clickedId) => {
-    if (clickedId === notificationId) {
-      let url;
-      switch (streamer.platform) {
-        case 'twitch':
-          url = `https://twitch.tv/${streamer.username}`;
-          break;
-        case 'youtube':
-          url = `https://youtube.com/@${streamer.username}/live`;
-          break;
-        case 'kick':
-          url = `https://kick.com/${streamer.username}`;
-          break;
-      }
-      if (url) {
-        chrome.tabs.create({ url });
-      }
-      chrome.notifications.onClicked.removeListener(clickHandler);
-    }
-  };
-
-  chrome.notifications.onClicked.addListener(clickHandler);
   saveToHistory(streamer);
 }
+
+// Single global click handler for all notifications
+chrome.notifications.onClicked.addListener((notificationId) => {
+  const url = notificationHandlers.get(notificationId);
+  if (url) {
+    chrome.tabs.create({ url });
+    notificationHandlers.delete(notificationId);
+  }
+  chrome.notifications.clear(notificationId);
+});
+
+// Clean up closed notifications
+chrome.notifications.onClosed.addListener((notificationId) => {
+  notificationHandlers.delete(notificationId);
+});
 
 async function saveToHistory(streamer) {
   const { history = [] } = await chrome.storage.local.get('history');
