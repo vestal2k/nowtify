@@ -408,7 +408,6 @@ function renderStreamerCard(streamer) {
   
   const statusText = getStatusText(streamer);
   const statusClass = streamer.isLive ? 'live' : (streamer.wasLiveRecently ? 'recent' : 'offline');
-  const statusEmoji = streamer.isLive ? '🔴' : (streamer.wasLiveRecently ? '⚫' : '⚫');
   const platformIcon = getPlatformIcon(streamer.platform);
   const avatarUrl = streamer.avatar && streamer.avatar !== '' ? streamer.avatar : 'icons/avatars/default.svg';
   
@@ -435,7 +434,6 @@ function renderStreamerCard(streamer) {
       <div class="streamer-name" title="${escapeHtml(streamer.name)}">${escapeHtml(streamer.name)}</div>
       <span class="status-indicator ${statusClass}">
         <span class="status-dot ${statusClass}"></span>
-        <span class="status-emoji">${statusEmoji}</span>
         ${statusText}
       </span>
     </div>
