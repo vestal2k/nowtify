@@ -487,13 +487,16 @@ function renderStreamerCard(streamer) {
 
   deleteBtn.addEventListener('click', async (e) => {
     e.stopPropagation();
-    
+
     const { settings = {} } = await chrome.storage.sync.get('settings');
     const shouldConfirm = settings.confirmDelete !== false;
-    
+
     if (streamer.team) {
-      if (!shouldConfirm || confirm(`Supprimer tous les membres de la team ${streamer.team} ?`)) {
-        await deleteTeam(streamer.team);
+      // Give user choice: delete just this streamer OR the entire team
+      if (!shouldConfirm) {
+        await deleteStreamer(streamer.id, card);
+      } else {
+        showDeleteTeamModal(streamer, card);
       }
     } else {
       if (!shouldConfirm || confirm(`Supprimer ${streamer.name} ?`)) {
@@ -559,6 +562,46 @@ async function deleteTeam(teamName) {
   } catch (error) {
     showError('Erreur lors de la suppression de la team');
   }
+}
+
+function showDeleteTeamModal(streamer, cardElement) {
+  // Remove existing modal if any
+  const existingModal = document.querySelector('.delete-modal');
+  if (existingModal) existingModal.remove();
+
+  const modal = document.createElement('div');
+  modal.className = 'delete-modal';
+  modal.innerHTML = `
+    <div class="delete-modal-content">
+      <div class="delete-modal-header">
+        <span class="delete-modal-title">Supprimer</span>
+        <button class="delete-modal-close">&times;</button>
+      </div>
+      <p class="delete-modal-text">${escapeHtml(streamer.name)} fait partie de la team <strong>${escapeHtml(capitalizeTeamName(streamer.team))}</strong></p>
+      <div class="delete-modal-buttons">
+        <button class="delete-btn-streamer">Ce streamer</button>
+        <button class="delete-btn-team">Toute la team</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Event listeners
+  modal.querySelector('.delete-modal-close').addEventListener('click', () => modal.remove());
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.remove();
+  });
+
+  modal.querySelector('.delete-btn-streamer').addEventListener('click', async () => {
+    modal.remove();
+    await deleteStreamer(streamer.id, cardElement);
+  });
+
+  modal.querySelector('.delete-btn-team').addEventListener('click', async () => {
+    modal.remove();
+    await deleteTeam(streamer.team);
+  });
 }
 
 function openStream(streamer) {
