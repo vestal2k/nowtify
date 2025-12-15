@@ -738,39 +738,99 @@ async function searchKickChannels(query) {
   }
 }
 
+// Generate possible team name variants for API lookup
+function getTeamNameVariants(teamName) {
+  const base = teamName.toLowerCase().trim();
+  const variants = new Set([base]);
+
+  // Without spaces
+  variants.add(base.replace(/\s+/g, ''));
+
+  // With underscores instead of spaces
+  variants.add(base.replace(/\s+/g, '_'));
+
+  // With hyphens instead of spaces
+  variants.add(base.replace(/\s+/g, '-'));
+
+  // Without special characters
+  variants.add(base.replace(/[^a-z0-9]/g, ''));
+
+  // Common team name patterns (e.g., "Team Name" -> "teamname")
+  variants.add(base.replace(/^team\s*/i, '').replace(/\s+/g, ''));
+
+  return [...variants].filter(v => v.length > 0);
+}
+
 async function getTeamLogo(teamName) {
   if (!teamName) return null;
 
-  const cacheKey = teamName.toLowerCase();
+  const cacheKey = teamName.toLowerCase().trim();
+
+  // Check memory cache first
   if (teamLogosCache[cacheKey]) {
     return teamLogosCache[cacheKey];
   }
 
   try {
     const token = await getTwitchToken();
-    if (!token) return null;
+    if (!token) {
+      console.warn('[Nowtify] No Twitch token available for team logo fetch');
+      return null;
+    }
 
-    const response = await fetch(`https://api.twitch.tv/helix/teams?name=${teamName}`, {
-      headers: {
-        'Client-ID': CONFIG.TWITCH_CLIENT_ID,
-        'Authorization': `Bearer ${token}`
-      }
-    });
+    // Try different name variants
+    const variants = getTeamNameVariants(teamName);
 
-    if (response.ok) {
-      const data = await response.json();
-      if (data.data && data.data[0]) {
-        const logoUrl = data.data[0].thumbnail_url || data.data[0].banner || null;
-        teamLogosCache[cacheKey] = logoUrl;
-        
-        if (logoUrl) {
-          await chrome.storage.local.set({ [`teamLogo_${cacheKey}`]: logoUrl });
+    for (const variant of variants) {
+      try {
+        const response = await fetch(`https://api.twitch.tv/helix/teams?name=${encodeURIComponent(variant)}`, {
+          headers: {
+            'Client-ID': CONFIG.TWITCH_CLIENT_ID,
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.data && data.data[0]) {
+            // Twitch Teams API returns thumbnail_url as the logo
+            let logoUrl = data.data[0].thumbnail_url || null;
+
+            // Some teams may have empty thumbnail, try background_image_url as fallback
+            if (!logoUrl && data.data[0].background_image_url) {
+              logoUrl = data.data[0].background_image_url;
+            }
+
+            if (logoUrl) {
+              // Cache the result
+              teamLogosCache[cacheKey] = logoUrl;
+              await chrome.storage.local.set({ [`teamLogo_${cacheKey}`]: logoUrl });
+              console.log(`[Nowtify] Team logo found for "${teamName}" using variant "${variant}"`);
+              return logoUrl;
+            }
+          }
+        } else if (response.status === 404) {
+          // Team not found with this variant, try next
+          continue;
+        } else if (response.status === 401 || response.status === 403) {
+          // Token issue, don't try more variants
+          console.warn(`[Nowtify] Auth error fetching team logo: ${response.status}`);
+          break;
         }
-        
-        return logoUrl;
+      } catch (fetchError) {
+        // Network error for this variant, try next
+        console.warn(`[Nowtify] Network error fetching team "${variant}": ${fetchError.message}`);
+        continue;
       }
     }
-  } catch (error) {}
+
+    // No logo found with any variant - cache null to avoid repeated lookups
+    teamLogosCache[cacheKey] = null;
+    console.log(`[Nowtify] No team logo found for "${teamName}" after trying ${variants.length} variants`);
+
+  } catch (error) {
+    console.error(`[Nowtify] Error fetching team logo for "${teamName}":`, error);
+  }
 
   return null;
 }

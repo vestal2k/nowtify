@@ -412,7 +412,7 @@ function renderStreamerCard(streamer) {
   const avatarUrl = streamer.avatar && streamer.avatar !== '' ? streamer.avatar : 'icons/avatars/default.svg';
   
   const teamName = streamer.team ? capitalizeTeamName(streamer.team) : '—';
-  const teamLogoUrl = streamer.teamLogo || (streamer.team ? `icons/teams/${streamer.team.toLowerCase()}.svg` : 'icons/teams/default.svg');
+  const teamLogoUrl = streamer.teamLogo || 'icons/teams/default.svg';
   
   const img = document.createElement('img');
   img.src = avatarUrl;
