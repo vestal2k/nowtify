@@ -31,18 +31,44 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function loadGroups() {
-  const { groups = [] } = await chrome.storage.sync.get('groups');
+  const { groups = [], streamers = [] } = await chrome.storage.sync.get(['groups', 'streamers']);
   allGroups = groups;
+
+  // Get unique teams from streamers (Twitch teams)
+  const teamsSet = new Set();
+  streamers.forEach(s => {
+    if (s.team) teamsSet.add(s.team);
+  });
+  const teams = Array.from(teamsSet).sort();
 
   // Populate group filter select
   groupFilter.innerHTML = '<option value="">Groupe</option>';
-  groups.forEach(group => {
-    const option = document.createElement('option');
-    option.value = group.id;
-    option.textContent = group.name;
-    option.style.color = group.color;
-    groupFilter.appendChild(option);
-  });
+
+  // Add custom groups first
+  if (groups.length > 0) {
+    const groupOptgroup = document.createElement('optgroup');
+    groupOptgroup.label = 'Groupes';
+    groups.forEach(group => {
+      const option = document.createElement('option');
+      option.value = `group:${group.id}`;
+      option.textContent = group.name;
+      groupOptgroup.appendChild(option);
+    });
+    groupFilter.appendChild(groupOptgroup);
+  }
+
+  // Add Twitch teams
+  if (teams.length > 0) {
+    const teamOptgroup = document.createElement('optgroup');
+    teamOptgroup.label = 'Teams';
+    teams.forEach(teamName => {
+      const option = document.createElement('option');
+      option.value = `team:${teamName}`;
+      option.textContent = capitalizeTeamName(teamName);
+      teamOptgroup.appendChild(option);
+    });
+    groupFilter.appendChild(teamOptgroup);
+  }
 }
 
 async function loadCustomOrder() {
@@ -102,7 +128,9 @@ function handleDragStart(e) {
 
 function handleDragEnd(e) {
   this.classList.remove('dragging');
+  this.classList.remove('drag-ready');
   this.style.opacity = '1';
+  this.draggable = false;
 
   // Remove placeholder if exists
   if (dragPlaceholder && dragPlaceholder.parentNode) {
@@ -269,9 +297,15 @@ function filterStreamers(streamers, filter) {
     });
   }
 
-  // Apply group filter
+  // Apply group/team filter
   if (currentGroupFilter) {
-    filtered = filtered.filter(s => s.group === currentGroupFilter);
+    if (currentGroupFilter.startsWith('group:')) {
+      const groupId = currentGroupFilter.replace('group:', '');
+      filtered = filtered.filter(s => s.group === groupId);
+    } else if (currentGroupFilter.startsWith('team:')) {
+      const teamName = currentGroupFilter.replace('team:', '');
+      filtered = filtered.filter(s => s.team === teamName);
+    }
   }
 
   return filtered;
@@ -847,7 +881,8 @@ function createStreamerCard(streamer) {
   const isRecent = streamer.wasLiveRecently && !streamer.isLive;
   card.className = `streamer-card ${streamer.isLive ? 'live' : ''} ${isRecent ? 'ended' : ''}`;
   card.dataset.streamerId = streamer.id;
-  card.draggable = true;
+  // Drag will be enabled/disabled via the drag handle
+  card.draggable = false;
   card.style.opacity = '0';
   card.style.transform = 'translateX(-20px)';
   
@@ -915,6 +950,21 @@ function createStreamerCard(streamer) {
       <circle cx="15" cy="19" r="1"></circle>
     </svg>
   `;
+
+  // Enable drag only when mousedown on handle
+  dragHandle.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    card.draggable = true;
+    card.classList.add('drag-ready');
+  });
+
+  // Disable drag on mouseup anywhere
+  dragHandle.addEventListener('mouseup', () => {
+    setTimeout(() => {
+      card.draggable = false;
+      card.classList.remove('drag-ready');
+    }, 100);
+  });
 
   const deleteBtn = document.createElement('button');
   deleteBtn.className = 'delete-btn';

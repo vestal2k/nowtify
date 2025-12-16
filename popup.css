@@ -351,7 +351,7 @@ h1 {
   border: 1px solid var(--border-default);
   border-radius: 8px;
   padding: 6px 10px;
-  padding-right: 24px;
+  padding-right: 26px;
   color: var(--text-secondary);
   font-size: 11px;
   font-weight: 500;
@@ -362,7 +362,11 @@ h1 {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%237B5CFF' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 8px center;
-  min-width: 75px;
+  min-width: 90px;
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .filter-group-select:hover {
@@ -1347,9 +1351,15 @@ h1 {
   cursor: grabbing;
 }
 
-.streamer-card.dragging {
+.streamer-card.dragging,
+.streamer-card.drag-ready {
   cursor: grabbing;
   z-index: 1000;
+}
+
+.streamer-card.drag-ready {
+  border-color: var(--purple);
+  box-shadow: var(--shadow-purple);
 }
 
 .streamer-card.dragging .drag-handle {
