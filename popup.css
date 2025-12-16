@@ -345,6 +345,48 @@ h1 {
   font-style: italic;
 }
 
+/* Group Filter Select */
+.filter-group-select {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 6px 10px;
+  padding-right: 24px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  font-family: 'Manrope', sans-serif;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%237B5CFF' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  min-width: 75px;
+}
+
+.filter-group-select:hover {
+  background-color: var(--bg-surface-hover);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+.filter-group-select:focus {
+  outline: none;
+  border-color: var(--purple);
+}
+
+.filter-group-select option {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.filter-group-select.active {
+  background-color: rgba(123, 92, 255, 0.15);
+  border-color: var(--purple);
+  color: var(--purple);
+}
+
 /* Compact Mode */
 .streamers-list.compact {
   display: grid;

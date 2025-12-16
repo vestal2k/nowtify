@@ -13,18 +13,37 @@ let autocompleteList = null;
 let currentStreamersMap = new Map(); // Track rendered streamers for diffing
 let isInitialLoad = true;
 let currentFilter = 'all';
+let currentGroupFilter = '';
 let allStreamersData = []; // Store all streamers for filtering
+let allGroups = []; // Store groups for filtering
 let isCompactMode = false;
 let draggedElement = null;
 let dragPlaceholder = null;
 let customOrder = []; // Store custom order of streamer IDs
+const groupFilter = document.getElementById('groupFilter');
 
 document.addEventListener('DOMContentLoaded', async () => {
   await loadCustomOrder();
+  await loadGroups();
   await loadStreamers();
   setupEventListeners();
   createAutocompleteList();
 });
+
+async function loadGroups() {
+  const { groups = [] } = await chrome.storage.sync.get('groups');
+  allGroups = groups;
+
+  // Populate group filter select
+  groupFilter.innerHTML = '<option value="">Groupe</option>';
+  groups.forEach(group => {
+    const option = document.createElement('option');
+    option.value = group.id;
+    option.textContent = group.name;
+    option.style.color = group.color;
+    groupFilter.appendChild(option);
+  });
+}
 
 async function loadCustomOrder() {
   const { streamerOrder = [] } = await chrome.storage.sync.get('streamerOrder');
@@ -201,6 +220,13 @@ function setupEventListeners() {
       streamersList.classList.add('compact');
     }
   });
+
+  // Group filter
+  groupFilter.addEventListener('change', () => {
+    currentGroupFilter = groupFilter.value;
+    groupFilter.classList.toggle('active', currentGroupFilter !== '');
+    applyFilter();
+  });
 }
 
 function createAutocompleteList() {
@@ -230,15 +256,25 @@ function applyFilter() {
 }
 
 function filterStreamers(streamers, filter) {
-  if (filter === 'all') return streamers;
+  let filtered = streamers;
 
-  return streamers.filter(s => {
-    if (filter === 'live') return s.isLive;
-    if (filter === 'twitch') return s.platform === 'twitch';
-    if (filter === 'youtube') return s.platform === 'youtube';
-    if (filter === 'kick') return s.platform === 'kick';
-    return true;
-  });
+  // Apply platform/live filter
+  if (filter !== 'all') {
+    filtered = filtered.filter(s => {
+      if (filter === 'live') return s.isLive;
+      if (filter === 'twitch') return s.platform === 'twitch';
+      if (filter === 'youtube') return s.platform === 'youtube';
+      if (filter === 'kick') return s.platform === 'kick';
+      return true;
+    });
+  }
+
+  // Apply group filter
+  if (currentGroupFilter) {
+    filtered = filtered.filter(s => s.group === currentGroupFilter);
+  }
+
+  return filtered;
 }
 
 async function loadStreamers() {
