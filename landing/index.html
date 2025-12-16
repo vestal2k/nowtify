@@ -3,20 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nowtify</title>
+    <title>Nowtify - Never Miss a Stream</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --cyan: #5CFFE0;
             --purple: #7B5CFF;
             --pink: #FF4F8B;
             --red: #FF3366;
-            --bg: #161618;
-            --text-primary: #F5F5F5;
-            --text-secondary: #B7B7B7;
+            --twitch: #9146FF;
+            --youtube: #FF0000;
+            --kick: #53FC18;
+            --bg: #0D0D0F;
+            --bg-card: #141416;
+            --bg-elevated: #1A1A1C;
+            --text-primary: #FFFFFF;
+            --text-secondary: #9CA3AF;
+            --border: rgba(255, 255, 255, 0.06);
         }
 
         * {
@@ -25,16 +31,20 @@
             box-sizing: border-box;
         }
 
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: var(--bg);
-            color: var(--text-primary);
-            overflow-x: hidden;
+        html {
             scroll-behavior: smooth;
         }
 
+        body {
+            font-family: 'Manrope', sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
         ::-webkit-scrollbar {
-            width: 10px;
+            width: 8px;
         }
 
         ::-webkit-scrollbar-track {
@@ -44,18 +54,9 @@
         ::-webkit-scrollbar-thumb {
             background: linear-gradient(180deg, var(--cyan), var(--purple), var(--red));
             border-radius: 10px;
-            transition: box-shadow 0.3s ease;
         }
 
-        ::-webkit-scrollbar-thumb:hover {
-            box-shadow: 0 0 12px rgba(92, 255, 224, 0.5);
-        }
-
-        * {
-            scrollbar-width: thin;
-            scrollbar-color: var(--purple) var(--bg);
-        }
-
+        /* Canvas Background */
         #canvas-container {
             position: fixed;
             top: 0;
@@ -69,9 +70,10 @@
         #three-canvas {
             width: 100%;
             height: 100%;
-            opacity: 0.6;
+            opacity: 0.5;
         }
 
+        /* Particles */
         .particles {
             position: fixed;
             top: 0;
@@ -88,26 +90,17 @@
             height: 2px;
             border-radius: 50%;
             opacity: 0;
-            animation: particleFloat 20s infinite ease-in-out;
+            animation: particleFloat 25s infinite ease-in-out;
         }
 
         @keyframes particleFloat {
-            0% {
-                opacity: 0;
-                transform: translateY(100vh) translateX(0);
-            }
-            15% {
-                opacity: 0.4;
-            }
-            85% {
-                opacity: 0.2;
-            }
-            100% {
-                opacity: 0;
-                transform: translateY(-100vh) translateX(80px);
-            }
+            0% { opacity: 0; transform: translateY(100vh) translateX(0); }
+            15% { opacity: 0.3; }
+            85% { opacity: 0.15; }
+            100% { opacity: 0; transform: translateY(-100vh) translateX(60px); }
         }
 
+        /* Layout */
         .container {
             position: relative;
             z-index: 2;
@@ -116,6 +109,105 @@
             padding: 0 24px;
         }
 
+        section {
+            position: relative;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 16px 24px;
+            background: rgba(13, 13, 15, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        nav .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .nav-logo img {
+            width: 36px;
+            height: 36px;
+        }
+
+        .nav-logo span {
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--cyan), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-primary);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-radius: 12px;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--cyan), var(--purple));
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(92, 255, 224, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Hero Section */
         .hero {
             min-height: 100vh;
             display: flex;
@@ -123,22 +215,36 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: 60px 24px;
+            padding: 120px 24px 80px;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(92, 255, 224, 0.1);
+            border: 1px solid rgba(92, 255, 224, 0.2);
+            border-radius: 100px;
+            font-size: 0.85rem;
+            color: var(--cyan);
+            margin-bottom: 32px;
+        }
+
+        .hero-badge svg {
+            width: 16px;
+            height: 16px;
         }
 
         .logo-wrapper {
             position: relative;
-            margin-bottom: 48px;
+            margin-bottom: 32px;
             animation: floatLogo 6s ease-in-out infinite;
         }
 
         @keyframes floatLogo {
-            0%, 100% {
-                transform: translateY(0);
-            }
-            50% {
-                transform: translateY(-12px);
-            }
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
 
         .logo-wrapper::before {
@@ -147,149 +253,188 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 280px;
-            height: 280px;
-            background: radial-gradient(circle, rgba(92, 255, 224, 0.15), rgba(123, 92, 255, 0.12), transparent 65%);
-            filter: blur(50px);
-            animation: pulseGlow 6s ease-in-out infinite;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(92, 255, 224, 0.2), rgba(123, 92, 255, 0.15), transparent 60%);
+            filter: blur(40px);
+            animation: pulseGlow 4s ease-in-out infinite;
         }
 
         @keyframes pulseGlow {
-            0%, 100% {
-                opacity: 0.5;
-                transform: translate(-50%, -50%) scale(1);
-            }
-            50% {
-                opacity: 0.8;
-                transform: translate(-50%, -50%) scale(1.15);
-            }
+            0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
         }
 
         .logo {
             position: relative;
-            width: 160px;
+            width: 120px;
             height: auto;
-            filter: drop-shadow(0 0 20px rgba(92, 255, 224, 0.4));
+            filter: drop-shadow(0 0 30px rgba(92, 255, 224, 0.4));
         }
 
-        .title-main {
-            font-size: 4.5rem;
-            font-weight: 600;
-            margin-bottom: 8px;
+        .hero h1 {
+            font-size: clamp(2.5rem, 8vw, 4.5rem);
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -0.03em;
+        }
+
+        .hero h1 .gradient {
             background: linear-gradient(90deg, var(--cyan), var(--purple), var(--pink), var(--red));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            animation: gradientFlow 8s ease infinite;
+            animation: gradientFlow 6s ease infinite;
             background-size: 200% 100%;
-            letter-spacing: -0.02em;
-            line-height: 1;
         }
 
         @keyframes gradientFlow {
-            0%, 100% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
         }
 
-        .title-sub {
-            font-size: 1.5rem;
-            font-weight: 400;
-            color: var(--text-primary);
+        .hero-subtitle {
+            font-size: clamp(1.1rem, 3vw, 1.4rem);
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin-bottom: 24px;
+        }
+
+        /* Platform Icons */
+        .platforms {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+
+        .platform-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            height: 56px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .platform-icon:hover {
+            transform: translateY(-4px);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .platform-icon.twitch:hover {
+            box-shadow: 0 8px 30px rgba(145, 70, 255, 0.3);
+            border-color: var(--twitch);
+        }
+
+        .platform-icon.youtube:hover {
+            box-shadow: 0 8px 30px rgba(255, 0, 0, 0.25);
+            border-color: var(--youtube);
+        }
+
+        .platform-icon.kick:hover {
+            box-shadow: 0 8px 30px rgba(83, 252, 24, 0.3);
+            border-color: var(--kick);
+        }
+
+        .platform-icon svg {
+            width: 28px;
+            height: 28px;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* Stats Section */
+        .stats {
+            padding: 60px 0;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            background: rgba(20, 20, 22, 0.5);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 32px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--cyan), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 120px 0;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 64px;
+        }
+
+        .section-tag {
+            display: inline-block;
+            padding: 6px 14px;
+            background: rgba(123, 92, 255, 0.1);
+            border: 1px solid rgba(123, 92, 255, 0.2);
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--purple);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
             margin-bottom: 16px;
-            letter-spacing: 0.02em;
         }
 
-        .title-desc {
+        .section-header h2 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+        }
+
+        .section-header p {
             font-size: 1.1rem;
             color: var(--text-secondary);
-            margin-bottom: 48px;
-            max-width: 560px;
-            line-height: 1.5;
-        }
-
-        .btn-primary {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 18px 40px;
-            font-size: 1.05rem;
-            font-weight: 600;
-            background: rgba(255, 255, 255, 0.04);
-            backdrop-filter: blur(12px);
-            border: 2px solid transparent;
-            border-radius: 14px;
-            color: var(--text-primary);
-            text-decoration: none;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .btn-primary::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: 14px;
-            padding: 2px;
-            background: linear-gradient(90deg, var(--cyan), var(--purple), var(--pink), var(--red));
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor;
-            mask-composite: exclude;
-            animation: borderRotate 4s linear infinite;
-            background-size: 200% 100%;
-        }
-
-        @keyframes borderRotate {
-            0% {
-                background-position: 0% 50%;
-            }
-            100% {
-                background-position: 200% 50%;
-            }
-        }
-
-        .btn-primary::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(92, 255, 224, 0.15), transparent 60%);
-            opacity: 0;
-            transition: opacity 0.4s;
-            border-radius: 14px;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 40px rgba(92, 255, 224, 0.25);
-            background: rgba(255, 255, 255, 0.06);
-        }
-
-        .btn-primary:hover::after {
-            opacity: 1;
-        }
-
-        .features {
-            padding: 120px 24px;
+            max-width: 600px;
+            margin: 0 auto;
         }
 
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 28px;
-            max-width: 900px;
-            margin: 0 auto;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
         }
 
         .feature-card {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
             border-radius: 20px;
-            padding: 36px 32px;
+            padding: 32px;
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
@@ -298,17 +443,19 @@
         .feature-card::before {
             content: '';
             position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(92, 255, 224, 0.06), transparent 70%);
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--cyan), transparent);
             opacity: 0;
             transition: opacity 0.4s;
         }
 
         .feature-card:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(92, 255, 224, 0.15);
             transform: translateY(-4px);
-            box-shadow: 0 12px 40px rgba(92, 255, 224, 0.12);
+            border-color: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
         }
 
         .feature-card:hover::before {
@@ -316,121 +463,353 @@
         }
 
         .feature-icon {
-            margin-bottom: 20px;
+            width: 48px;
+            height: 48px;
             display: flex;
             align-items: center;
             justify-content: center;
+            background: rgba(92, 255, 224, 0.1);
+            border-radius: 12px;
+            margin-bottom: 20px;
         }
 
         .feature-icon svg {
-            width: 44px;
-            height: 44px;
-            stroke-width: 1.8;
+            width: 24px;
+            height: 24px;
         }
 
-        .feature-title {
-            font-size: 1.25rem;
+        .feature-card:nth-child(2) .feature-icon { background: rgba(123, 92, 255, 0.1); }
+        .feature-card:nth-child(3) .feature-icon { background: rgba(255, 79, 139, 0.1); }
+        .feature-card:nth-child(4) .feature-icon { background: rgba(255, 51, 102, 0.1); }
+        .feature-card:nth-child(5) .feature-icon { background: rgba(83, 252, 24, 0.1); }
+        .feature-card:nth-child(6) .feature-icon { background: rgba(145, 70, 255, 0.1); }
+
+        .feature-card h3 {
+            font-size: 1.15rem;
             font-weight: 600;
-            margin-bottom: 10px;
-            color: var(--text-primary);
+            margin-bottom: 8px;
         }
 
-        .feature-desc {
-            font-size: 0.95rem;
+        .feature-card p {
+            font-size: 0.9rem;
             color: var(--text-secondary);
             line-height: 1.6;
         }
 
-        .cta {
-            padding: 100px 24px 120px;
-            text-align: center;
+        /* Preview Section */
+        .preview {
+            padding: 120px 0;
+            background: linear-gradient(180deg, transparent, rgba(20, 20, 22, 0.5), transparent);
         }
 
-        .cta-text {
-            font-size: 1.6rem;
-            margin-bottom: 12px;
-            color: var(--text-primary);
-            font-weight: 500;
+        .preview-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            align-items: center;
         }
 
-        .cta-subtext {
+        .preview-text h2 {
+            font-size: clamp(2rem, 4vw, 2.5rem);
+            font-weight: 700;
+            margin-bottom: 24px;
+            letter-spacing: -0.02em;
+        }
+
+        .preview-text p {
             font-size: 1.05rem;
             color: var(--text-secondary);
-            margin-bottom: 44px;
+            margin-bottom: 32px;
+            line-height: 1.7;
         }
 
-        footer {
-            padding: 44px 24px;
-            text-align: center;
-            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        .preview-features {
             display: flex;
-            justify-content: center;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .preview-feature {
+            display: flex;
             align-items: center;
-            gap: 24px;
+            gap: 12px;
+        }
+
+        .preview-feature-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(92, 255, 224, 0.1);
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+
+        .preview-feature-icon svg {
+            width: 16px;
+            height: 16px;
+            color: var(--cyan);
+        }
+
+        .preview-feature span {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        .preview-mockup {
             position: relative;
         }
 
-        footer::before {
+        .mockup-window {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.4);
+        }
+
+        .mockup-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            background: var(--bg-elevated);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .mockup-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--border);
+        }
+
+        .mockup-dot:nth-child(1) { background: #FF5F56; }
+        .mockup-dot:nth-child(2) { background: #FFBD2E; }
+        .mockup-dot:nth-child(3) { background: #27CA40; }
+
+        .mockup-body {
+            padding: 20px;
+        }
+
+        .mockup-streamer {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--bg-elevated);
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+
+        .mockup-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--purple), var(--pink));
+        }
+
+        .mockup-info {
+            flex: 1;
+        }
+
+        .mockup-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .mockup-game {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .mockup-live {
+            padding: 4px 10px;
+            background: rgba(255, 51, 102, 0.2);
+            color: var(--red);
+            font-size: 0.7rem;
+            font-weight: 600;
+            border-radius: 6px;
+            text-transform: uppercase;
+        }
+
+        .mockup-badge {
+            position: absolute;
+            top: -12px;
+            right: -12px;
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--cyan), var(--purple));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #000;
+            box-shadow: 0 8px 24px rgba(92, 255, 224, 0.3);
+        }
+
+        /* More Features Section */
+        .more-features {
+            padding: 120px 0;
+        }
+
+        .more-features-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+
+        .more-feature-card {
+            display: flex;
+            gap: 20px;
+            padding: 28px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .more-feature-card:hover {
+            border-color: rgba(255, 255, 255, 0.1);
+            background: var(--bg-elevated);
+        }
+
+        .more-feature-icon {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(92, 255, 224, 0.1);
+            border-radius: 10px;
+            flex-shrink: 0;
+        }
+
+        .more-feature-icon svg {
+            width: 22px;
+            height: 22px;
+        }
+
+        .more-feature-content h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .more-feature-content p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* CTA Section */
+        .cta {
+            padding: 120px 0;
+            text-align: center;
+        }
+
+        .cta-card {
+            background: linear-gradient(135deg, rgba(92, 255, 224, 0.1), rgba(123, 92, 255, 0.1));
+            border: 1px solid rgba(92, 255, 224, 0.2);
+            border-radius: 32px;
+            padding: 80px 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-card::before {
             content: '';
             position: absolute;
-            inset: 0;
-            background: linear-gradient(90deg, transparent, rgba(92, 255, 224, 0.03), rgba(123, 92, 255, 0.03), transparent);
-            animation: footerGlow 12s linear infinite;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(92, 255, 224, 0.15), transparent 60%);
+            filter: blur(60px);
+            pointer-events: none;
         }
 
-        @keyframes footerGlow {
-            0% {
-                transform: translateX(-100%);
-            }
-            100% {
-                transform: translateX(100%);
-            }
+        .cta-card h2 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 700;
+            margin-bottom: 16px;
+            position: relative;
         }
 
-        footer p {
+        .cta-card p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+            position: relative;
+        }
+
+        /* Footer */
+        footer {
+            padding: 40px 24px;
+            border-top: 1px solid var(--border);
+        }
+
+        .footer-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .footer-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             color: var(--text-secondary);
             font-size: 0.9rem;
-            position: relative;
-            z-index: 1;
         }
 
-        footer .heart {
-            display: inline-block;
-            animation: heartBeat 2.5s ease-in-out infinite;
+        .footer-left .heart {
             color: var(--pink);
+            animation: heartBeat 2s ease-in-out infinite;
         }
 
         @keyframes heartBeat {
-            0%, 100% {
-                transform: scale(1);
-            }
-            12%, 32% {
-                transform: scale(1.08);
-            }
-            22%, 42% {
-                transform: scale(1);
-            }
+            0%, 100% { transform: scale(1); }
+            15%, 30% { transform: scale(1.1); }
         }
 
-        .github-icon {
+        .footer-links {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--text-primary);
+        }
+
+        .footer-links svg {
             width: 22px;
             height: 22px;
-            opacity: 0.6;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            z-index: 1;
         }
 
-        .github-icon:hover {
-            opacity: 1;
-            transform: scale(1.1);
-            filter: drop-shadow(0 0 8px var(--cyan));
-        }
-
+        /* Animations */
         .fade-in {
             opacity: 0;
-            transform: translateY(30px);
-            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(20px);
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .fade-in.visible {
@@ -438,77 +817,91 @@
             transform: translateY(0);
         }
 
+        /* Responsive */
         @media (max-width: 1024px) {
             .features-grid {
-                max-width: 700px;
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .preview-content {
+                grid-template-columns: 1fr;
+                gap: 48px;
+            }
+
+            .preview-mockup {
+                order: -1;
+                max-width: 400px;
+                margin: 0 auto;
             }
         }
 
         @media (max-width: 768px) {
-            .title-main {
-                font-size: 3rem;
+            .nav-links {
+                display: none;
             }
 
-            .title-sub {
-                font-size: 1.2rem;
-            }
-
-            .title-desc {
-                font-size: 1rem;
-            }
-
-            .logo {
-                width: 120px;
-            }
-
-            .features {
-                padding: 80px 24px;
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 24px;
             }
 
             .features-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .more-features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero {
+                padding: 100px 24px 60px;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .platform-icon {
+                width: 48px;
+                height: 48px;
+            }
+
+            .platform-icon svg {
+                width: 24px;
+                height: 24px;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .hero-buttons .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .cta-card {
+                padding: 48px 24px;
+            }
+
+            .footer-content {
+                flex-direction: column;
                 gap: 20px;
             }
 
-            .feature-card {
-                padding: 28px 24px;
-            }
-
-            .cta {
-                padding: 80px 24px 100px;
-            }
-
-            .cta-text {
-                font-size: 1.3rem;
-            }
-
-            footer {
-                flex-direction: column;
-                gap: 12px;
-            }
-
             #canvas-container {
-                opacity: 0.4;
+                opacity: 0.3;
             }
         }
 
         @media (max-width: 480px) {
-            .title-main {
-                font-size: 2.5rem;
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
             }
 
-            .hero {
-                padding: 40px 20px;
-            }
-
-            .container {
-                padding: 0 20px;
-            }
-        }
-
-        @media (hover: none) {
-            #canvas-container {
-                opacity: 0.3;
+            .stat-value {
+                font-size: 2rem;
             }
         }
     </style>
@@ -520,98 +913,375 @@
 
     <div class="particles" id="particles"></div>
 
+    <nav>
+        <div class="container">
+            <a href="#" class="nav-logo">
+                <img src="logo.png" alt="Nowtify">
+                <span>Nowtify</span>
+            </a>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#preview">Preview</a>
+                <a href="https://github.com/vestal2k/nowtify" target="_blank" class="btn btn-secondary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                    </svg>
+                    GitHub
+                </a>
+            </div>
+        </div>
+    </nav>
+
     <div class="container">
+        <!-- Hero Section -->
         <section class="hero">
+            <div class="hero-badge fade-in">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+                Chrome Extension v2.0
+            </div>
+
             <div class="logo-wrapper fade-in">
                 <img src="logo.png" alt="Nowtify Logo" class="logo">
             </div>
-            <h1 class="title-main fade-in">Nowtify</h1>
-            <p class="title-sub fade-in">Never miss a stream again</p>
-            <p class="title-desc fade-in">Track your favorite Twitch, YouTube & Kick streamers in real time.</p>
-            <a href="https://github.com/vestal2k/nowtify/releases/tag/V1" class="btn-primary fade-in">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path>
-                    <path d="m3.3 7 8.7 5 8.7-5"></path>
-                    <path d="M12 22V12"></path>
-                </svg>
-                Download on GitHub
-            </a>
+
+            <h1 class="fade-in">Never miss a <span class="gradient">stream</span></h1>
+            <p class="hero-subtitle fade-in">Get instant notifications when your favorite streamers go live on Twitch, YouTube and Kick.</p>
+
+            <div class="platforms fade-in">
+                <div class="platform-icon twitch" title="Twitch">
+                    <svg viewBox="0 0 24 24" fill="var(--twitch)">
+                        <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
+                    </svg>
+                </div>
+                <div class="platform-icon youtube" title="YouTube">
+                    <svg viewBox="0 0 24 24" fill="var(--youtube)">
+                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                    </svg>
+                </div>
+                <div class="platform-icon kick" title="Kick">
+                    <svg viewBox="0 0 24 24" fill="var(--kick)">
+                        <path d="M1.333 0v24h5.334v-8l2.666 2.667L14.667 24H20l-8-8 8-8h-5.333l-5.334 5.333V0z"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="hero-buttons fade-in">
+                <a href="https://github.com/vestal2k/nowtify/releases" class="btn btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download Extension
+                </a>
+                <a href="#features" class="btn btn-secondary">
+                    Learn More
+                </a>
+            </div>
         </section>
 
-        <section class="features">
-            <div class="features-grid">
-                <div class="feature-card fade-in">
-                    <div class="feature-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="url(#grad1)" stroke-linecap="round" stroke-linejoin="round">
-                            <defs><linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#5CFFE0;stop-opacity:1" /><stop offset="100%" style="stop-color:#7B5CFF;stop-opacity:1" /></linearGradient></defs>
-                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                        </svg>
-                    </div>
-                    <h3 class="feature-title">Real-time detection</h3>
-                    <p class="feature-desc">Instantly know when your streamer goes live.</p>
+        <!-- Stats Section -->
+        <section class="stats fade-in">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value">3</div>
+                    <div class="stat-label">Platforms</div>
                 </div>
-                <div class="feature-card fade-in">
-                    <div class="feature-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="url(#grad2)" stroke-linecap="round" stroke-linejoin="round">
-                            <defs><linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#7B5CFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#FF4F8B;stop-opacity:1" /></linearGradient></defs>
-                            <path d="M12 8V4H8"></path><rect width="16" height="12" x="4" y="8" rx="2"></rect><path d="M2 14h2"></path><path d="M20 14h2"></path><path d="M15 13v2"></path><path d="M9 13v2"></path>
-                        </svg>
-                    </div>
-                    <h3 class="feature-title">Smart refresh</h3>
-                    <p class="feature-desc">Updates intelligently, no reloads needed.</p>
+                <div class="stat-item">
+                    <div class="stat-value">0s</div>
+                    <div class="stat-label">Latency</div>
                 </div>
-                <div class="feature-card fade-in">
-                    <div class="feature-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="url(#grad3)" stroke-linecap="round" stroke-linejoin="round">
-                            <defs><linearGradient id="grad3" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#FF4F8B;stop-opacity:1" /><stop offset="100%" style="stop-color:#FF3366;stop-opacity:1" /></linearGradient></defs>
-                            <path d="M10 2v3a4 4 0 0 0 4 4h3"></path><path d="M18 2h-3a5 5 0 0 0-5 5v3"></path><rect width="8" height="8" x="2" y="14" rx="2"></rect><path d="M17 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-3"></path>
-                        </svg>
-                    </div>
-                    <h3 class="feature-title">Persistent storage</h3>
-                    <p class="feature-desc">Keep your list after restart.</p>
+                <div class="stat-item">
+                    <div class="stat-value">5</div>
+                    <div class="stat-label">Sound Options</div>
                 </div>
-                <div class="feature-card fade-in">
-                    <div class="feature-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="url(#grad4)" stroke-linecap="round" stroke-linejoin="round">
-                            <defs><linearGradient id="grad4" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#5CFFE0;stop-opacity:1" /><stop offset="100%" style="stop-color:#FF3366;stop-opacity:1" /></linearGradient></defs>
-                            <path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"></path><path d="M8.5 8.5v.01"></path><path d="M16 15.5v.01"></path><path d="M12 12v.01"></path><path d="M11 17v.01"></path><path d="M7 14v.01"></path>
-                        </svg>
-                    </div>
-                    <h3 class="feature-title">Clean dark UI</h3>
-                    <p class="feature-desc">Inspired by the Nowtify gradient palette.</p>
+                <div class="stat-item">
+                    <div class="stat-value">&infin;</div>
+                    <div class="stat-label">Streamers</div>
                 </div>
             </div>
         </section>
 
-        <section class="cta fade-in">
-            <p class="cta-text">Nowtify is open-source and ready to use.</p>
-            <p class="cta-subtext">Get it now on GitHub.</p>
-            <a href="https://github.com/vestal2k/nowtify/releases/tag/V1" class="btn-primary">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                </svg>
-                View Release
-            </a>
+        <!-- Features Section -->
+        <section class="features" id="features">
+            <div class="section-header fade-in">
+                <span class="section-tag">Features</span>
+                <h2>Everything you need</h2>
+                <p>A powerful extension packed with features to help you never miss your favorite content creators.</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                        </svg>
+                    </div>
+                    <h3>Instant Notifications</h3>
+                    <p>Get notified the moment your favorite streamers go live. Zero delay, always first to know.</p>
+                </div>
+
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                    </div>
+                    <h3>Custom Groups</h3>
+                    <p>Organize streamers into groups like Favorites, Esports, Friends. Filter and manage with ease.</p>
+                </div>
+
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="var(--pink)" stroke-width="2">
+                            <path d="M9 18V5l12-2v13"></path>
+                            <circle cx="6" cy="18" r="3"></circle>
+                            <circle cx="18" cy="16" r="3"></circle>
+                        </svg>
+                    </div>
+                    <h3>Custom Sounds</h3>
+                    <p>Choose from 5 notification sounds: Default, Chime, Bell, Pop, or Ding. Make it yours.</p>
+                </div>
+
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                    </div>
+                    <h3>Stream History</h3>
+                    <p>Track your last 10 live detections. See who went live and when, all in one place.</p>
+                </div>
+
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="var(--kick)" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                    </div>
+                    <h3>Export & Import</h3>
+                    <p>Backup your entire configuration. Export your streamers and groups, restore anytime.</p>
+                </div>
+
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="var(--twitch)" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="3" y1="9" x2="21" y2="9"></line>
+                            <line x1="9" y1="21" x2="9" y2="9"></line>
+                        </svg>
+                    </div>
+                    <h3>Compact Mode</h3>
+                    <p>Condensed UI for power users. Track more streamers at a glance without scrolling.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Preview Section -->
+        <section class="preview" id="preview">
+            <div class="preview-content">
+                <div class="preview-text fade-in">
+                    <h2>Track all your streamers in one place</h2>
+                    <p>Add streamers from Twitch, YouTube, or Kick and get instant desktop notifications when they go live. The extension icon shows a live count badge so you always know who's streaming.</p>
+
+                    <div class="preview-features">
+                        <div class="preview-feature">
+                            <div class="preview-feature-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
+                            <span>Smart refresh intervals (30s to 5min)</span>
+                        </div>
+                        <div class="preview-feature">
+                            <div class="preview-feature-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
+                            <span>IndexedDB for robust local storage</span>
+                        </div>
+                        <div class="preview-feature">
+                            <div class="preview-feature-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
+                            <span>Add entire Twitch teams at once</span>
+                        </div>
+                        <div class="preview-feature">
+                            <div class="preview-feature-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
+                            <span>Dynamic badge shows live count</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="preview-mockup fade-in">
+                    <div class="mockup-window">
+                        <div class="mockup-header">
+                            <div class="mockup-dot"></div>
+                            <div class="mockup-dot"></div>
+                            <div class="mockup-dot"></div>
+                        </div>
+                        <div class="mockup-body">
+                            <div class="mockup-streamer">
+                                <div class="mockup-avatar" style="background: linear-gradient(135deg, #9146FF, #5CFFE0);"></div>
+                                <div class="mockup-info">
+                                    <div class="mockup-name">shroud</div>
+                                    <div class="mockup-game">Counter-Strike 2</div>
+                                </div>
+                                <div class="mockup-live">Live</div>
+                            </div>
+                            <div class="mockup-streamer">
+                                <div class="mockup-avatar" style="background: linear-gradient(135deg, #FF0000, #FF4F8B);"></div>
+                                <div class="mockup-info">
+                                    <div class="mockup-name">MKBHD</div>
+                                    <div class="mockup-game">Tech Talk</div>
+                                </div>
+                                <div class="mockup-live">Live</div>
+                            </div>
+                            <div class="mockup-streamer" style="opacity: 0.5;">
+                                <div class="mockup-avatar" style="background: linear-gradient(135deg, #53FC18, #7B5CFF);"></div>
+                                <div class="mockup-info">
+                                    <div class="mockup-name">xQc</div>
+                                    <div class="mockup-game">Just Chatting</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mockup-badge">2</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- More Features Section -->
+        <section class="more-features">
+            <div class="section-header fade-in">
+                <span class="section-tag">And More</span>
+                <h2>Built for power users</h2>
+                <p>Advanced features for those who want complete control over their streaming experience.</p>
+            </div>
+
+            <div class="more-features-grid">
+                <div class="more-feature-card fade-in">
+                    <div class="more-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                    </div>
+                    <div class="more-feature-content">
+                        <h4>Privacy First</h4>
+                        <p>All data stored locally on your device. No tracking, no analytics, no external servers.</p>
+                    </div>
+                </div>
+
+                <div class="more-feature-card fade-in">
+                    <div class="more-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                    </div>
+                    <div class="more-feature-content">
+                        <h4>Customizable</h4>
+                        <p>Adjust refresh intervals, toggle compact mode, and personalize notifications to your preference.</p>
+                    </div>
+                </div>
+
+                <div class="more-feature-card fade-in">
+                    <div class="more-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="var(--pink)" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                    </div>
+                    <div class="more-feature-content">
+                        <h4>Twitch Team Support</h4>
+                        <p>Add an entire Twitch team with one click. Perfect for esports orgs and group follows.</p>
+                    </div>
+                </div>
+
+                <div class="more-feature-card fade-in">
+                    <div class="more-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                            <line x1="8" y1="21" x2="16" y2="21"></line>
+                            <line x1="12" y1="17" x2="12" y2="21"></line>
+                        </svg>
+                    </div>
+                    <div class="more-feature-content">
+                        <h4>Clean Dark UI</h4>
+                        <p>Beautifully designed dark interface with glassmorphism. Easy on the eyes, day or night.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="cta">
+            <div class="cta-card fade-in">
+                <h2>Ready to never miss a stream?</h2>
+                <p>Download Nowtify for free and start tracking your favorite creators today.</p>
+                <div class="cta-buttons">
+                    <a href="https://github.com/vestal2k/nowtify/releases" class="btn btn-primary">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Download Now
+                    </a>
+                    <a href="https://github.com/vestal2k/nowtify" target="_blank" class="btn btn-secondary">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                        View on GitHub
+                    </a>
+                </div>
+            </div>
         </section>
     </div>
 
     <footer>
-        <p>Made with <span class="heart"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg></span> by Vestal — 2025</p>
-        <a href="https://github.com/vestal2k/nowtify" target="_blank">
-            <svg class="github-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                <path fill="var(--text-secondary)" d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-            </svg>
-        </a>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-left">
+                    Made with <span class="heart">&#10084;</span> by Vestal
+                </div>
+                <div class="footer-links">
+                    <a href="https://github.com/vestal2k/nowtify" target="_blank" title="GitHub">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
     </footer>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
+        // Three.js Background
         const isMobile = window.innerWidth < 769;
 
         if (!isMobile) {
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            const renderer = new THREE.WebGLRenderer({ 
+            const renderer = new THREE.WebGLRenderer({
                 canvas: document.getElementById('three-canvas'),
                 alpha: true,
                 antialias: true
@@ -619,71 +1289,65 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-            const geometry = new THREE.IcosahedronGeometry(8, 1);
+            // Main geometry
+            const geometry = new THREE.IcosahedronGeometry(6, 1);
             const material = new THREE.MeshBasicMaterial({
                 color: 0x5CFFE0,
                 wireframe: true,
                 transparent: true,
-                opacity: 0.12
+                opacity: 0.08
             });
             const mesh = new THREE.Mesh(geometry, material);
             scene.add(mesh);
 
+            // Particles
             const particlesGeometry = new THREE.BufferGeometry();
-            const particlesCount = 800;
+            const particlesCount = 600;
             const posArray = new Float32Array(particlesCount * 3);
 
             for(let i = 0; i < particlesCount * 3; i++) {
-                posArray[i] = (Math.random() - 0.5) * 80;
+                posArray[i] = (Math.random() - 0.5) * 60;
             }
 
             particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
             const particlesMaterial = new THREE.PointsMaterial({
-                size: 0.06,
+                size: 0.05,
                 color: 0x7B5CFF,
                 transparent: true,
-                opacity: 0.25
+                opacity: 0.2
             });
             const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
             scene.add(particlesMesh);
 
-            camera.position.set(0, 0, 25);
+            camera.position.set(0, 0, 20);
 
             const colors = [0x5CFFE0, 0x7B5CFF, 0xFF4F8B, 0xFF3366];
             let colorIndex = 0;
-            let colorProgress = 0;
             let time = 0;
 
             function animate() {
                 requestAnimationFrame(animate);
+                time += 0.008;
 
-                time += 0.01;
+                mesh.rotation.x += 0.0006;
+                mesh.rotation.y += 0.001;
 
-                mesh.rotation.x += 0.0008;
-                mesh.rotation.y += 0.0015;
-                mesh.rotation.z += 0.0005;
-
-                const breathScale = 1 + Math.sin(time * 0.5) * 0.08;
+                const breathScale = 1 + Math.sin(time * 0.4) * 0.06;
                 mesh.scale.set(breathScale, breathScale, breathScale);
 
-                particlesMesh.rotation.y += 0.0004;
-                particlesMesh.rotation.x = Math.sin(time * 0.3) * 0.1;
+                particlesMesh.rotation.y += 0.0003;
+                particlesMesh.rotation.x = Math.sin(time * 0.2) * 0.08;
 
-                camera.position.x = Math.sin(time * 0.15) * 1.2;
-                camera.position.y = Math.cos(time * 0.12) * 0.8;
+                camera.position.x = Math.sin(time * 0.1) * 0.8;
+                camera.position.y = Math.cos(time * 0.08) * 0.6;
                 camera.lookAt(0, 0, 0);
 
-                colorProgress += 0.0015;
-                if (colorProgress >= 1) {
-                    colorProgress = 0;
+                const nextColor = new THREE.Color(colors[(colorIndex + 1) % colors.length]);
+                material.color.lerp(nextColor, 0.001);
+
+                if (time % 10 < 0.01) {
                     colorIndex = (colorIndex + 1) % colors.length;
                 }
-
-                const nextColor = new THREE.Color(colors[(colorIndex + 1) % colors.length]);
-                material.color.lerp(nextColor, colorProgress * 0.05);
-
-                const pulseOpacity = 0.12 + Math.sin(time * 0.8) * 0.03;
-                material.opacity = pulseOpacity;
 
                 renderer.render(scene, camera);
             }
@@ -697,21 +1361,23 @@
             });
         }
 
+        // Floating Particles
         const particlesContainer = document.getElementById('particles');
-        for (let i = 0; i < 25; i++) {
+        for (let i = 0; i < 20; i++) {
             const particle = document.createElement('div');
             particle.className = 'particle';
             const colors = ['#5CFFE0', '#7B5CFF', '#FF4F8B', '#FF3366'];
             particle.style.background = colors[Math.floor(Math.random() * colors.length)];
             particle.style.left = Math.random() * 100 + '%';
-            particle.style.animationDelay = Math.random() * 20 + 's';
-            particle.style.animationDuration = (Math.random() * 15 + 15) + 's';
+            particle.style.animationDelay = Math.random() * 25 + 's';
+            particle.style.animationDuration = (Math.random() * 20 + 20) + 's';
             particlesContainer.appendChild(particle);
         }
 
+        // Intersection Observer for fade-in animations
         const observerOptions = {
             threshold: 0.1,
-            rootMargin: '0px 0px -80px 0px'
+            rootMargin: '0px 0px -50px 0px'
         };
 
         const observer = new IntersectionObserver((entries) => {
@@ -723,28 +1389,29 @@
         }, observerOptions);
 
         document.querySelectorAll('.fade-in').forEach((el, index) => {
-            el.style.transitionDelay = `${index * 0.1}s`;
+            el.style.transitionDelay = `${index * 0.05}s`;
             observer.observe(el);
         });
 
-        document.querySelectorAll('.feature-card').forEach(card => {
-            card.addEventListener('mousemove', (e) => {
-                const rect = card.getBoundingClientRect();
-                const x = ((e.clientX - rect.left) / rect.width) * 100;
-                const y = ((e.clientY - rect.top) / rect.height) * 100;
-                card.style.setProperty('--mouse-x', x + '%');
-                card.style.setProperty('--mouse-y', y + '%');
+        // Smooth scroll for nav links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
             });
         });
 
-        document.querySelectorAll('.btn-primary').forEach(btn => {
-            btn.addEventListener('mousemove', (e) => {
-                const rect = btn.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                btn.style.setProperty('--x', (x / rect.width * 100) + '%');
-                btn.style.setProperty('--y', (y / rect.height * 100) + '%');
-            });
+        // Nav background on scroll
+        const nav = document.querySelector('nav');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                nav.style.background = 'rgba(13, 13, 15, 0.95)';
+            } else {
+                nav.style.background = 'rgba(13, 13, 15, 0.8)';
+            }
         });
     </script>
 </body>
