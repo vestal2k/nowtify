@@ -345,50 +345,98 @@ h1 {
   font-style: italic;
 }
 
-/* Group Filter Select */
-.filter-group-select {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-default);
-  border-radius: 8px;
-  padding: 6px 10px;
-  padding-right: 26px;
-  color: var(--text-secondary);
-  font-size: 11px;
-  font-weight: 500;
-  font-family: 'Manrope', sans-serif;
-  cursor: pointer;
-  transition: var(--transition-fast);
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%237B5CFF' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  min-width: 90px;
-  max-width: 130px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* Group Filter Dropdown */
+.filter-group-wrapper {
+  position: relative;
 }
 
-.filter-group-select:hover {
-  background-color: var(--bg-surface-hover);
-  border-color: var(--border-hover);
-  color: var(--text-primary);
+.filter-group-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.filter-group-select:focus {
-  outline: none;
-  border-color: var(--purple);
+.filter-group-btn .filter-chevron {
+  transition: transform 0.2s ease;
 }
 
-.filter-group-select option {
-  background: var(--bg-primary);
-  color: var(--text-primary);
+.filter-group-wrapper.open .filter-group-btn .filter-chevron {
+  transform: rotate(180deg);
 }
 
-.filter-group-select.active {
-  background-color: rgba(123, 92, 255, 0.15);
+.filter-group-btn.active {
+  background: rgba(123, 92, 255, 0.15);
   border-color: var(--purple);
   color: var(--purple);
+}
+
+.filter-group-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 160px;
+  max-width: 200px;
+  max-height: 250px;
+  overflow-y: auto;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-hover);
+  border-radius: 10px;
+  padding: 6px;
+  z-index: 100;
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(16px);
+  display: none;
+  animation: dropdownSlide 0.2s ease-out;
+}
+
+.filter-group-wrapper.open .filter-group-dropdown {
+  display: block;
+}
+
+.filter-group-dropdown-label {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 6px 8px 4px;
+}
+
+.filter-group-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.filter-group-dropdown-item:hover {
+  background: rgba(123, 92, 255, 0.15);
+  color: var(--text-primary);
+}
+
+.filter-group-dropdown-item.selected {
+  background: rgba(123, 92, 255, 0.2);
+  color: var(--purple);
+}
+
+.filter-group-dropdown-item.clear-filter {
+  color: var(--text-muted);
+  font-style: italic;
+  border-bottom: 1px solid var(--border-default);
+  margin-bottom: 4px;
+  border-radius: 6px 6px 0 0;
+}
+
+.filter-group-dropdown-item.clear-filter:hover {
+  color: var(--text-primary);
 }
 
 /* Compact Mode */
@@ -576,7 +624,7 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding-right: 36px;
+  padding-right: 28px;
 }
 
 .streamer-main-line {
@@ -734,9 +782,9 @@ h1 {
 .delete-btn {
   background: rgba(255, 82, 82, 0.1);
   border: none;
-  border-radius: 6px;
-  width: 30px;
-  height: 30px;
+  border-radius: 5px;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -745,14 +793,14 @@ h1 {
   opacity: 0;
   flex-shrink: 0;
   position: absolute;
-  top: 14px;
-  right: 14px;
+  top: 10px;
+  right: 10px;
   z-index: 10;
 }
 
 .delete-btn svg {
-  width: 15px;
-  height: 15px;
+  width: 12px;
+  height: 12px;
   color: #FF5252;
 }
 

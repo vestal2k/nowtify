@@ -72,9 +72,20 @@
       <button class="filter-btn" data-filter="kick">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M1.333 0v24h5.334v-8.24L12.48 24h6.187l-7.653-10.08L18.667 4h-6.134l-5.866 7.093V0z"/></svg>
       </button>
-      <select class="filter-group-select" id="groupFilter">
-        <option value="">Groupe</option>
-      </select>
+      <div class="filter-group-wrapper" id="groupFilterWrapper">
+        <button class="filter-btn filter-group-btn" id="groupFilterBtn" title="Filtrer par groupe">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          <svg class="filter-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 9l6 6 6-6"/>
+          </svg>
+        </button>
+        <div class="filter-group-dropdown" id="groupFilterDropdown"></div>
+      </div>
     </div>
 
     <!-- Streamers List -->

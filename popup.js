@@ -20,7 +20,9 @@ let isCompactMode = false;
 let draggedElement = null;
 let dragPlaceholder = null;
 let customOrder = []; // Store custom order of streamer IDs
-const groupFilter = document.getElementById('groupFilter');
+const groupFilterWrapper = document.getElementById('groupFilterWrapper');
+const groupFilterBtn = document.getElementById('groupFilterBtn');
+const groupFilterDropdown = document.getElementById('groupFilterDropdown');
 
 document.addEventListener('DOMContentLoaded', async () => {
   await loadCustomOrder();
@@ -41,33 +43,35 @@ async function loadGroups() {
   });
   const teams = Array.from(teamsSet).sort();
 
-  // Populate group filter select
-  groupFilter.innerHTML = '<option value="">Groupe</option>';
+  // Build dropdown content
+  let dropdownHTML = '';
 
-  // Add custom groups first
+  // Clear filter option
+  dropdownHTML += '<div class="filter-group-dropdown-item clear-filter" data-value="">Tous les groupes</div>';
+
+  // Add custom groups
   if (groups.length > 0) {
-    const groupOptgroup = document.createElement('optgroup');
-    groupOptgroup.label = 'Groupes';
+    dropdownHTML += '<div class="filter-group-dropdown-label">Groupes</div>';
     groups.forEach(group => {
-      const option = document.createElement('option');
-      option.value = `group:${group.id}`;
-      option.textContent = group.name;
-      groupOptgroup.appendChild(option);
+      dropdownHTML += `<div class="filter-group-dropdown-item" data-value="group:${group.id}">${escapeHtml(group.name)}</div>`;
     });
-    groupFilter.appendChild(groupOptgroup);
   }
 
   // Add Twitch teams
   if (teams.length > 0) {
-    const teamOptgroup = document.createElement('optgroup');
-    teamOptgroup.label = 'Teams';
+    dropdownHTML += '<div class="filter-group-dropdown-label">Teams</div>';
     teams.forEach(teamName => {
-      const option = document.createElement('option');
-      option.value = `team:${teamName}`;
-      option.textContent = capitalizeTeamName(teamName);
-      teamOptgroup.appendChild(option);
+      dropdownHTML += `<div class="filter-group-dropdown-item" data-value="team:${teamName}">${escapeHtml(capitalizeTeamName(teamName))}</div>`;
     });
-    groupFilter.appendChild(teamOptgroup);
+  }
+
+  groupFilterDropdown.innerHTML = dropdownHTML;
+
+  // Hide the filter button if no groups/teams
+  if (groups.length === 0 && teams.length === 0) {
+    groupFilterWrapper.style.display = 'none';
+  } else {
+    groupFilterWrapper.style.display = 'block';
   }
 }
 
@@ -249,11 +253,38 @@ function setupEventListeners() {
     }
   });
 
-  // Group filter
-  groupFilter.addEventListener('change', () => {
-    currentGroupFilter = groupFilter.value;
-    groupFilter.classList.toggle('active', currentGroupFilter !== '');
+  // Group filter dropdown
+  groupFilterBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    groupFilterWrapper.classList.toggle('open');
+  });
+
+  groupFilterDropdown.addEventListener('click', (e) => {
+    const item = e.target.closest('.filter-group-dropdown-item');
+    if (!item) return;
+
+    const value = item.dataset.value;
+    currentGroupFilter = value;
+
+    // Update selected state
+    groupFilterDropdown.querySelectorAll('.filter-group-dropdown-item').forEach(i => {
+      i.classList.toggle('selected', i.dataset.value === value);
+    });
+
+    // Update button state
+    groupFilterBtn.classList.toggle('active', value !== '');
+
+    // Close dropdown
+    groupFilterWrapper.classList.remove('open');
+
     applyFilter();
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!groupFilterWrapper.contains(e.target)) {
+      groupFilterWrapper.classList.remove('open');
+    }
   });
 }
 
@@ -1067,19 +1098,19 @@ function createStreamPreview(streamer) {
 
 function getStatusText(streamer) {
   if (streamer.isLive) {
-    return streamer.viewerCount ? `En live - ${formatViewers(streamer.viewerCount)}` : 'En live';
+    return streamer.viewerCount ? formatViewers(streamer.viewerCount) : 'Live';
   }
   if (streamer.lastLiveDate && !streamer.isLive) {
     const hoursSince = Math.floor((Date.now() - streamer.lastLiveDate) / (1000 * 60 * 60));
     if (hoursSince < 24) {
-      return hoursSince === 0 ? 'Terminé il y a moins d\'1h' : `Terminé il y a ${hoursSince}h`;
+      return hoursSince === 0 ? '< 1h' : `${hoursSince}h`;
     }
   }
   if (streamer.wasLiveRecently && streamer.lastLiveDate) {
     const hoursSince = Math.floor((Date.now() - streamer.lastLiveDate) / (1000 * 60 * 60));
-    return hoursSince === 0 ? 'Terminé il y a moins d\'1h' : `Terminé il y a ${hoursSince}h`;
+    return hoursSince === 0 ? '< 1h' : `${hoursSince}h`;
   }
-  return 'Hors ligne';
+  return 'Offline';
 }
 
 function formatViewers(count) {
