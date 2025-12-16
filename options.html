@@ -90,20 +90,10 @@
             </label>
           </div>
 
-          <div class="setting-item">
-            <div class="setting-info">
-              <h3>Confirmer la suppression</h3>
-              <p>Afficher un message de confirmation avant de supprimer un streamer</p>
-            </div>
-            <label class="toggle">
-              <input type="checkbox" id="confirmDelete" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
         </div>
       </section>
 
-      <!-- Refresh Section -->
+      <!-- Interface Section -->
       <section class="section">
         <div class="section-header">
           <h2>
@@ -112,35 +102,34 @@
               <polyline points="1 20 1 14 7 14"></polyline>
               <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
             </svg>
-            Rafraîchissement
+            Interface
           </h2>
-          <p>Contrôlez la fréquence de vérification des streams</p>
+          <p>Personnalisez le comportement de l'extension</p>
         </div>
-        
+
         <div class="settings-group">
           <div class="setting-item">
             <div class="setting-info">
-              <h3>Rafraîchissement automatique</h3>
-              <p>Vérifier automatiquement le statut des streamers</p>
-            </div>
-            <label class="toggle">
-              <input type="checkbox" id="autoRefresh" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-
-          <div class="setting-item">
-            <div class="setting-info">
               <h3>Intervalle de rafraîchissement</h3>
-              <p>Fréquence de vérification (en minutes)</p>
+              <p>Fréquence de vérification des statuts</p>
             </div>
             <select id="refreshInterval" class="select-field">
-              <option value="1">1 minute</option>
               <option value="3">3 minutes</option>
               <option value="5" selected>5 minutes</option>
               <option value="10">10 minutes</option>
               <option value="15">15 minutes</option>
             </select>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <h3>Confirmer la suppression</h3>
+              <p>Demander confirmation avant de supprimer un streamer</p>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="confirmDelete" checked>
+              <span class="slider"></span>
+            </label>
           </div>
         </div>
       </section>
