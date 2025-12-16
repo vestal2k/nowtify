@@ -17,15 +17,11 @@ let currentGroupFilter = '';
 let allStreamersData = []; // Store all streamers for filtering
 let allGroups = []; // Store groups for filtering
 let isCompactMode = false;
-let draggedElement = null;
-let dragPlaceholder = null;
-let customOrder = []; // Store custom order of streamer IDs
 const groupFilterWrapper = document.getElementById('groupFilterWrapper');
 const groupFilterBtn = document.getElementById('groupFilterBtn');
 const groupFilterDropdown = document.getElementById('groupFilterDropdown');
 
 document.addEventListener('DOMContentLoaded', async () => {
-  await loadCustomOrder();
   await loadGroups();
   await loadStreamers();
   setupEventListeners();
@@ -75,124 +71,13 @@ async function loadGroups() {
   }
 }
 
-async function loadCustomOrder() {
-  const { streamerOrder = [] } = await chrome.storage.sync.get('streamerOrder');
-  customOrder = streamerOrder;
-}
-
 function sortStreamers(streamersData) {
-  // If we have a custom order, use it (but still keep live streamers grouped at top)
-  if (customOrder.length > 0) {
-    const orderMap = new Map(customOrder.map((id, index) => [id, index]));
-
-    return [...streamersData].sort((a, b) => {
-      // Live streamers always come first
-      if (a.isLive !== b.isLive) return b.isLive - a.isLive;
-      // Within same live status, use custom order
-      const orderA = orderMap.has(a.id) ? orderMap.get(a.id) : Infinity;
-      const orderB = orderMap.has(b.id) ? orderMap.get(b.id) : Infinity;
-      if (orderA !== orderB) return orderA - orderB;
-      // Fallback to recently live
-      if (a.wasLiveRecently !== b.wasLiveRecently) return b.wasLiveRecently - a.wasLiveRecently;
-      return 0;
-    });
-  }
-
-  // Default sort: live first, then recently live, then offline
+  // Sort: live first, then recently live, then offline
   return [...streamersData].sort((a, b) => {
     if (a.isLive !== b.isLive) return b.isLive - a.isLive;
     if (a.wasLiveRecently !== b.wasLiveRecently) return b.wasLiveRecently - a.wasLiveRecently;
     return 0;
   });
-}
-
-async function saveCustomOrder() {
-  const cards = streamersList.querySelectorAll('.streamer-card:not(.skeleton):not(.drag-placeholder)');
-  customOrder = Array.from(cards).map(card => card.dataset.streamerId);
-  await chrome.storage.sync.set({ streamerOrder: customOrder });
-}
-
-// Drag & Drop handlers
-function handleDragStart(e) {
-  draggedElement = this;
-  this.classList.add('dragging');
-  e.dataTransfer.effectAllowed = 'move';
-  e.dataTransfer.setData('text/plain', this.dataset.streamerId);
-
-  // Create placeholder
-  dragPlaceholder = document.createElement('div');
-  dragPlaceholder.className = 'drag-placeholder';
-  dragPlaceholder.style.height = this.offsetHeight + 'px';
-
-  // Slight delay to allow drag image to be captured
-  setTimeout(() => {
-    this.style.opacity = '0.4';
-  }, 0);
-}
-
-function handleDragEnd(e) {
-  this.classList.remove('dragging');
-  this.classList.remove('drag-ready');
-  this.style.opacity = '1';
-  this.draggable = false;
-
-  // Remove placeholder if exists
-  if (dragPlaceholder && dragPlaceholder.parentNode) {
-    dragPlaceholder.parentNode.removeChild(dragPlaceholder);
-  }
-
-  // Remove drag-over class from all cards
-  document.querySelectorAll('.streamer-card.drag-over').forEach(card => {
-    card.classList.remove('drag-over');
-  });
-
-  draggedElement = null;
-  dragPlaceholder = null;
-
-  // Save the new order
-  saveCustomOrder();
-}
-
-function handleDragOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-
-  if (!draggedElement || this === draggedElement) return;
-
-  const rect = this.getBoundingClientRect();
-  const midY = rect.top + rect.height / 2;
-
-  // Determine if we should place before or after
-  if (e.clientY < midY) {
-    streamersList.insertBefore(dragPlaceholder, this);
-  } else {
-    streamersList.insertBefore(dragPlaceholder, this.nextSibling);
-  }
-}
-
-function handleDragEnter(e) {
-  e.preventDefault();
-  if (this !== draggedElement) {
-    this.classList.add('drag-over');
-  }
-}
-
-function handleDragLeave(e) {
-  this.classList.remove('drag-over');
-}
-
-function handleDrop(e) {
-  e.preventDefault();
-  e.stopPropagation();
-
-  if (!draggedElement || this === draggedElement) return;
-
-  this.classList.remove('drag-over');
-
-  // Insert the dragged element at the placeholder position
-  if (dragPlaceholder && dragPlaceholder.parentNode) {
-    streamersList.insertBefore(draggedElement, dragPlaceholder);
-  }
 }
 
 function setupEventListeners() {
@@ -317,10 +202,9 @@ function applyFilter() {
 function filterStreamers(streamers, filter) {
   let filtered = streamers;
 
-  // Apply platform/live filter
+  // Apply platform filter
   if (filter !== 'all') {
     filtered = filtered.filter(s => {
-      if (filter === 'live') return s.isLive;
       if (filter === 'twitch') return s.platform === 'twitch';
       if (filter === 'youtube') return s.platform === 'youtube';
       if (filter === 'kick') return s.platform === 'kick';
@@ -912,8 +796,6 @@ function createStreamerCard(streamer) {
   const isRecent = streamer.wasLiveRecently && !streamer.isLive;
   card.className = `streamer-card ${streamer.isLive ? 'live' : ''} ${isRecent ? 'ended' : ''}`;
   card.dataset.streamerId = streamer.id;
-  // Drag will be enabled/disabled via the drag handle
-  card.draggable = false;
   card.style.opacity = '0';
   card.style.transform = 'translateX(-20px)';
   
@@ -967,35 +849,6 @@ function createStreamerCard(streamer) {
   secondaryLineHTML += '</div>';
   
   infoDiv.innerHTML = mainLineHTML + secondaryLineHTML;
-  
-  const dragHandle = document.createElement('div');
-  dragHandle.className = 'drag-handle';
-  dragHandle.title = 'Déplacer';
-  dragHandle.innerHTML = `
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="9" cy="5" r="1"></circle>
-      <circle cx="9" cy="12" r="1"></circle>
-      <circle cx="9" cy="19" r="1"></circle>
-      <circle cx="15" cy="5" r="1"></circle>
-      <circle cx="15" cy="12" r="1"></circle>
-      <circle cx="15" cy="19" r="1"></circle>
-    </svg>
-  `;
-
-  // Enable drag only when mousedown on handle
-  dragHandle.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    card.draggable = true;
-    card.classList.add('drag-ready');
-  });
-
-  // Disable drag on mouseup anywhere
-  dragHandle.addEventListener('mouseup', () => {
-    setTimeout(() => {
-      card.draggable = false;
-      card.classList.remove('drag-ready');
-    }, 100);
-  });
 
   const deleteBtn = document.createElement('button');
   deleteBtn.className = 'delete-btn';
@@ -1007,7 +860,6 @@ function createStreamerCard(streamer) {
     </svg>
   `;
 
-  card.appendChild(dragHandle);
   card.appendChild(img);
   card.appendChild(infoDiv);
   card.appendChild(deleteBtn);
@@ -1034,18 +886,10 @@ function createStreamerCard(streamer) {
   });
 
   card.addEventListener('click', (e) => {
-    if (!e.target.closest('.delete-btn') && !e.target.closest('.drag-handle')) {
+    if (!e.target.closest('.delete-btn')) {
       openStream(streamer);
     }
   });
-
-  // Drag & Drop events
-  card.addEventListener('dragstart', handleDragStart);
-  card.addEventListener('dragend', handleDragEnd);
-  card.addEventListener('dragover', handleDragOver);
-  card.addEventListener('dragenter', handleDragEnter);
-  card.addEventListener('dragleave', handleDragLeave);
-  card.addEventListener('drop', handleDrop);
 
   deleteBtn.addEventListener('click', async (e) => {
     e.stopPropagation();
