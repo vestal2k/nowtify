@@ -5,9 +5,16 @@ const streamersList = document.getElementById('streamersList');
 const emptyState = document.getElementById('emptyState');
 const errorMessage = document.getElementById('errorMessage');
 const loadingState = document.getElementById('loadingState');
+const filtersBar = document.getElementById('filtersBar');
+const compactBtn = document.getElementById('compactBtn');
 
 let autocompleteTimeout = null;
 let autocompleteList = null;
+let currentStreamersMap = new Map(); // Track rendered streamers for diffing
+let isInitialLoad = true;
+let currentFilter = 'all';
+let allStreamersData = []; // Store all streamers for filtering
+let isCompactMode = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
   await loadStreamers();
@@ -23,15 +30,54 @@ function setupEventListeners() {
       handleAddStreamer();
     }
   });
-  
+
   streamerInput.addEventListener('input', handleAutocomplete);
   streamerInput.addEventListener('focus', handleAutocomplete);
   streamerInput.addEventListener('blur', () => {
     setTimeout(() => hideAutocomplete(), 250);
   });
-  
+
   settingsBtn.addEventListener('click', () => {
     chrome.runtime.openOptionsPage();
+  });
+
+  // Filter buttons
+  filtersBar.addEventListener('click', (e) => {
+    const btn = e.target.closest('.filter-btn');
+    if (!btn) return;
+
+    const filter = btn.dataset.filter;
+    if (filter === currentFilter) return;
+
+    // Update active state
+    filtersBar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = filter;
+
+    // Apply filter
+    applyFilter();
+  });
+
+  // Compact mode toggle
+  compactBtn.addEventListener('click', () => {
+    isCompactMode = !isCompactMode;
+    compactBtn.classList.toggle('active', isCompactMode);
+    streamersList.classList.toggle('compact', isCompactMode);
+
+    // Save preference
+    chrome.storage.sync.get('settings', ({ settings = {} }) => {
+      settings.compactMode = isCompactMode;
+      chrome.storage.sync.set({ settings });
+    });
+  });
+
+  // Load compact mode preference
+  chrome.storage.sync.get('settings', ({ settings = {} }) => {
+    if (settings.compactMode) {
+      isCompactMode = true;
+      compactBtn.classList.add('active');
+      streamersList.classList.add('compact');
+    }
   });
 }
 
@@ -42,37 +88,280 @@ function createAutocompleteList() {
   document.querySelector('.add-section').appendChild(autocompleteList);
 }
 
+function applyFilter() {
+  const filteredStreamers = filterStreamers(allStreamersData, currentFilter);
+
+  if (filteredStreamers.length === 0 && allStreamersData.length > 0) {
+    // Show "no results" message for this filter
+    showEmptyState(false);
+    streamersList.innerHTML = '<div class="no-filter-results">Aucun streamer ne correspond à ce filtre</div>';
+    return;
+  }
+
+  if (filteredStreamers.length === 0) {
+    showEmptyState(true);
+    return;
+  }
+
+  showEmptyState(false);
+  updateStreamersWithDiff(filteredStreamers);
+}
+
+function filterStreamers(streamers, filter) {
+  if (filter === 'all') return streamers;
+
+  return streamers.filter(s => {
+    if (filter === 'live') return s.isLive;
+    if (filter === 'twitch') return s.platform === 'twitch';
+    if (filter === 'youtube') return s.platform === 'youtube';
+    if (filter === 'kick') return s.platform === 'kick';
+    return true;
+  });
+}
+
 async function loadStreamers() {
   try {
-    showLoading(true);
     const { streamers = [] } = await chrome.storage.sync.get('streamers');
-    
+
     if (streamers.length === 0) {
       showEmptyState(true);
       showLoading(false);
+      currentStreamersMap.clear();
+      streamersList.innerHTML = '';
+      allStreamersData = [];
+      isInitialLoad = true;
       return;
     }
 
     showEmptyState(false);
-    streamersList.innerHTML = '';
+
+    // Show skeletons only on initial load
+    if (isInitialLoad) {
+      showSkeletons(streamers.length);
+    }
+
+    // Save scroll position before update
+    const scrollTop = document.body.scrollTop || document.documentElement.scrollTop;
 
     chrome.runtime.sendMessage({ action: 'getStreamersData' }, (response) => {
-      showLoading(false);
-      
-      if (chrome.runtime.lastError) {
-        streamers.forEach(streamer => renderStreamerCard(streamer));
-        return;
-      }
-      
-      if (response && response.streamers) {
-        response.streamers.forEach(streamer => renderStreamerCard(streamer));
+      const streamersData = (response && response.streamers) ? response.streamers : streamers;
+
+      // Sort: live first, then recently live, then offline
+      const sortedStreamers = [...streamersData].sort((a, b) => {
+        if (a.isLive !== b.isLive) return b.isLive - a.isLive;
+        if (a.wasLiveRecently !== b.wasLiveRecently) return b.wasLiveRecently - a.wasLiveRecently;
+        return 0;
+      });
+
+      // Store all streamers for filtering
+      allStreamersData = sortedStreamers;
+
+      // Apply current filter
+      const filteredStreamers = filterStreamers(sortedStreamers, currentFilter);
+
+      if (filteredStreamers.length === 0 && sortedStreamers.length > 0) {
+        streamersList.innerHTML = '<div class="no-filter-results">Aucun streamer ne correspond à ce filtre</div>';
       } else {
-        streamers.forEach(streamer => renderStreamerCard(streamer));
+        // Apply diff update
+        updateStreamersWithDiff(filteredStreamers);
       }
+
+      showLoading(false);
+      isInitialLoad = false;
+
+      // Restore scroll position
+      requestAnimationFrame(() => {
+        document.body.scrollTop = scrollTop;
+        document.documentElement.scrollTop = scrollTop;
+      });
     });
   } catch (error) {
     showError('Erreur lors du chargement');
     showLoading(false);
+  }
+}
+
+function showSkeletons(count) {
+  streamersList.innerHTML = '';
+  for (let i = 0; i < Math.min(count, 5); i++) {
+    const skeleton = document.createElement('div');
+    skeleton.className = 'streamer-card skeleton';
+    skeleton.innerHTML = `
+      <div class="skeleton-avatar"></div>
+      <div class="skeleton-info">
+        <div class="skeleton-line skeleton-name"></div>
+        <div class="skeleton-line skeleton-title"></div>
+      </div>
+    `;
+    streamersList.appendChild(skeleton);
+  }
+}
+
+function updateStreamersWithDiff(newStreamers) {
+  const newStreamersMap = new Map(newStreamers.map(s => [s.id, s]));
+  const existingIds = new Set(currentStreamersMap.keys());
+  const newIds = new Set(newStreamersMap.keys());
+
+  // Remove streamers that are no longer in the list
+  for (const id of existingIds) {
+    if (!newIds.has(id)) {
+      const card = streamersList.querySelector(`[data-streamer-id="${id}"]`);
+      if (card) {
+        card.classList.add('removing');
+        setTimeout(() => card.remove(), 300);
+      }
+      currentStreamersMap.delete(id);
+    }
+  }
+
+  // Clear skeletons if any
+  const skeletons = streamersList.querySelectorAll('.skeleton');
+  skeletons.forEach(s => s.remove());
+
+  // Update or add streamers
+  newStreamers.forEach((streamer, index) => {
+    const existingData = currentStreamersMap.get(streamer.id);
+    const existingCard = streamersList.querySelector(`[data-streamer-id="${streamer.id}"]`);
+
+    if (existingCard && existingData) {
+      // Update existing card if data changed
+      if (hasStreamerChanged(existingData, streamer)) {
+        updateStreamerCard(existingCard, existingData, streamer);
+      }
+      // Reorder if needed
+      const currentIndex = Array.from(streamersList.children).indexOf(existingCard);
+      if (currentIndex !== index) {
+        const referenceNode = streamersList.children[index];
+        if (referenceNode !== existingCard) {
+          streamersList.insertBefore(existingCard, referenceNode);
+        }
+      }
+    } else {
+      // Create new card
+      const card = createStreamerCard(streamer);
+      if (index < streamersList.children.length) {
+        streamersList.insertBefore(card, streamersList.children[index]);
+      } else {
+        streamersList.appendChild(card);
+      }
+    }
+
+    currentStreamersMap.set(streamer.id, { ...streamer });
+  });
+}
+
+function hasStreamerChanged(oldData, newData) {
+  return oldData.isLive !== newData.isLive ||
+         oldData.wasLiveRecently !== newData.wasLiveRecently ||
+         oldData.title !== newData.title ||
+         oldData.viewerCount !== newData.viewerCount ||
+         oldData.avatar !== newData.avatar ||
+         oldData.team !== newData.team ||
+         oldData.thumbnail !== newData.thumbnail ||
+         oldData.game !== newData.game;
+}
+
+function updateStreamerCard(card, oldData, newData) {
+  // Handle live status change with animation
+  if (oldData.isLive !== newData.isLive) {
+    if (newData.isLive) {
+      card.classList.add('going-live');
+      setTimeout(() => {
+        card.classList.remove('going-live');
+        card.classList.add('live');
+        card.classList.remove('ended');
+      }, 50);
+    } else {
+      card.classList.add('going-offline');
+      setTimeout(() => {
+        card.classList.remove('going-offline', 'live');
+        if (newData.wasLiveRecently) {
+          card.classList.add('ended');
+        }
+      }, 300);
+    }
+  }
+
+  // Update ended state
+  if (!newData.isLive && newData.wasLiveRecently && !card.classList.contains('ended')) {
+    card.classList.add('ended');
+  } else if (!newData.wasLiveRecently && card.classList.contains('ended')) {
+    card.classList.remove('ended');
+  }
+
+  // Update status indicator
+  const statusIndicator = card.querySelector('.status-indicator');
+  const statusDot = card.querySelector('.status-dot');
+  if (statusIndicator && statusDot) {
+    const statusText = getStatusText(newData);
+    const statusClass = newData.isLive ? 'live' : (newData.wasLiveRecently ? 'recent' : 'offline');
+
+    statusIndicator.className = `status-indicator ${statusClass}`;
+    statusDot.className = `status-dot ${statusClass}`;
+
+    // Update text content smoothly
+    const textNode = statusIndicator.childNodes[statusIndicator.childNodes.length - 1];
+    if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+      textNode.textContent = statusText;
+    } else {
+      statusIndicator.innerHTML = `<span class="status-dot ${statusClass}"></span>${statusText}`;
+    }
+  }
+
+  // Update title if changed
+  if (oldData.title !== newData.title) {
+    const titleEl = card.querySelector('.streamer-title');
+    if (titleEl && newData.title) {
+      titleEl.textContent = newData.title;
+      titleEl.title = newData.title;
+    }
+  }
+
+  // Update avatar if changed
+  if (oldData.avatar !== newData.avatar && newData.avatar) {
+    const avatarEl = card.querySelector('.streamer-avatar');
+    if (avatarEl) {
+      avatarEl.src = newData.avatar;
+    }
+  }
+
+  // Update stream preview
+  const existingPreview = card.querySelector('.stream-preview');
+  if (newData.isLive && newData.thumbnail) {
+    if (existingPreview) {
+      // Update existing preview
+      const thumbnailEl = existingPreview.querySelector('.stream-preview-thumbnail');
+      if (thumbnailEl) thumbnailEl.src = newData.thumbnail;
+
+      const gameEl = existingPreview.querySelector('.stream-preview-game');
+      if (gameEl) {
+        const gameIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13h4m-2-2v4m3 1h.01M17 16h.01M2 12V7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-5z"/></svg>`;
+        gameEl.innerHTML = `${gameIcon} ${escapeHtml(newData.game || 'Stream en cours')}`;
+      }
+
+      const viewersEl = existingPreview.querySelector('.stream-preview-viewers');
+      if (newData.viewerCount) {
+        const viewersIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+        if (viewersEl) {
+          viewersEl.innerHTML = `${viewersIcon} ${formatViewers(newData.viewerCount)} spectateurs`;
+        } else {
+          const infoEl = existingPreview.querySelector('.stream-preview-info');
+          if (infoEl) {
+            const viewersDiv = document.createElement('div');
+            viewersDiv.className = 'stream-preview-viewers';
+            viewersDiv.innerHTML = `${viewersIcon} ${formatViewers(newData.viewerCount)} spectateurs`;
+            infoEl.appendChild(viewersDiv);
+          }
+        }
+      }
+    } else {
+      // Add new preview
+      const preview = createStreamPreview(newData);
+      card.appendChild(preview);
+    }
+  } else if (existingPreview) {
+    // Remove preview when going offline
+    existingPreview.remove();
   }
 }
 
@@ -399,10 +688,11 @@ function hideAutocomplete() {
   }
 }
 
-function renderStreamerCard(streamer) {
+function createStreamerCard(streamer) {
   const card = document.createElement('div');
   const isRecent = streamer.wasLiveRecently && !streamer.isLive;
   card.className = `streamer-card ${streamer.isLive ? 'live' : ''} ${isRecent ? 'ended' : ''}`;
+  card.dataset.streamerId = streamer.id;
   card.style.opacity = '0';
   card.style.transform = 'translateX(-20px)';
   
@@ -471,6 +761,12 @@ function renderStreamerCard(streamer) {
   card.appendChild(infoDiv);
   card.appendChild(deleteBtn);
 
+  // Add stream preview for live streamers with thumbnail
+  if (streamer.isLive && streamer.thumbnail) {
+    const preview = createStreamPreview(streamer);
+    card.appendChild(preview);
+  }
+
   setTimeout(() => {
     card.style.transition = 'all 0.3s ease';
     card.style.opacity = '1';
@@ -512,11 +808,33 @@ function renderStreamerCard(streamer) {
     }
   });
 
-  streamersList.appendChild(card);
+  return card;
 }
 
 function capitalizeTeamName(teamName) {
   return teamName.charAt(0).toUpperCase() + teamName.slice(1).toLowerCase();
+}
+
+function createStreamPreview(streamer) {
+  const preview = document.createElement('div');
+  preview.className = 'stream-preview';
+
+  const gameIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13h4m-2-2v4m3 1h.01M17 16h.01M2 12V7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-5z"/></svg>`;
+  const viewersIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+
+  const gameText = streamer.game ? escapeHtml(streamer.game) : 'Stream en cours';
+  const viewersText = streamer.viewerCount ? formatViewers(streamer.viewerCount) + ' spectateurs' : '';
+
+  preview.innerHTML = `
+    <div class="stream-preview-live-badge">Live</div>
+    <img src="${streamer.thumbnail}" alt="Stream preview" class="stream-preview-thumbnail" onerror="this.style.display='none'">
+    <div class="stream-preview-info">
+      <div class="stream-preview-game">${gameIcon} ${gameText}</div>
+      ${viewersText ? `<div class="stream-preview-viewers">${viewersIcon} ${viewersText}</div>` : ''}
+    </div>
+  `;
+
+  return preview;
 }
 
 function getStatusText(streamer) {
@@ -545,15 +863,24 @@ function formatViewers(count) {
 
 async function deleteStreamer(id, cardElement) {
   try {
+    cardElement.classList.add('removing');
     cardElement.style.transition = 'all 0.3s ease';
     cardElement.style.opacity = '0';
     cardElement.style.transform = 'translateX(20px)';
-    
+
+    currentStreamersMap.delete(id);
+
     setTimeout(async () => {
+      cardElement.remove();
       const { streamers = [] } = await chrome.storage.sync.get('streamers');
       const filtered = streamers.filter(s => s.id !== id);
       await chrome.storage.sync.set({ streamers: filtered });
-      await loadStreamers();
+
+      // Check if list is now empty
+      if (filtered.length === 0) {
+        showEmptyState(true);
+        isInitialLoad = true;
+      }
     }, 300);
   } catch (error) {
     showError('Erreur lors de la suppression');
