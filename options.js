@@ -5,7 +5,6 @@ const soundSelectContainer = document.getElementById('soundSelectContainer');
 const playSoundBtn = document.getElementById('playSoundBtn');
 const persistentNotifications = document.getElementById('persistentNotifications');
 const confirmDelete = document.getElementById('confirmDelete');
-const autoRefresh = document.getElementById('autoRefresh');
 const refreshInterval = document.getElementById('refreshInterval');
 const twitchClientId = document.getElementById('twitchClientId');
 const twitchClientSecret = document.getElementById('twitchClientSecret');
@@ -52,7 +51,7 @@ function setupEventListeners() {
   saveBtn.addEventListener('click', saveSettings);
   clearHistoryBtn.addEventListener('click', clearHistory);
 
-  [notificationsEnabled, persistentNotifications, confirmDelete, autoRefresh].forEach(toggle => {
+  [notificationsEnabled, persistentNotifications, confirmDelete].forEach(toggle => {
     toggle.addEventListener('change', () => {
       saveSettings(false);
     });
@@ -99,8 +98,6 @@ async function loadSettings() {
     soundSelectContainer.style.display = settings.notificationSound ? 'flex' : 'none';
     persistentNotifications.checked = settings.persistentNotifications === true;
     confirmDelete.checked = settings.confirmDelete !== false;
-
-    autoRefresh.checked = settings.autoRefresh !== false;
     refreshInterval.value = settings.refreshInterval || '5';
 
     twitchClientId.value = apiKeys.twitchClientId || '';
@@ -119,7 +116,6 @@ async function saveSettings(showMessage = true) {
       notificationSoundType: notificationSoundType.value,
       persistentNotifications: persistentNotifications.checked,
       confirmDelete: confirmDelete.checked,
-      autoRefresh: autoRefresh.checked,
       refreshInterval: refreshInterval.value
     };
 
@@ -485,7 +481,7 @@ async function deleteGroup(groupId) {
 
 async function exportData() {
   try {
-    const { streamers = [], groups = [], settings = {}, streamerOrder = [] } = await chrome.storage.sync.get(['streamers', 'groups', 'settings', 'streamerOrder']);
+    const { streamers = [], groups = [], settings = {} } = await chrome.storage.sync.get(['streamers', 'groups', 'settings']);
     const { history = [] } = await chrome.storage.local.get('history');
 
     const exportObj = {
@@ -495,7 +491,6 @@ async function exportData() {
         streamers,
         groups,
         settings,
-        streamerOrder,
         history
       }
     };
