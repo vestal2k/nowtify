@@ -60,6 +60,25 @@
             </label>
           </div>
 
+          <div class="setting-item sound-select-item" id="soundSelectContainer" style="display: none;">
+            <div class="setting-info">
+              <h3>Choisir le son</h3>
+              <p>Sélectionnez le son de notification</p>
+            </div>
+            <div class="sound-select-wrapper">
+              <select id="notificationSoundType" class="select-field">
+                <option value="default">Par défaut</option>
+                <option value="chime">Carillon</option>
+                <option value="bell">Cloche</option>
+                <option value="pop">Pop</option>
+                <option value="ding">Ding</option>
+              </select>
+              <button type="button" class="btn-play-sound" id="playSoundBtn" title="Écouter">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              </button>
+            </div>
+          </div>
+
           <div class="setting-item">
             <div class="setting-info">
               <h3>Notifications persistantes</h3>
@@ -212,6 +231,35 @@
         </div>
       </section>
 
+      <!-- Groups/Categories Section -->
+      <section class="section">
+        <div class="section-header">
+          <h2>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+            Groupes personnalisés
+          </h2>
+          <p>Créez des catégories pour organiser vos streamers</p>
+        </div>
+
+        <div class="groups-management">
+          <div class="add-group-form">
+            <input type="text" id="newGroupName" class="input-field" placeholder="Nom du groupe (ex: Favoris, Esport...)">
+            <button type="button" class="btn-add-group" id="addGroupBtn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Ajouter
+            </button>
+          </div>
+          <div id="groupsList" class="groups-list">
+            <!-- Groupes injectés dynamiquement -->
+          </div>
+        </div>
+      </section>
+
       <!-- Teams Management Section -->
       <section class="section">
         <div class="section-header">
@@ -226,7 +274,7 @@
           </h2>
           <p>Gérer vos teams et leurs membres</p>
         </div>
-        
+
         <div id="teamsManagement" class="teams-management">
         </div>
       </section>
@@ -260,6 +308,51 @@
         </button>
       </section>
 
+      <!-- Export/Import Section -->
+      <section class="section">
+        <div class="section-header">
+          <h2>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Export / Import
+          </h2>
+          <p>Sauvegardez ou restaurez votre liste de streamers</p>
+        </div>
+
+        <div class="export-import-section">
+          <div class="export-import-info">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M12 16v-4"></path>
+              <path d="M12 8h.01"></path>
+            </svg>
+            <p>Exportez vos données pour les sauvegarder ou les transférer vers un autre navigateur. L'import fusionnera les données avec votre liste actuelle.</p>
+          </div>
+          <div class="export-import-buttons">
+            <button type="button" class="btn-export" id="exportBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              Exporter
+            </button>
+            <button type="button" class="btn-import" id="importBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Importer
+            </button>
+            <input type="file" id="importFile" accept=".json" style="display: none;">
+          </div>
+        </div>
+      </section>
+
       <!-- About Section -->
       <section class="section">
         <div class="section-header">
@@ -272,7 +365,7 @@
             À propos
           </h2>
         </div>
-        
+
         <div class="about-content">
           <p><strong>Nowtify</strong> v1.0.0</p>
           <p>Extension Chrome pour suivre vos streamers favoris sur Twitch, YouTube et Kick.</p>
