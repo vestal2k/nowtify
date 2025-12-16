@@ -15,6 +15,258 @@ let isChecking = false;
 let adaptiveTimers = {};
 let lastCheck = {};
 
+// IndexedDB for large data storage
+const DB_NAME = 'NowtifyDB';
+const DB_VERSION = 1;
+let dbInstance = null;
+
+async function openDB() {
+  if (dbInstance) return dbInstance;
+
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onerror = () => reject(request.error);
+
+    request.onsuccess = () => {
+      dbInstance = request.result;
+      resolve(dbInstance);
+    };
+
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+
+      // Store for streamers list
+      if (!db.objectStoreNames.contains('streamers')) {
+        db.createObjectStore('streamers', { keyPath: 'id' });
+      }
+
+      // Store for history
+      if (!db.objectStoreNames.contains('history')) {
+        const historyStore = db.createObjectStore('history', { keyPath: 'id', autoIncrement: true });
+        historyStore.createIndex('timestamp', 'timestamp', { unique: false });
+      }
+
+      // Store for groups
+      if (!db.objectStoreNames.contains('groups')) {
+        db.createObjectStore('groups', { keyPath: 'id' });
+      }
+    };
+  });
+}
+
+// Get all streamers from IndexedDB
+async function getStreamersFromDB() {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['streamers'], 'readonly');
+      const store = transaction.objectStore('streamers');
+      const request = store.getAll();
+
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+  } catch (error) {
+    console.warn('IndexedDB read failed, falling back to chrome.storage:', error);
+    const { streamers = [] } = await chrome.storage.sync.get('streamers');
+    return streamers;
+  }
+}
+
+// Save all streamers to IndexedDB and sync to chrome.storage
+async function saveStreamersToDB(streamers, skipSync = false) {
+  try {
+    const db = await openDB();
+    await new Promise((resolve, reject) => {
+      const transaction = db.transaction(['streamers'], 'readwrite');
+      const store = transaction.objectStore('streamers');
+
+      // Clear existing and add all
+      store.clear();
+      for (const streamer of streamers) {
+        store.put(streamer);
+      }
+
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+
+    // Sync to chrome.storage.sync for popup/options compatibility
+    if (!skipSync) {
+      try {
+        await chrome.storage.sync.set({ streamers });
+      } catch (syncError) {
+        // chrome.storage.sync has size limits, ignore if too large
+        console.warn('Could not sync to chrome.storage.sync:', syncError);
+      }
+    }
+  } catch (error) {
+    console.warn('IndexedDB write failed, falling back to chrome.storage:', error);
+    await chrome.storage.sync.set({ streamers });
+  }
+}
+
+// Migrate data from chrome.storage.sync to IndexedDB
+async function migrateToIndexedDB() {
+  try {
+    const db = await openDB();
+    const existingStreamers = await getStreamersFromDB();
+
+    // Only migrate if IndexedDB is empty
+    if (existingStreamers.length === 0) {
+      const { streamers = [] } = await chrome.storage.sync.get('streamers');
+      if (streamers.length > 0) {
+        await saveStreamersToDB(streamers);
+        console.log(`Migrated ${streamers.length} streamers to IndexedDB`);
+      }
+    }
+
+    // Migrate history
+    const { history = [] } = await chrome.storage.local.get('history');
+    if (history.length > 0) {
+      const transaction = db.transaction(['history'], 'readwrite');
+      const store = transaction.objectStore('history');
+
+      const countRequest = store.count();
+      countRequest.onsuccess = async () => {
+        if (countRequest.result === 0) {
+          for (const entry of history) {
+            store.put({ ...entry, id: entry.id || Date.now() + Math.random() });
+          }
+        }
+      };
+    }
+
+    // Migrate groups
+    const { groups = [] } = await chrome.storage.sync.get('groups');
+    if (groups.length > 0) {
+      const transaction = db.transaction(['groups'], 'readwrite');
+      const store = transaction.objectStore('groups');
+
+      const countRequest = store.count();
+      countRequest.onsuccess = async () => {
+        if (countRequest.result === 0) {
+          for (const group of groups) {
+            store.put(group);
+          }
+        }
+      };
+    }
+  } catch (error) {
+    console.warn('Migration to IndexedDB failed:', error);
+  }
+}
+
+// Get history from IndexedDB
+async function getHistoryFromDB(limit = 50) {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['history'], 'readonly');
+      const store = transaction.objectStore('history');
+      const index = store.index('timestamp');
+      const request = index.openCursor(null, 'prev');
+
+      const results = [];
+      request.onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (cursor && results.length < limit) {
+          results.push(cursor.value);
+          cursor.continue();
+        } else {
+          resolve(results);
+        }
+      };
+      request.onerror = () => reject(request.error);
+    });
+  } catch (error) {
+    const { history = [] } = await chrome.storage.local.get('history');
+    return history.slice(0, limit);
+  }
+}
+
+// Save history entry to IndexedDB
+async function saveHistoryToDB(entry) {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['history'], 'readwrite');
+      const store = transaction.objectStore('history');
+
+      entry.id = entry.id || Date.now() + Math.random();
+      store.put(entry);
+
+      // Clean up old entries (keep last 100)
+      const index = store.index('timestamp');
+      const countRequest = store.count();
+      countRequest.onsuccess = () => {
+        if (countRequest.result > 100) {
+          const deleteRequest = index.openCursor();
+          let deleted = 0;
+          const toDelete = countRequest.result - 100;
+
+          deleteRequest.onsuccess = (event) => {
+            const cursor = event.target.result;
+            if (cursor && deleted < toDelete) {
+              cursor.delete();
+              deleted++;
+              cursor.continue();
+            }
+          };
+        }
+      };
+
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+  } catch (error) {
+    // Fallback to chrome.storage.local
+    const { history = [] } = await chrome.storage.local.get('history');
+    history.unshift(entry);
+    await chrome.storage.local.set({ history: history.slice(0, 50) });
+  }
+}
+
+// Get groups from IndexedDB
+async function getGroupsFromDB() {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['groups'], 'readonly');
+      const store = transaction.objectStore('groups');
+      const request = store.getAll();
+
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+  } catch (error) {
+    const { groups = [] } = await chrome.storage.sync.get('groups');
+    return groups;
+  }
+}
+
+// Save groups to IndexedDB
+async function saveGroupsToDB(groups) {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['groups'], 'readwrite');
+      const store = transaction.objectStore('groups');
+
+      store.clear();
+      for (const group of groups) {
+        store.put(group);
+      }
+
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+  } catch (error) {
+    await chrome.storage.sync.set({ groups });
+  }
+}
+
 chrome.runtime.onInstalled.addListener(async () => {
   chrome.action.setIcon({
     path: {
@@ -26,11 +278,14 @@ chrome.runtime.onInstalled.addListener(async () => {
   });
 
   await loadApiKeys();
-  
-  const { streamers } = await chrome.storage.sync.get('streamers');
-  if (!streamers) {
-    await chrome.storage.sync.set({ 
-      streamers: [],
+
+  // Initialize IndexedDB and migrate existing data
+  await migrateToIndexedDB();
+
+  // Initialize settings in chrome.storage.sync (small data)
+  const { settings } = await chrome.storage.sync.get('settings');
+  if (!settings) {
+    await chrome.storage.sync.set({
       settings: {
         notifications: true,
         autoRefresh: true,
@@ -55,6 +310,7 @@ chrome.runtime.onStartup.addListener(async () => {
   });
 
   await loadApiKeys();
+  await migrateToIndexedDB();
   checkAllStreamers();
 });
 
@@ -119,6 +375,32 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }).catch(() => {
       sendResponse({ results: [] });
     });
+    return true;
+  }
+
+  // IndexedDB CRUD operations for popup/options
+  if (request.action === 'getStreamers') {
+    getStreamersFromDB().then(streamers => sendResponse({ streamers }));
+    return true;
+  }
+
+  if (request.action === 'saveStreamers') {
+    saveStreamersToDB(request.streamers).then(() => sendResponse({ success: true }));
+    return true;
+  }
+
+  if (request.action === 'getGroups') {
+    getGroupsFromDB().then(groups => sendResponse({ groups }));
+    return true;
+  }
+
+  if (request.action === 'saveGroups') {
+    saveGroupsToDB(request.groups).then(() => sendResponse({ success: true }));
+    return true;
+  }
+
+  if (request.action === 'getHistory') {
+    getHistoryFromDB(request.limit || 50).then(history => sendResponse({ history }));
     return true;
   }
 
@@ -201,11 +483,11 @@ async function addTwitchTeam(teamName) {
       return { success: false, error: 'Aucun membre dans cette team' };
     }
 
-    const { streamers = [] } = await chrome.storage.sync.get('streamers');
+    const streamers = await getStreamersFromDB();
     let addedCount = 0;
 
     for (const user of teamUsers) {
-      const existingIndex = streamers.findIndex(s => 
+      const existingIndex = streamers.findIndex(s =>
         s.platform === 'twitch' && s.username.toLowerCase() === user.user_login.toLowerCase()
       );
 
@@ -229,7 +511,7 @@ async function addTwitchTeam(teamName) {
       }
     }
 
-    await chrome.storage.sync.set({ streamers });
+    await saveStreamersToDB(streamers);
     checkAllStreamers();
 
     return { success: true, count: addedCount };
@@ -246,13 +528,52 @@ async function checkAllStreamers() {
   try {
     isChecking = true;
     await loadApiKeys();
-    
-    const { streamers = [], settings = {} } = await chrome.storage.sync.get(['streamers', 'settings']);
-    
+
+    // Use IndexedDB for streamers, chrome.storage.sync for settings
+    const streamers = await getStreamersFromDB();
+    const { settings = {} } = await chrome.storage.sync.get('settings');
+
     if (streamers.length === 0) {
       updateBadge(0);
       isChecking = false;
       return;
+    }
+
+    // Group streamers by platform for batch requests
+    const byPlatform = {
+      twitch: streamers.filter(s => s.platform === 'twitch'),
+      youtube: streamers.filter(s => s.platform === 'youtube'),
+      kick: streamers.filter(s => s.platform === 'kick')
+    };
+
+    // Batch fetch status for each platform
+    const statusMap = new Map();
+
+    // Batch Twitch requests (supports up to 100 users per request)
+    if (byPlatform.twitch.length > 0) {
+      const twitchStatuses = await checkTwitchStatusBatch(byPlatform.twitch.map(s => s.username));
+      for (const [username, status] of Object.entries(twitchStatuses)) {
+        statusMap.set(`twitch_${username.toLowerCase()}`, status);
+      }
+    }
+
+    // YouTube and Kick don't support batch, but we can parallelize
+    const [youtubeResults, kickResults] = await Promise.all([
+      Promise.all(byPlatform.youtube.map(async s => {
+        const status = await checkYouTubeStatus(s.username);
+        return { username: s.username, status };
+      })),
+      Promise.all(byPlatform.kick.map(async s => {
+        const status = await checkKickStatus(s.username);
+        return { username: s.username, status };
+      }))
+    ]);
+
+    for (const { username, status } of youtubeResults) {
+      statusMap.set(`youtube_${username.toLowerCase()}`, status);
+    }
+    for (const { username, status } of kickResults) {
+      statusMap.set(`kick_${username.toLowerCase()}`, status);
     }
 
     const updatedStreamers = [];
@@ -260,21 +581,22 @@ async function checkAllStreamers() {
 
     for (const streamer of streamers) {
       try {
-        const data = await checkStreamerStatus(streamer);
-        
+        const statusKey = `${streamer.platform}_${streamer.username.toLowerCase()}`;
+        const data = statusMap.get(statusKey) || { isLive: false };
+
         if (!data.avatar || data.avatar === '') {
           data.avatar = await getStreamerAvatar(streamer.platform, streamer.username);
         }
-        
+
         const updated = { ...streamer, ...data };
-        
+
         if (streamer.platform === 'twitch' && !updated.team) {
           const teamName = await getStreamerTeam(streamer.username);
           if (teamName) {
             updated.team = teamName;
           }
         }
-        
+
         if (data.isLive) {
           updated.lastLiveDate = Date.now();
           updated.endedAt = null;
@@ -285,7 +607,7 @@ async function checkAllStreamers() {
           const timeSince = Date.now() - updated.lastLiveDate;
           updated.wasLiveRecently = timeSince < CONFIG.RECENT_LIVE_THRESHOLD;
         }
-        
+
         if (data.isLive && !streamer.isLive && settings.notifications !== false) {
           sendNotification(updated);
         }
@@ -301,20 +623,25 @@ async function checkAllStreamers() {
           updated.priority = 'normal';
           scheduleAdaptiveCheck(updated.id, CONFIG.CHECK_INTERVAL_SLOW);
         }
-        
+
         lastCheck[streamer.id] = Date.now();
-        
+
         const streamersData = { ...updated };
         delete streamersData.avatar;
         delete streamersData.thumbnail;
         delete streamersData.teamLogo;
-        
+
         updatedStreamers.push(streamersData);
-        
+
         if (updated.avatar) {
           await chrome.storage.local.set({ [`avatar_${updated.id}`]: updated.avatar });
         }
-        
+
+        // Cache thumbnail in storage for persistence
+        if (updated.thumbnail) {
+          await chrome.storage.local.set({ [`thumbnail_${updated.id}`]: updated.thumbnail });
+        }
+
         streamersCache[streamer.id] = updated;
       } catch (error) {
         updatedStreamers.push(streamer);
@@ -322,7 +649,7 @@ async function checkAllStreamers() {
     }
 
     updateBadge(liveCount);
-    await chrome.storage.sync.set({ streamers: updatedStreamers });
+    await saveStreamersToDB(updatedStreamers);
 
   } catch (error) {
   } finally {
@@ -341,22 +668,23 @@ function scheduleAdaptiveCheck(streamerId, interval) {
   }
 
   adaptiveTimers[streamerId] = setTimeout(async () => {
-    const { streamers = [], settings = {} } = await chrome.storage.sync.get(['streamers', 'settings']);
+    const streamers = await getStreamersFromDB();
+    const { settings = {} } = await chrome.storage.sync.get('settings');
     const streamer = streamers.find(s => s.id === streamerId);
-    
+
     if (streamer) {
       try {
         const data = await checkStreamerStatus(streamer);
         const updated = { ...streamer, ...data };
-        
+
         if (data.isLive && !streamer.isLive && settings.notifications !== false) {
           sendNotification(updated);
         }
-        
+
         const index = streamers.findIndex(s => s.id === streamerId);
         if (index !== -1) {
           streamers[index] = updated;
-          await chrome.storage.sync.set({ streamers });
+          await saveStreamersToDB(streamers);
           streamersCache[streamerId] = updated;
           lastCheck[streamerId] = Date.now();
         }
@@ -386,6 +714,79 @@ async function checkStreamerStatus(streamer) {
   } catch (error) {
     return { isLive: false, error: true };
   }
+}
+
+// Batch check Twitch status for multiple users (up to 100 per request)
+async function checkTwitchStatusBatch(usernames) {
+  const results = {};
+
+  if (!CONFIG.TWITCH_CLIENT_ID || usernames.length === 0) {
+    usernames.forEach(u => results[u.toLowerCase()] = { isLive: false, error: true });
+    return results;
+  }
+
+  try {
+    const token = await getTwitchToken();
+    if (!token) {
+      usernames.forEach(u => results[u.toLowerCase()] = { isLive: false, error: true });
+      return results;
+    }
+
+    // Twitch API supports up to 100 user_login parameters per request
+    const chunks = [];
+    for (let i = 0; i < usernames.length; i += 100) {
+      chunks.push(usernames.slice(i, i + 100));
+    }
+
+    for (const chunk of chunks) {
+      const params = chunk.map(u => `user_login=${encodeURIComponent(u)}`).join('&');
+      const response = await fetch(`https://api.twitch.tv/helix/streams?${params}`, {
+        headers: {
+          'Client-ID': CONFIG.TWITCH_CLIENT_ID,
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          await chrome.storage.local.remove('twitchToken');
+        }
+        chunk.forEach(u => results[u.toLowerCase()] = { isLive: false, error: true });
+        continue;
+      }
+
+      const data = await response.json();
+
+      // Map live streams by username
+      const liveStreams = new Map();
+      for (const stream of data.data) {
+        liveStreams.set(stream.user_login.toLowerCase(), {
+          isLive: true,
+          title: stream.title,
+          game: stream.game_name,
+          viewerCount: stream.viewer_count,
+          thumbnail: stream.thumbnail_url.replace('{width}', '320').replace('{height}', '180'),
+          startedAt: new Date(stream.started_at).getTime(),
+          lastLiveDate: Date.now(),
+          endedAt: null
+        });
+      }
+
+      // Fill results for this chunk
+      for (const username of chunk) {
+        const lowerUsername = username.toLowerCase();
+        if (liveStreams.has(lowerUsername)) {
+          results[lowerUsername] = liveStreams.get(lowerUsername);
+        } else {
+          results[lowerUsername] = { isLive: false, endedAt: Date.now() };
+        }
+      }
+    }
+  } catch (error) {
+    usernames.forEach(u => results[u.toLowerCase()] = { isLive: false, error: true });
+  }
+
+  return results;
 }
 
 async function checkTwitchStatus(username) {
@@ -875,8 +1276,8 @@ async function getStreamerTeam(username) {
 }
 
 async function getStreamersWithData() {
-  const { streamers = [] } = await chrome.storage.sync.get('streamers');
-  
+  const streamers = await getStreamersFromDB();
+
   const enriched = await Promise.all(streamers.map(async (streamer) => {
     const cached = streamersCache[streamer.id];
     if (cached && cached._cacheTime && (Date.now() - cached._cacheTime < 30000)) {
@@ -915,10 +1316,18 @@ async function getStreamersWithData() {
     }
 
     // Include thumbnail and game from cache if available
-    const cached = streamersCache[streamer.id];
-    if (cached) {
-      if (cached.thumbnail) streamer.thumbnail = cached.thumbnail;
-      if (cached.game) streamer.game = cached.game;
+    const cachedData = streamersCache[streamer.id];
+    if (cachedData) {
+      if (cachedData.thumbnail) streamer.thumbnail = cachedData.thumbnail;
+      if (cachedData.game) streamer.game = cachedData.game;
+    }
+
+    // Try to load thumbnail from persistent storage if not in memory cache
+    if (!streamer.thumbnail) {
+      const thumbnailCache = await chrome.storage.local.get(`thumbnail_${streamer.id}`);
+      if (thumbnailCache[`thumbnail_${streamer.id}`]) {
+        streamer.thumbnail = thumbnailCache[`thumbnail_${streamer.id}`];
+      }
     }
 
     streamer._cacheTime = Date.now();
@@ -932,11 +1341,12 @@ async function getStreamersWithData() {
 
 async function updateBadge(liveCount) {
   if (liveCount > 0) {
-    // Show count in native Chrome badge (more visible)
+    // Show count in native Chrome badge with Nowtify colors
     const badgeText = liveCount > 99 ? '99+' : liveCount.toString();
     chrome.action.setBadgeText({ text: badgeText });
-    chrome.action.setBadgeBackgroundColor({ color: '#10B981' });
-    chrome.action.setBadgeTextColor({ color: '#FFFFFF' });
+    // Use cyan color from Nowtify palette for better brand consistency
+    chrome.action.setBadgeBackgroundColor({ color: '#5CFFE0' });
+    chrome.action.setBadgeTextColor({ color: '#161618' });
   } else {
     // Clear badge when no one is live
     chrome.action.setBadgeText({ text: '' });
@@ -1024,15 +1434,13 @@ chrome.notifications.onClosed.addListener((notificationId) => {
 });
 
 async function saveToHistory(streamer) {
-  const { history = [] } = await chrome.storage.local.get('history');
-
   // Calculate duration if we have startedAt
   let duration = null;
   if (streamer.startedAt) {
     duration = Date.now() - streamer.startedAt;
   }
 
-  history.unshift({
+  const entry = {
     streamerId: streamer.id,
     name: streamer.name,
     platform: streamer.platform,
@@ -1041,12 +1449,26 @@ async function saveToHistory(streamer) {
     duration: duration,
     viewerCount: streamer.viewerCount || null,
     timestamp: Date.now()
-  });
+  };
 
-  const trimmed = history.slice(0, 50);
-  await chrome.storage.local.set({ history: trimmed });
+  await saveHistoryToDB(entry);
 }
 
+// Sync chrome.storage.sync changes to IndexedDB (for popup/options changes)
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === 'sync') {
+    // Use skipSync=true to avoid infinite loop
+    if (changes.streamers?.newValue) {
+      saveStreamersToDB(changes.streamers.newValue, true).catch(() => {});
+    }
+    if (changes.groups?.newValue) {
+      saveGroupsToDB(changes.groups.newValue, true).catch(() => {});
+    }
+  }
+});
+
 loadApiKeys().then(() => {
-  checkAllStreamers();
+  migrateToIndexedDB().then(() => {
+    checkAllStreamers();
+  });
 });
