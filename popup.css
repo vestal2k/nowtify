@@ -1264,3 +1264,107 @@ h1 {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+
+/* Drag & Drop Styles */
+.drag-handle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  opacity: 0;
+  transition: opacity 0.2s ease, background 0.2s ease;
+  border-radius: 14px 0 0 14px;
+  z-index: 5;
+}
+
+.drag-handle svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+  transition: color 0.2s ease;
+}
+
+.streamer-card:hover .drag-handle {
+  opacity: 1;
+}
+
+.drag-handle:hover {
+  background: rgba(123, 92, 255, 0.1);
+}
+
+.drag-handle:hover svg {
+  color: var(--purple);
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.streamer-card.dragging {
+  cursor: grabbing;
+  z-index: 1000;
+}
+
+.streamer-card.dragging .drag-handle {
+  opacity: 1;
+  cursor: grabbing;
+}
+
+.streamer-card.dragging .drag-handle svg {
+  color: var(--cyan);
+}
+
+.streamer-card.drag-over {
+  border-color: var(--cyan);
+  background: rgba(92, 255, 224, 0.05);
+}
+
+.drag-placeholder {
+  background: rgba(123, 92, 255, 0.1);
+  border: 2px dashed var(--purple);
+  border-radius: 14px;
+  margin-bottom: 10px;
+  transition: all 0.2s ease;
+  animation: placeholderPulse 1s ease-in-out infinite;
+}
+
+@keyframes placeholderPulse {
+  0%, 100% {
+    border-color: var(--purple);
+    background: rgba(123, 92, 255, 0.1);
+  }
+  50% {
+    border-color: var(--cyan);
+    background: rgba(92, 255, 224, 0.1);
+  }
+}
+
+/* Adjust card padding for drag handle */
+.streamer-card {
+  padding-left: 28px;
+}
+
+/* Compact mode adjustments for drag handle */
+.streamers-list.compact .drag-handle {
+  left: 4px;
+  top: 4px;
+  bottom: auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+}
+
+.streamers-list.compact .drag-handle svg {
+  width: 12px;
+  height: 12px;
+}
+
+.streamers-list.compact .streamer-card {
+  padding-left: 10px;
+  padding-top: 24px;
+}
