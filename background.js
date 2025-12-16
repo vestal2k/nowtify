@@ -914,6 +914,13 @@ async function getStreamersWithData() {
       streamer.wasLiveRecently = timeSince < CONFIG.RECENT_LIVE_THRESHOLD;
     }
 
+    // Include thumbnail and game from cache if available
+    const cached = streamersCache[streamer.id];
+    if (cached) {
+      if (cached.thumbnail) streamer.thumbnail = cached.thumbnail;
+      if (cached.game) streamer.game = cached.game;
+    }
+
     streamer._cacheTime = Date.now();
     streamersCache[streamer.id] = streamer;
 
