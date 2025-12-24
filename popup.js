@@ -461,6 +461,28 @@ function updateStreamerCard(card, oldData, newData) {
       // Add new preview
       const preview = createStreamPreview(newData);
       card.appendChild(preview);
+
+      // Position preview to the left of the card on hover
+      card.addEventListener('mouseenter', () => {
+        const rect = card.getBoundingClientRect();
+        const previewWidth = 280;
+        const previewHeight = preview.offsetHeight || 200;
+
+        let left = rect.left - previewWidth - 12;
+        let top = rect.top + (rect.height / 2) - (previewHeight / 2);
+
+        if (left < 8) {
+          left = rect.right + 12;
+        }
+
+        if (top < 8) top = 8;
+        if (top + previewHeight > window.innerHeight - 8) {
+          top = window.innerHeight - previewHeight - 8;
+        }
+
+        preview.style.left = left + 'px';
+        preview.style.top = top + 'px';
+      });
     }
   } else if (existingPreview) {
     // Remove preview when going offline
@@ -868,6 +890,31 @@ function createStreamerCard(streamer) {
   if (streamer.isLive && streamer.thumbnail) {
     const preview = createStreamPreview(streamer);
     card.appendChild(preview);
+
+    // Position preview to the left of the card on hover
+    card.addEventListener('mouseenter', () => {
+      const rect = card.getBoundingClientRect();
+      const previewWidth = 280;
+      const previewHeight = preview.offsetHeight || 200;
+
+      // Position to the left of the card
+      let left = rect.left - previewWidth - 12;
+      let top = rect.top + (rect.height / 2) - (previewHeight / 2);
+
+      // If it goes off the left edge, position to the right instead
+      if (left < 8) {
+        left = rect.right + 12;
+      }
+
+      // Keep it within vertical bounds
+      if (top < 8) top = 8;
+      if (top + previewHeight > window.innerHeight - 8) {
+        top = window.innerHeight - previewHeight - 8;
+      }
+
+      preview.style.left = left + 'px';
+      preview.style.top = top + 'px';
+    });
   }
 
   setTimeout(() => {
