@@ -25,7 +25,8 @@
   "permissions": [
     "notifications",
     "storage",
-    "alarms"
+    "alarms",
+    "identity"
   ],
   "host_permissions": [
     "https://api.twitch.tv/*",
