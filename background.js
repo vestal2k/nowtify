@@ -6,14 +6,57 @@ let CONFIG = {
   CHECK_INTERVAL_NORMAL: 3 * 60 * 1000,
   CHECK_INTERVAL_SLOW: 5 * 60 * 1000,
   RECENT_LIVE_THRESHOLD: 12 * 60 * 60 * 1000,
-  AUTO_REFRESH_INTERVAL: 5 * 60 * 1000
+  AUTO_REFRESH_INTERVAL: 5 * 60 * 1000,
+  NOTIFICATION_COOLDOWN: 30 * 60 * 1000
 };
 
 let streamersCache = {};
 let teamLogosCache = {};
 let isChecking = false;
-let adaptiveTimers = {};
-let lastCheck = {};
+
+async function getNotifiedStreamers() {
+  try {
+    const { notifiedStreamers = {} } = await chrome.storage.local.get('notifiedStreamers');
+    return notifiedStreamers;
+  } catch {
+    return {};
+  }
+}
+
+async function setStreamerNotified(streamerId) {
+  try {
+    const notified = await getNotifiedStreamers();
+    notified[streamerId] = Date.now();
+
+    const cutoff = Date.now() - CONFIG.NOTIFICATION_COOLDOWN;
+    for (const [id, timestamp] of Object.entries(notified)) {
+      if (timestamp < cutoff) {
+        delete notified[id];
+      }
+    }
+
+    await chrome.storage.local.set({ notifiedStreamers: notified });
+  } catch {}
+}
+
+async function wasRecentlyNotified(streamerId) {
+  try {
+    const notified = await getNotifiedStreamers();
+    const lastNotified = notified[streamerId];
+    if (!lastNotified) return false;
+    return (Date.now() - lastNotified) < CONFIG.NOTIFICATION_COOLDOWN;
+  } catch {
+    return false;
+  }
+}
+
+async function clearStreamerNotified(streamerId) {
+  try {
+    const notified = await getNotifiedStreamers();
+    delete notified[streamerId];
+    await chrome.storage.local.set({ notifiedStreamers: notified });
+  } catch {}
+}
 
 // IndexedDB for large data storage
 const DB_NAME = 'NowtifyDB';
@@ -608,23 +651,27 @@ async function checkAllStreamers() {
           updated.wasLiveRecently = timeSince < CONFIG.RECENT_LIVE_THRESHOLD;
         }
 
-        if (data.isLive && !streamer.isLive && settings.notifications !== false) {
-          sendNotification(updated);
+        const wasLiveBefore = streamer.isLive === true;
+        const isLiveNow = data.isLive === true;
+        const recentlyNotified = await wasRecentlyNotified(streamer.id);
+
+        if (isLiveNow && !wasLiveBefore && !recentlyNotified && settings.notifications !== false) {
+          await sendNotification(updated);
+          await setStreamerNotified(streamer.id);
+        }
+
+        if (!isLiveNow && wasLiveBefore) {
+          await clearStreamerNotified(streamer.id);
         }
 
         if (data.isLive) {
           liveCount++;
           updated.priority = 'high';
-          scheduleAdaptiveCheck(updated.id, CONFIG.CHECK_INTERVAL_FAST);
         } else if (updated.wasLiveRecently) {
           updated.priority = 'medium';
-          scheduleAdaptiveCheck(updated.id, CONFIG.CHECK_INTERVAL_NORMAL);
         } else {
           updated.priority = 'normal';
-          scheduleAdaptiveCheck(updated.id, CONFIG.CHECK_INTERVAL_SLOW);
         }
-
-        lastCheck[streamer.id] = Date.now();
 
         const streamersData = { ...updated };
         delete streamersData.avatar;
@@ -651,53 +698,27 @@ async function checkAllStreamers() {
     updateBadge(liveCount);
     await saveStreamersToDB(updatedStreamers);
 
+    await updateAlarmInterval(liveCount);
+
   } catch (error) {
+    console.error('[Nowtify] checkAllStreamers error:', error);
   } finally {
     isChecking = false;
   }
 }
 
-function scheduleAdaptiveCheck(streamerId, interval) {
-  if (adaptiveTimers[streamerId]) {
-    clearTimeout(adaptiveTimers[streamerId]);
-  }
-
-  const timeSinceLastCheck = lastCheck[streamerId] ? Date.now() - lastCheck[streamerId] : interval;
-  if (timeSinceLastCheck < interval * 0.5) {
-    return;
-  }
-
-  adaptiveTimers[streamerId] = setTimeout(async () => {
-    const streamers = await getStreamersFromDB();
+async function updateAlarmInterval(liveCount) {
+  try {
     const { settings = {} } = await chrome.storage.sync.get('settings');
-    const streamer = streamers.find(s => s.id === streamerId);
+    const userInterval = parseInt(settings.refreshInterval) || 5;
 
-    if (streamer) {
-      try {
-        const data = await checkStreamerStatus(streamer);
-        const updated = { ...streamer, ...data };
+    const intervalMinutes = liveCount > 0 ? 1 : userInterval;
 
-        if (data.isLive && !streamer.isLive && settings.notifications !== false) {
-          sendNotification(updated);
-        }
-
-        const index = streamers.findIndex(s => s.id === streamerId);
-        if (index !== -1) {
-          streamers[index] = updated;
-          await saveStreamersToDB(streamers);
-          streamersCache[streamerId] = updated;
-          lastCheck[streamerId] = Date.now();
-        }
-        
-        const nextInterval = data.isLive ? CONFIG.CHECK_INTERVAL_FAST : 
-                            updated.wasLiveRecently ? CONFIG.CHECK_INTERVAL_NORMAL : 
-                            CONFIG.CHECK_INTERVAL_SLOW;
-        scheduleAdaptiveCheck(streamerId, nextInterval);
-      } catch (error) {
-      }
-    }
-  }, interval);
+    await chrome.alarms.clear('checkStreams');
+    chrome.alarms.create('checkStreams', { periodInMinutes: intervalMinutes });
+  } catch {}
 }
+
 
 async function checkStreamerStatus(streamer) {
   try {
@@ -1353,84 +1374,102 @@ async function updateBadge(liveCount) {
   }
 }
 
-const notificationHandlers = new Map();
-
-async function sendNotification(streamer) {
-  const notificationId = `live-${streamer.id}-${Date.now()}`;
-
-  // Store streamer URL for click handler
-  let url;
+function getStreamerUrl(streamer) {
   switch (streamer.platform) {
     case 'twitch':
-      url = `https://twitch.tv/${streamer.username}`;
-      break;
+      return `https://twitch.tv/${streamer.username}`;
     case 'youtube':
-      url = `https://youtube.com/@${streamer.username}/live`;
-      break;
+      return `https://youtube.com/@${streamer.username}/live`;
     case 'kick':
-      url = `https://kick.com/${streamer.username}`;
-      break;
+      return `https://kick.com/${streamer.username}`;
+    default:
+      return null;
   }
+}
 
-  if (url) {
-    notificationHandlers.set(notificationId, url);
+async function saveNotificationUrl(notificationId, url) {
+  try {
+    const { notificationUrls = {} } = await chrome.storage.local.get('notificationUrls');
+    notificationUrls[notificationId] = url;
+
+    const keys = Object.keys(notificationUrls);
+    if (keys.length > 50) {
+      keys.slice(0, keys.length - 50).forEach(k => delete notificationUrls[k]);
+    }
+
+    await chrome.storage.local.set({ notificationUrls });
+  } catch {}
+}
+
+async function getNotificationUrl(notificationId) {
+  try {
+    const { notificationUrls = {} } = await chrome.storage.local.get('notificationUrls');
+    return notificationUrls[notificationId] || null;
+  } catch {
+    return null;
   }
+}
 
-  // Use logo.png as fallback (icon128.png doesn't exist)
-  const iconUrl = streamer.avatar && streamer.avatar.startsWith('http')
-    ? streamer.avatar
-    : 'icons/logo.png';
+async function removeNotificationUrl(notificationId) {
+  try {
+    const { notificationUrls = {} } = await chrome.storage.local.get('notificationUrls');
+    delete notificationUrls[notificationId];
+    await chrome.storage.local.set({ notificationUrls });
+  } catch {}
+}
 
-  // Get settings for sound
-  const { settings = {} } = await chrome.storage.sync.get('settings');
+async function sendNotification(streamer) {
+  return new Promise(async (resolve) => {
+    try {
+      const notificationId = `live-${streamer.id}-${Date.now()}`;
+      const url = getStreamerUrl(streamer);
 
-  chrome.notifications.create(notificationId, {
-    type: 'basic',
-    iconUrl: iconUrl,
-    title: `${streamer.name} est en live !`,
-    message: streamer.title || `${streamer.name} vient de commencer un stream sur ${streamer.platform}`,
-    priority: 2,
-    requireInteraction: settings.persistentNotifications === true,
-    silent: !settings.notificationSound
-  }, (createdId) => {
-    if (chrome.runtime.lastError) {
-      console.error('Notification error:', chrome.runtime.lastError.message);
+      if (url) {
+        await saveNotificationUrl(notificationId, url);
+      }
+
+      const iconUrl = streamer.avatar && streamer.avatar.startsWith('http')
+        ? streamer.avatar
+        : chrome.runtime.getURL('icons/logo.png');
+
+      const { settings = {} } = await chrome.storage.sync.get('settings');
+
+      chrome.notifications.create(notificationId, {
+        type: 'basic',
+        iconUrl: iconUrl,
+        title: `${streamer.name} est en live !`,
+        message: streamer.title || `${streamer.name} vient de commencer un stream sur ${streamer.platform}`,
+        priority: 2,
+        requireInteraction: settings.persistentNotifications === true,
+        silent: false
+      }, (createdId) => {
+        if (chrome.runtime.lastError) {
+          console.error('[Nowtify] Notification error:', chrome.runtime.lastError.message);
+        } else {
+          console.log('[Nowtify] Notification sent:', createdId, streamer.name);
+        }
+        resolve(createdId);
+      });
+
+      await saveToHistory(streamer);
+    } catch (error) {
+      console.error('[Nowtify] sendNotification error:', error);
+      resolve(null);
     }
   });
-
-  // Play custom sound if enabled
-  if (settings.notificationSound) {
-    playNotificationSound(settings.notificationSoundType || 'default');
-  }
-
-  saveToHistory(streamer);
 }
 
-// Sound generation using offscreen document or simple audio
-async function playNotificationSound(soundType) {
-  try {
-    // For service workers, we need to use chrome.offscreen or a simple approach
-    // Since offscreen API may not be available, we'll skip for now in background
-    // The sound will be played when notification is shown (native browser sound)
-    // or through the popup/options page preview
-  } catch (error) {
-    console.warn('Could not play notification sound:', error);
-  }
-}
-
-// Single global click handler for all notifications
-chrome.notifications.onClicked.addListener((notificationId) => {
-  const url = notificationHandlers.get(notificationId);
+chrome.notifications.onClicked.addListener(async (notificationId) => {
+  const url = await getNotificationUrl(notificationId);
   if (url) {
     chrome.tabs.create({ url });
-    notificationHandlers.delete(notificationId);
+    await removeNotificationUrl(notificationId);
   }
   chrome.notifications.clear(notificationId);
 });
 
-// Clean up closed notifications
-chrome.notifications.onClosed.addListener((notificationId) => {
-  notificationHandlers.delete(notificationId);
+chrome.notifications.onClosed.addListener(async (notificationId) => {
+  await removeNotificationUrl(notificationId);
 });
 
 async function saveToHistory(streamer) {
