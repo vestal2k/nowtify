@@ -8,7 +8,6 @@ const confirmDelete = document.getElementById('confirmDelete');
 const refreshInterval = document.getElementById('refreshInterval');
 const twitchClientId = document.getElementById('twitchClientId');
 const twitchClientSecret = document.getElementById('twitchClientSecret');
-const youtubeApiKey = document.getElementById('youtubeApiKey');
 const historyList = document.getElementById('historyList');
 const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 const saveBtn = document.getElementById('saveBtn');
@@ -102,7 +101,6 @@ async function loadSettings() {
 
     twitchClientId.value = apiKeys.twitchClientId || '';
     twitchClientSecret.value = apiKeys.twitchClientSecret || '';
-    youtubeApiKey.value = apiKeys.youtubeApiKey || '';
 
   } catch (error) {
   }
@@ -121,8 +119,7 @@ async function saveSettings(showMessage = true) {
 
     const apiKeys = {
       twitchClientId: twitchClientId.value.trim(),
-      twitchClientSecret: twitchClientSecret.value.trim(),
-      youtubeApiKey: youtubeApiKey.value.trim()
+      twitchClientSecret: twitchClientSecret.value.trim()
     };
 
     await chrome.storage.sync.set({ settings, apiKeys });

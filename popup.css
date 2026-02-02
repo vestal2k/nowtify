@@ -297,23 +297,6 @@ h1 {
   color: var(--purple);
 }
 
-.filter-btn[data-filter="twitch"].active {
-  background: rgba(145, 70, 255, 0.15);
-  border-color: #9146FF;
-  color: #9146FF;
-}
-
-.filter-btn[data-filter="youtube"].active {
-  background: rgba(255, 0, 0, 0.15);
-  border-color: #FF0000;
-  color: #FF0000;
-}
-
-.filter-btn[data-filter="kick"].active {
-  background: rgba(83, 252, 24, 0.15);
-  border-color: #53FC18;
-  color: #53FC18;
-}
 
 .no-filter-results {
   text-align: center;
@@ -547,14 +530,6 @@ h1 {
   color: #9146FF;
 }
 
-.streamers-list.compact .grid-platform.platform-youtube {
-  color: #FF0000;
-}
-
-.streamers-list.compact .grid-platform.platform-kick {
-  color: #53FC18;
-}
-
 @keyframes slideIn {
   from {
     opacity: 0;
@@ -705,14 +680,6 @@ h1 {
 
 .platform-icon.platform-twitch {
   color: #9146FF;
-}
-
-.platform-icon.platform-youtube {
-  color: #FF0000;
-}
-
-.platform-icon.platform-kick {
-  color: #53FC18;
 }
 
 .streamer-name {
@@ -1035,15 +1002,6 @@ h1 {
 
 .platform-badge-small.platform-twitch {
   background: #9146FF;
-}
-
-.platform-badge-small.platform-youtube {
-  background: #FF0000;
-}
-
-.platform-badge-small.platform-kick {
-  background: #53FC18;
-  color: #000000;
 }
 
 .partner-badge {

@@ -1,7 +1,6 @@
 let CONFIG = {
   TWITCH_CLIENT_ID: '',
   TWITCH_CLIENT_SECRET: '',
-  YOUTUBE_API_KEY: '',
   CHECK_INTERVAL_FAST: 30 * 1000,
   CHECK_INTERVAL_NORMAL: 3 * 60 * 1000,
   CHECK_INTERVAL_SLOW: 5 * 60 * 1000,
@@ -362,7 +361,6 @@ async function loadApiKeys() {
     const { apiKeys = {} } = await chrome.storage.sync.get('apiKeys');
     CONFIG.TWITCH_CLIENT_ID = apiKeys.twitchClientId || '';
     CONFIG.TWITCH_CLIENT_SECRET = apiKeys.twitchClientSecret || '';
-    CONFIG.YOUTUBE_API_KEY = apiKeys.youtubeApiKey || '';
   } catch (error) {}
 }
 
@@ -386,7 +384,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.apiKeys) {
       CONFIG.TWITCH_CLIENT_ID = request.apiKeys.twitchClientId || '';
       CONFIG.TWITCH_CLIENT_SECRET = request.apiKeys.twitchClientSecret || '';
-      CONFIG.YOUTUBE_API_KEY = request.apiKeys.youtubeApiKey || '';
       chrome.storage.local.remove('twitchToken');
     }
     sendResponse({ success: true });
@@ -582,41 +579,15 @@ async function checkAllStreamers() {
       return;
     }
 
-    // Group streamers by platform for batch requests
-    const byPlatform = {
-      twitch: streamers.filter(s => s.platform === 'twitch'),
-      youtube: streamers.filter(s => s.platform === 'youtube'),
-      kick: streamers.filter(s => s.platform === 'kick')
-    };
-
-    // Batch fetch status for each platform
+    // Batch fetch status for Twitch
     const statusMap = new Map();
+    const twitchStreamers = streamers.filter(s => s.platform === 'twitch');
 
-    // Batch Twitch requests (supports up to 100 users per request)
-    if (byPlatform.twitch.length > 0) {
-      const twitchStatuses = await checkTwitchStatusBatch(byPlatform.twitch.map(s => s.username));
+    if (twitchStreamers.length > 0) {
+      const twitchStatuses = await checkTwitchStatusBatch(twitchStreamers.map(s => s.username));
       for (const [username, status] of Object.entries(twitchStatuses)) {
         statusMap.set(`twitch_${username.toLowerCase()}`, status);
       }
-    }
-
-    // YouTube and Kick don't support batch, but we can parallelize
-    const [youtubeResults, kickResults] = await Promise.all([
-      Promise.all(byPlatform.youtube.map(async s => {
-        const status = await checkYouTubeStatus(s.username);
-        return { username: s.username, status };
-      })),
-      Promise.all(byPlatform.kick.map(async s => {
-        const status = await checkKickStatus(s.username);
-        return { username: s.username, status };
-      }))
-    ]);
-
-    for (const { username, status } of youtubeResults) {
-      statusMap.set(`youtube_${username.toLowerCase()}`, status);
-    }
-    for (const { username, status } of kickResults) {
-      statusMap.set(`kick_${username.toLowerCase()}`, status);
     }
 
     const updatedStreamers = [];
@@ -722,16 +693,10 @@ async function updateAlarmInterval(liveCount) {
 
 async function checkStreamerStatus(streamer) {
   try {
-    switch (streamer.platform) {
-      case 'twitch':
-        return await checkTwitchStatus(streamer.username);
-      case 'youtube':
-        return await checkYouTubeStatus(streamer.username);
-      case 'kick':
-        return await checkKickStatus(streamer.username);
-      default:
-        return { isLive: false };
+    if (streamer.platform === 'twitch') {
+      return await checkTwitchStatus(streamer.username);
     }
+    return { isLive: false };
   } catch (error) {
     return { isLive: false, error: true };
   }
@@ -897,148 +862,26 @@ async function getTwitchToken() {
   }
 }
 
-async function checkYouTubeStatus(username) {
-  try {
-    if (!CONFIG.YOUTUBE_API_KEY) {
-      return { isLive: false, error: true };
-    }
-
-    let channelId = username;
-    
-    if (username.startsWith('@') || !username.startsWith('UC')) {
-      const searchResponse = await fetch(
-        `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(username)}&maxResults=1&key=${CONFIG.YOUTUBE_API_KEY}`
-      );
-      
-      if (searchResponse.ok) {
-        const searchData = await searchResponse.json();
-        if (searchData.items && searchData.items[0]) {
-          channelId = searchData.items[0].snippet.channelId;
-        }
-      }
-    }
-
-    const response = await fetch(
-      `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&eventType=live&type=video&key=${CONFIG.YOUTUBE_API_KEY}`
-    );
-
-    if (!response.ok) {
-      throw new Error('Erreur API YouTube');
-    }
-
-    const data = await response.json();
-
-    if (data.items && data.items.length > 0) {
-      const video = data.items[0];
-      
-      const detailsResponse = await fetch(
-        `https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails,snippet&id=${video.id.videoId}&key=${CONFIG.YOUTUBE_API_KEY}`
-      );
-      const detailsData = await detailsResponse.json();
-      const details = detailsData.items[0];
-
-      return {
-        isLive: true,
-        title: details.snippet.title,
-        thumbnail: details.snippet.thumbnails.medium.url,
-        viewerCount: parseInt(details.liveStreamingDetails.concurrentViewers || 0),
-        startedAt: new Date(details.liveStreamingDetails.actualStartTime).getTime(),
-        lastLiveDate: Date.now(),
-        endedAt: null
-      };
-    }
-
-    return { 
-      isLive: false,
-      endedAt: Date.now()
-    };
-  } catch (error) {
-    return { isLive: false, error: true };
-  }
-}
-
-async function checkKickStatus(username) {
-  try {
-    const response = await fetch(`https://kick.com/api/v1/channels/${username}`);
-    
-    if (!response.ok) {
-      throw new Error('Erreur API Kick');
-    }
-
-    const data = await response.json();
-
-    if (data.livestream) {
-      const avatarUrl = data.user?.profile_pic || data.user?.avatar || data.livestream.thumbnail?.url || '';
-      return {
-        isLive: true,
-        title: data.livestream.session_title || 'Sans titre',
-        thumbnail: data.livestream.thumbnail?.url || avatarUrl,
-        viewerCount: data.livestream.viewer_count || 0,
-        startedAt: new Date(data.livestream.created_at).getTime(),
-        lastLiveDate: Date.now(),
-        endedAt: null,
-        avatar: avatarUrl
-      };
-    }
-
-    return { 
-      isLive: false,
-      endedAt: Date.now()
-    };
-  } catch (error) {
-    return { isLive: false, error: true };
-  }
-}
 
 async function getStreamerAvatar(platform, username) {
   try {
-    switch (platform) {
-      case 'twitch':
-        const token = await getTwitchToken();
-        if (!token) return '';
-        
-        const response = await fetch(`https://api.twitch.tv/helix/users?login=${username}`, {
-          headers: {
-            'Client-ID': CONFIG.TWITCH_CLIENT_ID,
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          const avatarUrl = data.data[0]?.profile_image_url || '';
-          return avatarUrl;
-        }
-        return '';
-        
-      case 'youtube':
-        if (!CONFIG.YOUTUBE_API_KEY) return '';
-        
-        const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(username)}&maxResults=1&key=${CONFIG.YOUTUBE_API_KEY}`;
-        const ytResponse = await fetch(searchUrl);
-        
-        if (ytResponse.ok) {
-          const ytData = await ytResponse.json();
-          if (ytData.items && ytData.items[0]) {
-            return ytData.items[0].snippet.thumbnails.default?.url || '';
-          }
-        }
-        return '';
-        
-      case 'kick':
-        const kickResponse = await fetch(`https://kick.com/api/v1/channels/${username}`);
-        if (kickResponse.ok) {
-          const kickData = await kickResponse.json();
-          const avatarUrl = kickData.user?.profile_pic || kickData.user?.avatar || kickData.profile_pic || '';
-          if (avatarUrl && !avatarUrl.includes('placeholder') && !avatarUrl.includes('default')) {
-            return avatarUrl;
-          }
-        }
-        return '';
-        
-      default:
-        return '';
+    if (platform !== 'twitch') return '';
+
+    const token = await getTwitchToken();
+    if (!token) return '';
+
+    const response = await fetch(`https://api.twitch.tv/helix/users?login=${username}`, {
+      headers: {
+        'Client-ID': CONFIG.TWITCH_CLIENT_ID,
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.data[0]?.profile_image_url || '';
     }
+    return '';
   } catch (error) {
     return '';
   }
@@ -1048,20 +891,7 @@ async function searchStreamers(query) {
   if (!query || query.length < 2) return [];
 
   try {
-    const results = [];
-    
-    const twitchResults = await searchTwitchStreamers(query);
-    results.push(...twitchResults);
-    
-    if (CONFIG.YOUTUBE_API_KEY) {
-      const youtubeResults = await searchYouTubeChannels(query);
-      results.push(...youtubeResults);
-    }
-    
-    const kickResults = await searchKickChannels(query);
-    results.push(...kickResults);
-    
-    return results;
+    return await searchTwitchStreamers(query);
   } catch (error) {
     return [];
   }
@@ -1110,55 +940,6 @@ async function searchTwitchStreamers(query) {
   }
 }
 
-async function searchYouTubeChannels(query) {
-  try {
-    if (!CONFIG.YOUTUBE_API_KEY) return [];
-
-    const response = await fetch(
-      `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(query)}&maxResults=3&key=${CONFIG.YOUTUBE_API_KEY}`
-    );
-
-    if (response.ok) {
-      const data = await response.json();
-      return data.items.map(item => ({
-        name: item.snippet.title,
-        username: item.snippet.channelId,
-        avatar: item.snippet.thumbnails.default?.url || '',
-        platform: 'youtube',
-        isLive: false
-      }));
-    }
-    
-    return [];
-  } catch (error) {
-    return [];
-  }
-}
-
-async function searchKickChannels(query) {
-  try {
-    const response = await fetch(`https://kick.com/api/search?searched_word=${encodeURIComponent(query)}`);
-    
-    if (response.ok) {
-      const data = await response.json();
-      const channels = data.channels || [];
-      return channels.slice(0, 3).map(channel => {
-        const avatarUrl = channel.user?.profile_pic || channel.user?.avatar || channel.profile_pic || '';
-        return {
-          name: channel.username,
-          username: channel.slug || channel.username,
-          avatar: avatarUrl && !avatarUrl.includes('placeholder') ? avatarUrl : '',
-          platform: 'kick',
-          isLive: channel.is_live || false
-        };
-      });
-    }
-    
-    return [];
-  } catch (error) {
-    return [];
-  }
-}
 
 // Generate possible team name variants for API lookup
 function getTeamNameVariants(teamName) {
@@ -1375,16 +1156,10 @@ async function updateBadge(liveCount) {
 }
 
 function getStreamerUrl(streamer) {
-  switch (streamer.platform) {
-    case 'twitch':
-      return `https://twitch.tv/${streamer.username}`;
-    case 'youtube':
-      return `https://youtube.com/@${streamer.username}/live`;
-    case 'kick':
-      return `https://kick.com/${streamer.username}`;
-    default:
-      return null;
+  if (streamer.platform === 'twitch') {
+    return `https://twitch.tv/${streamer.username}`;
   }
+  return null;
 }
 
 async function saveNotificationUrl(notificationId, url) {
