@@ -202,17 +202,6 @@ function applyFilter() {
 function filterStreamers(streamers, filter) {
   let filtered = streamers;
 
-  // Apply platform filter
-  if (filter !== 'all') {
-    filtered = filtered.filter(s => {
-      if (filter === 'twitch') return s.platform === 'twitch';
-      if (filter === 'youtube') return s.platform === 'youtube';
-      if (filter === 'kick') return s.platform === 'kick';
-      return true;
-    });
-  }
-
-  // Apply group/team filter
   if (currentGroupFilter) {
     if (currentGroupFilter.startsWith('group:')) {
       const groupId = currentGroupFilter.replace('group:', '');
@@ -782,22 +771,6 @@ function parseStreamerInput(input) {
   if (input.includes('twitch.tv/')) {
     const match = input.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
     if (match) return { platform: 'twitch', username: match[1] };
-  } else if (input.includes('twitch')) {
-    const username = input.replace(/[^a-zA-Z0-9_]/g, '');
-    if (username) return { platform: 'twitch', username };
-  }
-
-  if (input.includes('youtube.com/') || input.includes('youtu.be/')) {
-    const match = input.match(/youtube\.com\/@([a-zA-Z0-9_-]+)|youtube\.com\/channel\/([a-zA-Z0-9_-]+)|youtube\.com\/c\/([a-zA-Z0-9_-]+)/);
-    if (match) {
-      const username = match[1] || match[2] || match[3];
-      return { platform: 'youtube', username };
-    }
-  }
-
-  if (input.includes('kick.com/')) {
-    const match = input.match(/kick\.com\/([a-zA-Z0-9_-]+)/);
-    if (match) return { platform: 'kick', username: match[1] };
   }
 
   if (/^[a-zA-Z0-9_]+$/.test(input)) {
@@ -1100,21 +1073,8 @@ function showDeleteTeamModal(streamer, cardElement) {
 }
 
 function openStream(streamer) {
-  let url;
-  switch (streamer.platform) {
-    case 'twitch':
-      url = `https://twitch.tv/${streamer.username}`;
-      break;
-    case 'youtube':
-      url = `https://youtube.com/@${streamer.username}/live`;
-      break;
-    case 'kick':
-      url = `https://kick.com/${streamer.username}`;
-      break;
-  }
-  
-  if (url) {
-    chrome.tabs.create({ url });
+  if (streamer.platform === 'twitch') {
+    chrome.tabs.create({ url: `https://twitch.tv/${streamer.username}` });
   }
 }
 
