@@ -6,8 +6,12 @@ const playSoundBtn = document.getElementById('playSoundBtn');
 const persistentNotifications = document.getElementById('persistentNotifications');
 const confirmDelete = document.getElementById('confirmDelete');
 const refreshInterval = document.getElementById('refreshInterval');
-const twitchClientId = document.getElementById('twitchClientId');
-const twitchClientSecret = document.getElementById('twitchClientSecret');
+const twitchLoginBtn = document.getElementById('twitchLoginBtn');
+const twitchLogoutBtn = document.getElementById('twitchLogoutBtn');
+const twitchNotConnected = document.getElementById('twitchNotConnected');
+const twitchConnected = document.getElementById('twitchConnected');
+const twitchUserAvatar = document.getElementById('twitchUserAvatar');
+const twitchUsername = document.getElementById('twitchUsername');
 const historyList = document.getElementById('historyList');
 const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 const saveBtn = document.getElementById('saveBtn');
@@ -27,6 +31,7 @@ const GROUP_COLORS = [
 
 document.addEventListener('DOMContentLoaded', async () => {
   await loadSettings();
+  await loadTwitchAuthStatus();
   await loadGroups();
   await loadTeamsManagement();
   await loadHistory();
@@ -85,11 +90,15 @@ function setupEventListeners() {
   exportBtn.addEventListener('click', exportData);
   importBtn.addEventListener('click', () => importFile.click());
   importFile.addEventListener('change', importData);
+
+  // Twitch OAuth
+  twitchLoginBtn.addEventListener('click', handleTwitchLogin);
+  twitchLogoutBtn.addEventListener('click', handleTwitchLogout);
 }
 
 async function loadSettings() {
   try {
-    const { settings = {}, apiKeys = {} } = await chrome.storage.sync.get(['settings', 'apiKeys']);
+    const { settings = {} } = await chrome.storage.sync.get('settings');
 
     notificationsEnabled.checked = settings.notifications !== false;
     notificationSound.checked = settings.notificationSound === true;
@@ -98,11 +107,69 @@ async function loadSettings() {
     persistentNotifications.checked = settings.persistentNotifications === true;
     confirmDelete.checked = settings.confirmDelete !== false;
     refreshInterval.value = settings.refreshInterval || '5';
+  } catch (error) {}
+}
 
-    twitchClientId.value = apiKeys.twitchClientId || '';
-    twitchClientSecret.value = apiKeys.twitchClientSecret || '';
+async function loadTwitchAuthStatus() {
+  try {
+    const response = await chrome.runtime.sendMessage({ action: 'getTwitchAuthStatus' });
 
+    if (response && response.connected && response.user) {
+      showTwitchConnected(response.user);
+    } else {
+      showTwitchDisconnected();
+    }
   } catch (error) {
+    showTwitchDisconnected();
+  }
+}
+
+function showTwitchConnected(user) {
+  twitchNotConnected.style.display = 'none';
+  twitchConnected.style.display = 'flex';
+  twitchUsername.textContent = user.display_name || user.login;
+  twitchUserAvatar.src = user.profile_image_url || 'icons/logo.png';
+}
+
+function showTwitchDisconnected() {
+  twitchNotConnected.style.display = 'block';
+  twitchConnected.style.display = 'none';
+}
+
+async function handleTwitchLogin() {
+  twitchLoginBtn.disabled = true;
+  twitchLoginBtn.textContent = 'Connexion...';
+
+  try {
+    const response = await chrome.runtime.sendMessage({ action: 'twitchLogin' });
+
+    if (response && response.success) {
+      showTwitchConnected(response.user);
+      showSaveMessage('Connecte a Twitch !');
+      chrome.runtime.sendMessage({ action: 'checkNow' });
+    } else {
+      alert('Erreur de connexion : ' + (response?.error || 'Inconnue'));
+    }
+  } catch (error) {
+    alert('Erreur de connexion : ' + error.message);
+  } finally {
+    twitchLoginBtn.disabled = false;
+    twitchLoginBtn.innerHTML = `
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
+      </svg>
+      Se connecter avec Twitch
+    `;
+  }
+}
+
+async function handleTwitchLogout() {
+  try {
+    await chrome.runtime.sendMessage({ action: 'twitchLogout' });
+    showTwitchDisconnected();
+    showSaveMessage('Deconnecte de Twitch');
+  } catch (error) {
+    alert('Erreur lors de la deconnexion');
   }
 }
 
@@ -117,18 +184,9 @@ async function saveSettings(showMessage = true) {
       refreshInterval: refreshInterval.value
     };
 
-    const apiKeys = {
-      twitchClientId: twitchClientId.value.trim(),
-      twitchClientSecret: twitchClientSecret.value.trim()
-    };
+    await chrome.storage.sync.set({ settings });
 
-    await chrome.storage.sync.set({ settings, apiKeys });
-
-    chrome.runtime.sendMessage({ 
-      action: 'settingsUpdated',
-      settings,
-      apiKeys
-    });
+    chrome.runtime.sendMessage({ action: 'settingsUpdated', settings });
 
     if (showMessage) {
       saveMessage.classList.add('show');
@@ -138,7 +196,7 @@ async function saveSettings(showMessage = true) {
     }
 
   } catch (error) {
-    alert('Erreur lors de la sauvegarde des paramètres');
+    alert('Erreur lors de la sauvegarde des parametres');
   }
 }
 
