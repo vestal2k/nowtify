@@ -820,15 +820,15 @@ function createStreamerCard(streamer) {
   card.dataset.streamerId = streamer.id;
   card.style.opacity = '0';
   card.style.transform = 'translateX(-20px)';
-  
+
   const statusText = getStatusText(streamer);
   const statusClass = streamer.isLive ? 'live' : (streamer.wasLiveRecently ? 'recent' : 'offline');
   const platformIcon = getPlatformIcon(streamer.platform);
   const avatarUrl = streamer.avatar && streamer.avatar !== '' ? streamer.avatar : 'icons/avatars/default.svg';
-  
+
   const teamName = streamer.team ? capitalizeTeamName(streamer.team) : '—';
   const teamLogoUrl = streamer.teamLogo || 'icons/teams/default.svg';
-  
+
   const img = document.createElement('img');
   img.src = avatarUrl;
   img.alt = streamer.name;
@@ -837,10 +837,10 @@ function createStreamerCard(streamer) {
   img.addEventListener('error', () => {
     img.src = 'icons/avatars/default.svg';
   });
-  
+
   const infoDiv = document.createElement('div');
   infoDiv.className = 'streamer-info';
-  
+
   const mainLineHTML = `
     <div class="streamer-main-line">
       <span class="platform-icon platform-${streamer.platform}" title="${streamer.platform}">
@@ -852,24 +852,30 @@ function createStreamerCard(streamer) {
         ${statusText}
       </span>
     </div>
+    ${streamer.isLive && streamer.viewerCount ? `
+      <div class="grid-viewers">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        ${formatViewers(streamer.viewerCount)}
+      </div>
+    ` : ''}
   `;
-  
+
   let secondaryLineHTML = '<div class="streamer-secondary-line">';
-  
+
   if (streamer.title) {
     const titleClass = isRecent ? 'streamer-title ended' : 'streamer-title';
     secondaryLineHTML += `<div class="${titleClass}" title="${escapeHtml(streamer.title)}">${escapeHtml(streamer.title)}</div>`;
   }
-  
+
   secondaryLineHTML += `
     <div class="team-info">
       ${streamer.team ? `<img src="${teamLogoUrl}" alt="${teamName}" class="team-logo" onerror="this.src='icons/teams/default.svg'">` : ''}
       <span class="team-name ${!streamer.team ? 'no-team' : ''}">${teamName}</span>
     </div>
   `;
-  
+
   secondaryLineHTML += '</div>';
-  
+
   infoDiv.innerHTML = mainLineHTML + secondaryLineHTML;
 
   const deleteBtn = document.createElement('button');
@@ -882,9 +888,14 @@ function createStreamerCard(streamer) {
     </svg>
   `;
 
+  const gridPlatform = document.createElement('span');
+  gridPlatform.className = `grid-platform platform-${streamer.platform}`;
+  gridPlatform.innerHTML = platformIcon;
+
   card.appendChild(img);
   card.appendChild(infoDiv);
   card.appendChild(deleteBtn);
+  card.appendChild(gridPlatform);
 
   // Add stream preview for live streamers with thumbnail
   if (streamer.isLive && streamer.thumbnail) {
