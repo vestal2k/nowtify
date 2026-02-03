@@ -1,4 +1,5 @@
-const TWITCH_CLIENT_ID = '29eecrihjrapftw8bigmjs28le78lg';
+const TWITCH_CLIENT_ID = 'bel47qfvj0ib2a4tclxon7f263uf4o';
+const NOWTIFY_SERVER_URL = 'https://nowtify-server.vercel.app';
 
 let CONFIG = {
   CHECK_INTERVAL_FAST: 30 * 1000,
@@ -350,6 +351,7 @@ chrome.runtime.onStartup.addListener(async () => {
   });
 
   await migrateToIndexedDB();
+  await syncWithServer();
   checkAllStreamers();
 });
 
@@ -1359,6 +1361,57 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   }
 });
 
-migrateToIndexedDB().then(() => {
+async function syncWithServer() {
+  try {
+    const streamers = await getStreamersFromDB();
+    if (streamers.length === 0) return;
+
+    await fetch(`${NOWTIFY_SERVER_URL}/api/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ streamers })
+    });
+
+    const response = await fetch(`${NOWTIFY_SERVER_URL}/api/status`);
+    if (!response.ok) return;
+
+    const { statuses } = await response.json();
+    if (!statuses || Object.keys(statuses).length === 0) return;
+
+    let updated = false;
+    for (const streamer of streamers) {
+      const serverStatus = statuses[streamer.username.toLowerCase()];
+      if (!serverStatus) continue;
+
+      if (serverStatus.lastLiveDate) {
+        const localLastLive = streamer.lastLiveDate || 0;
+        const serverLastLive = serverStatus.lastLiveDate;
+
+        if (serverLastLive > localLastLive) {
+          streamer.lastLiveDate = serverLastLive;
+          streamer.wasLiveRecently = (Date.now() - serverLastLive) < CONFIG.RECENT_LIVE_THRESHOLD;
+
+          if (serverStatus.lastStreamTitle) {
+            streamer.title = serverStatus.lastStreamTitle;
+          }
+          if (serverStatus.lastStreamGame) {
+            streamer.game = serverStatus.lastStreamGame;
+          }
+
+          updated = true;
+        }
+      }
+    }
+
+    if (updated) {
+      await saveStreamersToDB(streamers);
+    }
+  } catch (error) {
+    console.warn('[Nowtify] Server sync failed:', error.message);
+  }
+}
+
+migrateToIndexedDB().then(async () => {
+  await syncWithServer();
   checkAllStreamers();
 });
