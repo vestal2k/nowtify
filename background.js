@@ -1,4 +1,4 @@
-const TWITCH_CLIENT_ID = 'gp762nuuoqcoxypju8c569th9wz7q5';
+const TWITCH_CLIENT_ID = '29eecrihjrapftw8bigmjs28le78lg';
 
 let CONFIG = {
   CHECK_INTERVAL_FAST: 30 * 1000,
@@ -566,7 +566,6 @@ async function checkAllStreamers() {
 
   try {
     isChecking = true;
-    await loadApiKeys();
 
     // Use IndexedDB for streamers, chrome.storage.sync for settings
     const streamers = await getStreamersFromDB();
@@ -1360,8 +1359,6 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   }
 });
 
-loadApiKeys().then(() => {
-  migrateToIndexedDB().then(() => {
-    checkAllStreamers();
-  });
+migrateToIndexedDB().then(() => {
+  checkAllStreamers();
 });
