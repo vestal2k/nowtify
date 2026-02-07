@@ -412,11 +412,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   if (request.action === 'updateAlarm') {
     chrome.alarms.clear('checkStreams', () => {
-      chrome.alarms.create('checkStreams', { 
-        periodInMinutes: request.minutes 
+      chrome.alarms.create('checkStreams', {
+        periodInMinutes: request.minutes
       });
+      sendResponse({ success: true });
     });
-    sendResponse({ success: true });
     return true;
   }
 

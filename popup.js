@@ -1062,20 +1062,19 @@ function formatViewers(count) {
 
 async function deleteStreamer(id, cardElement) {
   try {
+    const { streamers = [] } = await chrome.storage.sync.get('streamers');
+    const filtered = streamers.filter(s => s.id !== id);
+    await chrome.storage.sync.set({ streamers: filtered });
+
+    currentStreamersMap.delete(id);
+
     cardElement.classList.add('removing');
     cardElement.style.transition = 'all 0.3s ease';
     cardElement.style.opacity = '0';
     cardElement.style.transform = 'translateX(20px)';
 
-    currentStreamersMap.delete(id);
-
-    setTimeout(async () => {
+    setTimeout(() => {
       cardElement.remove();
-      const { streamers = [] } = await chrome.storage.sync.get('streamers');
-      const filtered = streamers.filter(s => s.id !== id);
-      await chrome.storage.sync.set({ streamers: filtered });
-
-      // Check if list is now empty
       if (filtered.length === 0) {
         showEmptyState(true);
         isInitialLoad = true;
