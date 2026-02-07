@@ -20,13 +20,34 @@ let isCompactMode = false;
 const groupFilterWrapper = document.getElementById('groupFilterWrapper');
 const groupFilterBtn = document.getElementById('groupFilterBtn');
 const groupFilterDropdown = document.getElementById('groupFilterDropdown');
+const authErrorBanner = document.getElementById('authErrorBanner');
+const authErrorBtn = document.getElementById('authErrorBtn');
 
 document.addEventListener('DOMContentLoaded', async () => {
+  await checkAuthError();
   await loadGroups();
   await loadStreamers();
   setupEventListeners();
   createAutocompleteList();
 });
+
+async function checkAuthError() {
+  try {
+    const response = await new Promise((resolve) => {
+      chrome.runtime.sendMessage({ action: 'getAuthError' }, (res) => {
+        if (chrome.runtime.lastError || !res) resolve(null);
+        else resolve(res);
+      });
+    });
+    if (response && response.hasAuthError) {
+      authErrorBanner.classList.remove('hidden');
+    } else {
+      authErrorBanner.classList.add('hidden');
+    }
+  } catch {
+    authErrorBanner.classList.add('hidden');
+  }
+}
 
 async function loadGroups() {
   let groups = [];
@@ -121,6 +142,10 @@ function setupEventListeners() {
   });
 
   settingsBtn.addEventListener('click', () => {
+    chrome.runtime.openOptionsPage();
+  });
+
+  authErrorBtn.addEventListener('click', () => {
     chrome.runtime.openOptionsPage();
   });
 

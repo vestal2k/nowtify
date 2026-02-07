@@ -13,7 +13,12 @@ let CONFIG = {
 let streamersCache = {};
 let teamLogosCache = {};
 let isChecking = false;
+let checkStartedAt = 0;
+const CHECK_TIMEOUT = 2 * 60 * 1000;
 let cachedToken = null;
+let tokenValidatedAt = 0;
+const TOKEN_REVALIDATE_INTERVAL = 30 * 60 * 1000;
+let lastCheckHadAuthError = false;
 
 async function getNotifiedStreamers() {
   try {
@@ -445,6 +450,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
+  if (request.action === 'getAuthError') {
+    sendResponse({ hasAuthError: lastCheckHadAuthError });
+    return true;
+  }
+
   if (request.action === 'addTwitchTeam') {
     addTwitchTeam(request.teamName).then(result => {
       sendResponse(result);
@@ -562,20 +572,19 @@ async function addTwitchTeam(teamName) {
 }
 
 async function checkAllStreamers() {
-  if (isChecking) {
+  if (isChecking && (Date.now() - checkStartedAt < CHECK_TIMEOUT)) {
     return;
   }
 
   try {
     isChecking = true;
+    checkStartedAt = Date.now();
 
-    // Use IndexedDB for streamers, chrome.storage.sync for settings
     const streamers = await getStreamersFromDB();
     const { settings = {} } = await chrome.storage.sync.get('settings');
 
     if (streamers.length === 0) {
       updateBadge(0);
-      isChecking = false;
       return;
     }
 
@@ -714,9 +723,11 @@ async function checkTwitchStatusBatch(usernames) {
   try {
     const token = await getTwitchToken();
     if (!token) {
+      lastCheckHadAuthError = true;
       usernames.forEach(u => results[u.toLowerCase()] = { isLive: false, error: true });
       return results;
     }
+    lastCheckHadAuthError = false;
 
     // Twitch API supports up to 100 user_login parameters per request
     const chunks = [];
@@ -736,6 +747,8 @@ async function checkTwitchStatusBatch(usernames) {
       if (!response.ok) {
         if (response.status === 401) {
           cachedToken = null;
+          tokenValidatedAt = 0;
+          lastCheckHadAuthError = true;
           await chrome.storage.local.remove('twitchAuth');
         }
         chunk.forEach(u => results[u.toLowerCase()] = { isLive: false, error: true });
@@ -828,12 +841,15 @@ async function checkTwitchStatus(username) {
 }
 
 async function getTwitchToken() {
-  if (cachedToken) return cachedToken;
+  if (cachedToken && (Date.now() - tokenValidatedAt < TOKEN_REVALIDATE_INTERVAL)) {
+    return cachedToken;
+  }
 
   try {
     const { twitchAuth } = await chrome.storage.local.get('twitchAuth');
 
     if (!twitchAuth || !twitchAuth.access_token) {
+      cachedToken = null;
       return null;
     }
 
@@ -841,10 +857,12 @@ async function getTwitchToken() {
     if (!isValid) {
       await chrome.storage.local.remove('twitchAuth');
       cachedToken = null;
+      tokenValidatedAt = 0;
       return null;
     }
 
     cachedToken = twitchAuth.access_token;
+    tokenValidatedAt = Date.now();
     return cachedToken;
   } catch (error) {
     return null;
@@ -883,6 +901,7 @@ async function loginWithTwitch() {
         }
       });
       cachedToken = accessToken;
+      tokenValidatedAt = Date.now();
 
       const userInfo = await getTwitchUserInfo(accessToken);
 
@@ -923,6 +942,7 @@ async function getTwitchUserInfo(token) {
 
 async function logoutTwitch() {
   cachedToken = null;
+  tokenValidatedAt = 0;
   await chrome.storage.local.remove('twitchAuth');
   return { success: true };
 }
