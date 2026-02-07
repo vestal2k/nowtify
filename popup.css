@@ -245,6 +245,45 @@ h1 {
   transform: translateY(0) scale(0.98);
 }
 
+.auth-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 165, 0, 0.1);
+  border: 1px solid rgba(255, 165, 0, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  color: #FFA500;
+  font-size: 12px;
+  animation: slideIn 0.3s ease;
+}
+
+.auth-error-banner.hidden {
+  display: none;
+}
+
+.auth-error-banner svg {
+  flex-shrink: 0;
+}
+
+.auth-error-btn {
+  margin-left: auto;
+  background: rgba(255, 165, 0, 0.2);
+  border: 1px solid rgba(255, 165, 0, 0.4);
+  color: #FFA500;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition-fast);
+}
+
+.auth-error-btn:hover {
+  background: rgba(255, 165, 0, 0.3);
+}
+
 .error-message {
   display: none;
   background: rgba(255, 82, 82, 0.1);
