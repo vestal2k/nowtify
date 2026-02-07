@@ -607,11 +607,16 @@ async function checkAllStreamers() {
         const statusKey = `${streamer.platform}_${streamer.username.toLowerCase()}`;
         const data = statusMap.get(statusKey) || { isLive: false };
 
-        if (!data.avatar || data.avatar === '') {
-          data.avatar = await getStreamerAvatar(streamer.platform, streamer.username);
-        }
-
         const updated = { ...streamer, ...data };
+
+        if (!updated.avatar || updated.avatar === '') {
+          const cachedAvatar = await chrome.storage.local.get(`avatar_${streamer.id}`);
+          if (cachedAvatar[`avatar_${streamer.id}`]) {
+            updated.avatar = cachedAvatar[`avatar_${streamer.id}`];
+          } else {
+            updated.avatar = await getStreamerAvatar(streamer.platform, streamer.username);
+          }
+        }
 
         if (streamer.platform === 'twitch' && !updated.team) {
           const teamName = await getStreamerTeam(streamer.username);
@@ -653,12 +658,7 @@ async function checkAllStreamers() {
           updated.priority = 'normal';
         }
 
-        const streamersData = { ...updated };
-        delete streamersData.avatar;
-        delete streamersData.thumbnail;
-        delete streamersData.teamLogo;
-
-        updatedStreamers.push(streamersData);
+        updatedStreamers.push(updated);
 
         if (updated.avatar) {
           await chrome.storage.local.set({ [`avatar_${updated.id}`]: updated.avatar });
@@ -1182,36 +1182,13 @@ async function getStreamerTeam(username) {
 async function getStreamersWithData() {
   const streamers = await getStreamersFromDB();
 
-  const enriched = await Promise.all(streamers.map(async (streamer) => {
+  const enriched = streamers.map((streamer) => {
     const cached = streamersCache[streamer.id];
-    if (cached && cached._cacheTime && (Date.now() - cached._cacheTime < 30000)) {
-      return cached;
-    }
-
-    const avatarCache = await chrome.storage.local.get(`avatar_${streamer.id}`);
-    if (avatarCache[`avatar_${streamer.id}`]) {
-      streamer.avatar = avatarCache[`avatar_${streamer.id}`];
-    } else if (!streamer.avatar) {
-      streamer.avatar = await getStreamerAvatar(streamer.platform, streamer.username);
-      if (streamer.avatar) {
-        await chrome.storage.local.set({ [`avatar_${streamer.id}`]: streamer.avatar });
-      }
-    }
-
-    if (streamer.platform === 'twitch' && !streamer.team) {
-      const teamName = await getStreamerTeam(streamer.username);
-      if (teamName) {
-        streamer.team = teamName;
-      }
-    }
-
-    if (streamer.team && !streamer.teamLogo) {
-      const cachedLogo = await chrome.storage.local.get(`teamLogo_${streamer.team.toLowerCase()}`);
-      if (cachedLogo[`teamLogo_${streamer.team.toLowerCase()}`]) {
-        streamer.teamLogo = cachedLogo[`teamLogo_${streamer.team.toLowerCase()}`];
-      } else {
-        streamer.teamLogo = await getTeamLogo(streamer.team);
-      }
+    if (cached) {
+      if (cached.thumbnail && !streamer.thumbnail) streamer.thumbnail = cached.thumbnail;
+      if (cached.game && !streamer.game) streamer.game = cached.game;
+      if (cached.avatar && !streamer.avatar) streamer.avatar = cached.avatar;
+      if (cached.teamLogo && !streamer.teamLogo) streamer.teamLogo = cached.teamLogo;
     }
 
     if (streamer.lastLiveDate) {
@@ -1219,26 +1196,9 @@ async function getStreamersWithData() {
       streamer.wasLiveRecently = timeSince < CONFIG.RECENT_LIVE_THRESHOLD;
     }
 
-    // Include thumbnail and game from cache if available
-    const cachedData = streamersCache[streamer.id];
-    if (cachedData) {
-      if (cachedData.thumbnail) streamer.thumbnail = cachedData.thumbnail;
-      if (cachedData.game) streamer.game = cachedData.game;
-    }
-
-    // Try to load thumbnail from persistent storage if not in memory cache
-    if (!streamer.thumbnail) {
-      const thumbnailCache = await chrome.storage.local.get(`thumbnail_${streamer.id}`);
-      if (thumbnailCache[`thumbnail_${streamer.id}`]) {
-        streamer.thumbnail = thumbnailCache[`thumbnail_${streamer.id}`];
-      }
-    }
-
-    streamer._cacheTime = Date.now();
     streamersCache[streamer.id] = streamer;
-
     return streamer;
-  }));
+  });
 
   return enriched;
 }
