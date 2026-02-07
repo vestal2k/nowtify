@@ -29,7 +29,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function loadGroups() {
-  const { groups = [], streamers = [] } = await chrome.storage.sync.get(['groups', 'streamers']);
+  let groups = [];
+  let streamers = [];
+
+  try {
+    const bgGroups = await new Promise((resolve) => {
+      chrome.runtime.sendMessage({ action: 'getGroups' }, (response) => {
+        if (chrome.runtime.lastError || !response) resolve(null);
+        else resolve(response.groups);
+      });
+    });
+    const bgStreamers = await new Promise((resolve) => {
+      chrome.runtime.sendMessage({ action: 'getStreamers' }, (response) => {
+        if (chrome.runtime.lastError || !response) resolve(null);
+        else resolve(response.streamers);
+      });
+    });
+    if (bgGroups) groups = bgGroups;
+    if (bgStreamers) streamers = bgStreamers;
+  } catch {}
+
+  if (groups.length === 0 || streamers.length === 0) {
+    const syncData = await chrome.storage.sync.get(['groups', 'streamers']);
+    if (groups.length === 0) groups = syncData.groups || [];
+    if (streamers.length === 0) streamers = syncData.streamers || [];
+  }
+
   allGroups = groups;
 
   // Get unique teams from streamers (Twitch teams)
@@ -202,6 +227,12 @@ function applyFilter() {
 function filterStreamers(streamers, filter) {
   let filtered = streamers;
 
+  if (filter === 'online') {
+    filtered = filtered.filter(s => s.isLive);
+  } else if (filter === 'offline') {
+    filtered = filtered.filter(s => !s.isLive);
+  }
+
   if (currentGroupFilter) {
     if (currentGroupFilter.startsWith('group:')) {
       const groupId = currentGroupFilter.replace('group:', '');
@@ -217,7 +248,25 @@ function filterStreamers(streamers, filter) {
 
 async function loadStreamers() {
   try {
-    const { streamers = [] } = await chrome.storage.sync.get('streamers');
+    const scrollTop = document.body.scrollTop || document.documentElement.scrollTop;
+
+    const baseStreamers = await new Promise((resolve) => {
+      chrome.runtime.sendMessage({ action: 'getStreamers' }, (response) => {
+        if (chrome.runtime.lastError || !response || !response.streamers) {
+          resolve(null);
+        } else {
+          resolve(response.streamers);
+        }
+      });
+    });
+
+    let streamers;
+    if (baseStreamers && baseStreamers.length > 0) {
+      streamers = baseStreamers;
+    } else {
+      const syncData = await chrome.storage.sync.get('streamers');
+      streamers = syncData.streamers || [];
+    }
 
     if (streamers.length === 0) {
       showEmptyState(true);
@@ -231,37 +280,28 @@ async function loadStreamers() {
 
     showEmptyState(false);
 
-    // Show skeletons only on initial load
     if (isInitialLoad) {
       showSkeletons(streamers.length);
     }
 
-    // Save scroll position before update
-    const scrollTop = document.body.scrollTop || document.documentElement.scrollTop;
-
     chrome.runtime.sendMessage({ action: 'getStreamersData' }, (response) => {
       const streamersData = (response && response.streamers) ? response.streamers : streamers;
 
-      // Sort streamers based on custom order or default (live first)
       const sortedStreamers = sortStreamers(streamersData);
 
-      // Store all streamers for filtering
       allStreamersData = sortedStreamers;
 
-      // Apply current filter
       const filteredStreamers = filterStreamers(sortedStreamers, currentFilter);
 
       if (filteredStreamers.length === 0 && sortedStreamers.length > 0) {
         streamersList.innerHTML = '<div class="no-filter-results">Aucun streamer ne correspond à ce filtre</div>';
       } else {
-        // Apply diff update
         updateStreamersWithDiff(filteredStreamers);
       }
 
       showLoading(false);
       isInitialLoad = false;
 
-      // Restore scroll position
       requestAnimationFrame(() => {
         document.body.scrollTop = scrollTop;
         document.documentElement.scrollTop = scrollTop;

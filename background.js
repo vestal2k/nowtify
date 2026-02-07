@@ -735,7 +735,8 @@ async function checkTwitchStatusBatch(usernames) {
 
       if (!response.ok) {
         if (response.status === 401) {
-          await chrome.storage.local.remove('twitchToken');
+          cachedToken = null;
+          await chrome.storage.local.remove('twitchAuth');
         }
         chunk.forEach(u => results[u.toLowerCase()] = { isLive: false, error: true });
         continue;
@@ -795,7 +796,8 @@ async function checkTwitchStatus(username) {
 
     if (!response.ok) {
       if (response.status === 401) {
-        await chrome.storage.local.remove('twitchToken');
+        cachedToken = null;
+        await chrome.storage.local.remove('twitchAuth');
       }
       throw new Error(`HTTP ${response.status}`);
     }
