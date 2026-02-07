@@ -277,7 +277,21 @@ async function saveHistoryToDB(entry) {
   }
 }
 
-// Get groups from IndexedDB
+async function clearHistoryFromDB() {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['history'], 'readwrite');
+      const store = transaction.objectStore('history');
+      store.clear();
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+  } catch (error) {
+    await chrome.storage.local.set({ history: [] });
+  }
+}
+
 async function getGroupsFromDB() {
   try {
     const db = await openDB();
@@ -447,6 +461,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   if (request.action === 'getHistory') {
     getHistoryFromDB(request.limit || 50).then(history => sendResponse({ history }));
+    return true;
+  }
+
+  if (request.action === 'clearHistory') {
+    clearHistoryFromDB().then(() => sendResponse({ success: true })).catch(() => sendResponse({ success: false }));
     return true;
   }
 
