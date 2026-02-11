@@ -441,7 +441,7 @@ h1 {
 
 /* Grid Mode */
 .streamers-list.compact {
-  display: grid;
+  display: grid !important;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
@@ -453,7 +453,9 @@ h1 {
   text-align: center;
   gap: 6px;
   border-radius: 12px;
-  min-height: 100px;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .streamers-list.compact .streamer-card:hover {
@@ -469,7 +471,9 @@ h1 {
 .streamers-list.compact .streamer-info {
   padding-right: 0;
   width: 100%;
+  min-width: 0;
   gap: 4px;
+  overflow: hidden;
 }
 
 .streamers-list.compact .streamer-main-line {
@@ -485,7 +489,10 @@ h1 {
 .streamers-list.compact .streamer-name {
   font-size: 11px;
   max-width: 100%;
+  min-width: 0;
   line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .streamers-list.compact .status-indicator {
