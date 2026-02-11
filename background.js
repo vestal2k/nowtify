@@ -541,7 +541,7 @@ async function addTwitchTeam(teamName) {
     }
 
     const data = await response.json();
-    
+
     if (!data.data || data.data.length === 0) {
       return { success: false, error: 'Team introuvable' };
     }
@@ -551,6 +551,13 @@ async function addTwitchTeam(teamName) {
 
     if (teamUsers.length === 0) {
       return { success: false, error: 'Aucun membre dans cette team' };
+    }
+
+    const teamLogoUrl = team.thumbnail_url || team.background_image_url || null;
+    if (teamLogoUrl) {
+      const logoCacheKey = teamName.toLowerCase().trim();
+      teamLogosCache[logoCacheKey] = teamLogoUrl;
+      await chrome.storage.local.set({ [`teamLogo_${logoCacheKey}`]: teamLogoUrl });
     }
 
     const streamers = await getStreamersFromDB();
@@ -563,6 +570,7 @@ async function addTwitchTeam(teamName) {
 
       if (existingIndex >= 0) {
         streamers[existingIndex].team = teamName;
+        if (teamLogoUrl) streamers[existingIndex].teamLogo = teamLogoUrl;
       } else {
         const newStreamer = {
           id: `twitch_${user.user_login}_${Date.now()}_${addedCount}`,
@@ -573,6 +581,7 @@ async function addTwitchTeam(teamName) {
           isLive: false,
           wasLiveRecently: false,
           team: teamName,
+          teamLogo: teamLogoUrl,
           addedDate: Date.now(),
           priority: 'high'
         };
@@ -607,7 +616,6 @@ async function checkAllStreamers() {
       return;
     }
 
-    // Batch fetch status for Twitch
     const statusMap = new Map();
     const twitchStreamers = streamers.filter(s => s.platform === 'twitch');
 
@@ -641,6 +649,13 @@ async function checkAllStreamers() {
           const teamName = await getStreamerTeam(streamer.username);
           if (teamName) {
             updated.team = teamName;
+          }
+        }
+
+        if (updated.team && !updated.teamLogo) {
+          const logo = await getTeamLogo(updated.team);
+          if (logo) {
+            updated.teamLogo = logo;
           }
         }
 
@@ -683,7 +698,6 @@ async function checkAllStreamers() {
           await chrome.storage.local.set({ [`avatar_${updated.id}`]: updated.avatar });
         }
 
-        // Cache thumbnail in storage for persistence
         if (updated.thumbnail) {
           await chrome.storage.local.set({ [`thumbnail_${updated.id}`]: updated.thumbnail });
         }
@@ -872,8 +886,8 @@ async function getTwitchToken() {
       return null;
     }
 
-    const isValid = await validateTwitchToken(twitchAuth.access_token);
-    if (!isValid) {
+    const validationResult = await validateTwitchToken(twitchAuth.access_token);
+    if (validationResult === 'invalid') {
       await chrome.storage.local.remove('twitchAuth');
       cachedToken = null;
       tokenValidatedAt = 0;
@@ -881,7 +895,9 @@ async function getTwitchToken() {
     }
 
     cachedToken = twitchAuth.access_token;
-    tokenValidatedAt = Date.now();
+    if (validationResult === 'valid') {
+      tokenValidatedAt = Date.now();
+    }
     return cachedToken;
   } catch (error) {
     return null;
@@ -893,9 +909,11 @@ async function validateTwitchToken(token) {
     const response = await fetch('https://id.twitch.tv/oauth2/validate', {
       headers: { 'Authorization': `OAuth ${token}` }
     });
-    return response.ok;
+    if (response.ok) return 'valid';
+    if (response.status === 401) return 'invalid';
+    return 'network_error';
   } catch {
-    return false;
+    return 'network_error';
   }
 }
 
@@ -1062,24 +1080,18 @@ async function searchTwitchStreamers(query) {
 }
 
 
-// Generate possible team name variants for API lookup
 function getTeamNameVariants(teamName) {
   const base = teamName.toLowerCase().trim();
   const variants = new Set([base]);
 
-  // Without spaces
   variants.add(base.replace(/\s+/g, ''));
 
-  // With underscores instead of spaces
   variants.add(base.replace(/\s+/g, '_'));
 
-  // With hyphens instead of spaces
   variants.add(base.replace(/\s+/g, '-'));
 
-  // Without special characters
   variants.add(base.replace(/[^a-z0-9]/g, ''));
 
-  // Common team name patterns (e.g., "Team Name" -> "teamname")
   variants.add(base.replace(/^team\s*/i, '').replace(/\s+/g, ''));
 
   return [...variants].filter(v => v.length > 0);
@@ -1090,8 +1102,13 @@ async function getTeamLogo(teamName) {
 
   const cacheKey = teamName.toLowerCase().trim();
 
-  // Check memory cache first
   if (teamLogosCache[cacheKey]) {
+    return teamLogosCache[cacheKey];
+  }
+
+  const stored = await chrome.storage.local.get(`teamLogo_${cacheKey}`);
+  if (stored[`teamLogo_${cacheKey}`]) {
+    teamLogosCache[cacheKey] = stored[`teamLogo_${cacheKey}`];
     return teamLogosCache[cacheKey];
   }
 
@@ -1102,7 +1119,6 @@ async function getTeamLogo(teamName) {
       return null;
     }
 
-    // Try different name variants
     const variants = getTeamNameVariants(teamName);
 
     for (const variant of variants) {
@@ -1117,16 +1133,13 @@ async function getTeamLogo(teamName) {
         if (response.ok) {
           const data = await response.json();
           if (data.data && data.data[0]) {
-            // Twitch Teams API returns thumbnail_url as the logo
             let logoUrl = data.data[0].thumbnail_url || null;
 
-            // Some teams may have empty thumbnail, try background_image_url as fallback
             if (!logoUrl && data.data[0].background_image_url) {
               logoUrl = data.data[0].background_image_url;
             }
 
             if (logoUrl) {
-              // Cache the result
               teamLogosCache[cacheKey] = logoUrl;
               await chrome.storage.local.set({ [`teamLogo_${cacheKey}`]: logoUrl });
               console.log(`[Nowtify] Team logo found for "${teamName}" using variant "${variant}"`);
@@ -1134,21 +1147,17 @@ async function getTeamLogo(teamName) {
             }
           }
         } else if (response.status === 404) {
-          // Team not found with this variant, try next
           continue;
         } else if (response.status === 401 || response.status === 403) {
-          // Token issue, don't try more variants
           console.warn(`[Nowtify] Auth error fetching team logo: ${response.status}`);
           break;
         }
       } catch (fetchError) {
-        // Network error for this variant, try next
         console.warn(`[Nowtify] Network error fetching team "${variant}": ${fetchError.message}`);
         continue;
       }
     }
 
-    // No logo found with any variant - cache null to avoid repeated lookups
     teamLogosCache[cacheKey] = null;
     console.log(`[Nowtify] No team logo found for "${teamName}" after trying ${variants.length} variants`);
 
