@@ -945,7 +945,7 @@ async function loginWithTwitch() {
       return { success: true, user: userInfo };
     }
 
-    return { success: false, error: 'Token non recu' };
+    return { success: false, error: 'Token non reçu' };
   } catch (error) {
     return { success: false, error: error.message };
   }

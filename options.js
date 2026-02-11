@@ -145,7 +145,7 @@ async function handleTwitchLogin() {
 
     if (response && response.success) {
       showTwitchConnected(response.user);
-      showSaveMessage('Connecte a Twitch !');
+      showSaveMessage('Connecté à Twitch !');
       chrome.runtime.sendMessage({ action: 'checkNow' });
     } else {
       alert('Erreur de connexion : ' + (response?.error || 'Inconnue'));
@@ -167,9 +167,9 @@ async function handleTwitchLogout() {
   try {
     await chrome.runtime.sendMessage({ action: 'twitchLogout' });
     showTwitchDisconnected();
-    showSaveMessage('Deconnecte de Twitch');
+    showSaveMessage('Déconnecté de Twitch');
   } catch (error) {
-    alert('Erreur lors de la deconnexion');
+    alert('Erreur lors de la déconnexion');
   }
 }
 
@@ -196,7 +196,7 @@ async function saveSettings(showMessage = true) {
     }
 
   } catch (error) {
-    alert('Erreur lors de la sauvegarde des parametres');
+    alert('Erreur lors de la sauvegarde des paramètres');
   }
 }
 

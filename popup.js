@@ -650,10 +650,10 @@ function showAutocomplete(results) {
     
     let badges = `<span class="platform-badge-small platform-${result.platform}">${platformLabel}</span>`;
     if (result.isLive) {
-      badges += '<span class="live-badge">🔴 Live</span>';
+      badges += '<span class="live-badge"><svg width="8" height="8" viewBox="0 0 24 24" fill="#ef4444" stroke="none"><circle cx="12" cy="12" r="10"/></svg> Live</span>';
     }
     if (result.isPartner) {
-      badges += '<span class="partner-badge">✓ Partner</span>';
+      badges += '<span class="partner-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Partner</span>';
     }
     
     infoDiv.innerHTML = `
