@@ -2,7 +2,8 @@ const TWITCH_CLIENT_ID = 'bel47qfvj0ib2a4tclxon7f263uf4o';
 
 const CONFIG = {
   RECENT_LIVE_THRESHOLD: 12 * 60 * 60 * 1000,
-  NOTIFICATION_COOLDOWN: 30 * 60 * 1000
+  NOTIFICATION_COOLDOWN: 30 * 60 * 1000,
+  TEAM_RECHECK_INTERVAL: 24 * 60 * 60 * 1000
 };
 
 let streamersCache = {};
@@ -13,6 +14,8 @@ const CHECK_TIMEOUT = 2 * 60 * 1000;
 let cachedToken = null;
 let tokenValidatedAt = 0;
 const TOKEN_REVALIDATE_INTERVAL = 30 * 60 * 1000;
+let lastSilentLoginAt = 0;
+const SILENT_LOGIN_INTERVAL = 5 * 60 * 1000;
 
 async function setAuthErrorFlag(hasError) {
   try {
@@ -733,11 +736,15 @@ async function checkAllStreamers() {
           }
         }
 
-        if (streamer.platform === 'twitch' && !updated.team) {
+        const teamCheckDue = !updated.teamCheckedAt ||
+          (Date.now() - updated.teamCheckedAt > CONFIG.TEAM_RECHECK_INTERVAL);
+
+        if (streamer.platform === 'twitch' && !updated.team && teamCheckDue) {
           const teamName = await getStreamerTeam(streamer.username);
           if (teamName) {
             updated.team = teamName;
           }
+          updated.teamCheckedAt = Date.now();
         }
 
         if (updated.team && !updated.teamLogo) {
@@ -906,27 +913,43 @@ async function getTwitchToken() {
   try {
     const { twitchAuth } = await chrome.storage.local.get('twitchAuth');
 
-    if (!twitchAuth || !twitchAuth.access_token) {
-      cachedToken = null;
-      return null;
-    }
+    if (twitchAuth && twitchAuth.access_token) {
+      const validationResult = await validateTwitchToken(twitchAuth.access_token);
 
-    const validationResult = await validateTwitchToken(twitchAuth.access_token);
-    if (validationResult === 'invalid') {
+      if (validationResult === 'valid') {
+        cachedToken = twitchAuth.access_token;
+        tokenValidatedAt = Date.now();
+        return cachedToken;
+      }
+
+      if (validationResult === 'network_error') {
+        cachedToken = twitchAuth.access_token;
+        return cachedToken;
+      }
+
       await chrome.storage.local.remove('twitchAuth');
       cachedToken = null;
       tokenValidatedAt = 0;
-      return null;
     }
 
-    cachedToken = twitchAuth.access_token;
-    if (validationResult === 'valid') {
-      tokenValidatedAt = Date.now();
-    }
-    return cachedToken;
+    return await attemptSilentLogin();
   } catch (error) {
     return null;
   }
+}
+
+async function attemptSilentLogin() {
+  const { twitchLoggedOut } = await chrome.storage.local.get('twitchLoggedOut');
+  if (twitchLoggedOut) {
+    return null;
+  }
+
+  if (Date.now() - lastSilentLoginAt < SILENT_LOGIN_INTERVAL) {
+    return null;
+  }
+  lastSilentLoginAt = Date.now();
+
+  return await silentTwitchLogin();
 }
 
 async function validateTwitchToken(token) {
@@ -942,32 +965,55 @@ async function validateTwitchToken(token) {
   }
 }
 
-async function loginWithTwitch() {
+async function runTwitchAuthFlow(interactive) {
   const redirectUri = chrome.identity.getRedirectURL();
   const authUrl = `https://id.twitch.tv/oauth2/authorize?client_id=${TWITCH_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=`;
 
-  try {
-    const responseUrl = await chrome.identity.launchWebAuthFlow({
-      url: authUrl,
-      interactive: true
-    });
+  const responseUrl = await chrome.identity.launchWebAuthFlow({
+    url: authUrl,
+    interactive
+  });
 
-    const hashParams = new URLSearchParams(responseUrl.split('#')[1]);
-    const accessToken = hashParams.get('access_token');
+  if (!responseUrl || !responseUrl.includes('#')) {
+    return null;
+  }
+
+  const hashParams = new URLSearchParams(responseUrl.split('#')[1]);
+  return hashParams.get('access_token');
+}
+
+async function storeTwitchToken(accessToken) {
+  await chrome.storage.local.set({
+    twitchAuth: {
+      access_token: accessToken,
+      obtained_at: Date.now()
+    }
+  });
+  cachedToken = accessToken;
+  tokenValidatedAt = Date.now();
+  await setAuthErrorFlag(false);
+}
+
+async function silentTwitchLogin() {
+  try {
+    const accessToken = await runTwitchAuthFlow(false);
+    if (accessToken) {
+      await storeTwitchToken(accessToken);
+      return accessToken;
+    }
+  } catch {}
+  return null;
+}
+
+async function loginWithTwitch() {
+  try {
+    const accessToken = await runTwitchAuthFlow(true);
 
     if (accessToken) {
-      await chrome.storage.local.set({
-        twitchAuth: {
-          access_token: accessToken,
-          obtained_at: Date.now()
-        }
-      });
-      cachedToken = accessToken;
-      tokenValidatedAt = Date.now();
-      await setAuthErrorFlag(false);
+      await storeTwitchToken(accessToken);
+      await chrome.storage.local.remove('twitchLoggedOut');
 
       const userInfo = await getTwitchUserInfo(accessToken);
-
       return { success: true, user: userInfo };
     }
 
@@ -1006,24 +1052,22 @@ async function getTwitchUserInfo(token) {
 async function logoutTwitch() {
   cachedToken = null;
   tokenValidatedAt = 0;
+  await chrome.storage.local.set({ twitchLoggedOut: true });
   await chrome.storage.local.remove('twitchAuth');
   return { success: true };
 }
 
 async function getTwitchAuthStatus() {
-  const { twitchAuth } = await chrome.storage.local.get('twitchAuth');
-
-  if (!twitchAuth || !twitchAuth.access_token) {
+  const token = await getTwitchToken();
+  if (!token) {
     return { connected: false };
   }
 
-  const validationResult = await validateTwitchToken(twitchAuth.access_token);
-  if (validationResult === 'invalid') {
-    await chrome.storage.local.remove('twitchAuth');
+  const userInfo = await getTwitchUserInfo(token);
+  if (!userInfo) {
     return { connected: false };
   }
 
-  const userInfo = await getTwitchUserInfo(twitchAuth.access_token);
   return { connected: true, user: userInfo };
 }
 
@@ -1121,23 +1165,24 @@ async function getTeamLogo(teamName) {
   if (!teamName) return null;
 
   const cacheKey = teamName.toLowerCase().trim();
+  const storageKey = `teamLogo_${cacheKey}`;
 
-  if (teamLogosCache[cacheKey]) {
-    return teamLogosCache[cacheKey];
+  if (cacheKey in teamLogosCache) {
+    return teamLogosCache[cacheKey] || null;
   }
 
-  const stored = await chrome.storage.local.get(`teamLogo_${cacheKey}`);
-  if (stored[`teamLogo_${cacheKey}`]) {
-    teamLogosCache[cacheKey] = stored[`teamLogo_${cacheKey}`];
-    return teamLogosCache[cacheKey];
+  const stored = await chrome.storage.local.get(storageKey);
+  if (storageKey in stored) {
+    teamLogosCache[cacheKey] = stored[storageKey] || false;
+    return teamLogosCache[cacheKey] || null;
   }
+
+  const token = await getTwitchToken();
+  if (!token) return null;
+
+  let authFailed = false;
 
   try {
-    const token = await getTwitchToken();
-    if (!token) {
-      return null;
-    }
-
     const variants = getTeamNameVariants(teamName);
 
     for (const variant of variants) {
@@ -1152,31 +1197,32 @@ async function getTeamLogo(teamName) {
         if (response.ok) {
           const data = await response.json();
           if (data.data && data.data[0]) {
-            let logoUrl = data.data[0].thumbnail_url || null;
-
-            if (!logoUrl && data.data[0].background_image_url) {
-              logoUrl = data.data[0].background_image_url;
-            }
-
+            const logoUrl = data.data[0].thumbnail_url || data.data[0].background_image_url || null;
             if (logoUrl) {
               teamLogosCache[cacheKey] = logoUrl;
-              await chrome.storage.local.set({ [`teamLogo_${cacheKey}`]: logoUrl });
+              await chrome.storage.local.set({ [storageKey]: logoUrl });
               return logoUrl;
             }
           }
         } else if (response.status === 404) {
           continue;
         } else if (response.status === 401 || response.status === 403) {
+          authFailed = true;
           break;
         }
       } catch (fetchError) {
-        continue;
+        authFailed = true;
+        break;
       }
     }
-
-    teamLogosCache[cacheKey] = null;
   } catch (error) {
     console.error(`[Nowtify] Error fetching team logo for "${teamName}":`, error);
+    return null;
+  }
+
+  if (!authFailed) {
+    teamLogosCache[cacheKey] = false;
+    await chrome.storage.local.set({ [storageKey]: false });
   }
 
   return null;
