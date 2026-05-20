@@ -93,8 +93,9 @@ async function loadGroups() {
 function sortStreamers(streamersData) {
   return [...streamersData].sort((a, b) => {
     if (a.isLive !== b.isLive) return b.isLive - a.isLive;
-    if (a.wasLiveRecently !== b.wasLiveRecently) return b.wasLiveRecently - a.wasLiveRecently;
-    return 0;
+    const aTime = a.isLive ? (a.startedAt || a.lastLiveDate || 0) : (a.lastLiveDate || 0);
+    const bTime = b.isLive ? (b.startedAt || b.lastLiveDate || 0) : (b.lastLiveDate || 0);
+    return bTime - aTime;
   });
 }
 
