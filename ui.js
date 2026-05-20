@@ -7,27 +7,26 @@ globalThis.UI = {
 
     const style = document.createElement('style');
     style.textContent = [
-      '.ui-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:10000;animation:ui-fade 0.15s ease;}',
-      '.ui-modal{background:rgba(26,26,28,0.96);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:20px;width:290px;max-width:calc(100vw - 48px);box-shadow:0 24px 60px rgba(0,0,0,0.5),0 0 60px rgba(123,92,255,0.15);animation:ui-rise 0.3s cubic-bezier(0.34,1.56,0.64,1);}',
-      '.ui-modal-title{font-weight:600;font-size:15px;color:#E8E8E8;margin:0 0 10px;}',
-      '.ui-modal-message{font-size:13px;color:rgba(232,232,232,0.7);line-height:1.5;margin:0 0 18px;}',
+      '.ui-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:10000;animation:ui-fade 0.15s ease;}',
+      '.ui-modal{background:#18181B;border:1px solid #27272A;border-radius:10px;padding:20px;width:290px;max-width:calc(100vw - 48px);box-shadow:0 24px 60px rgba(0,0,0,0.6);animation:ui-rise 0.2s cubic-bezier(0.4,0,0.2,1);}',
+      '.ui-modal-title{font-weight:600;font-size:14px;color:#FAFAFA;margin:0 0 10px;}',
+      '.ui-modal-message{font-size:12.5px;color:#A1A1AA;line-height:1.5;margin:0 0 18px;}',
       '.ui-modal-actions{display:flex;gap:8px;justify-content:flex-end;}',
-      '.ui-btn{font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;border-radius:10px;border:1px solid transparent;cursor:pointer;transition:transform 0.1s ease,background 0.15s ease,border-color 0.15s ease;}',
+      '.ui-btn{font-family:inherit;font-size:12px;font-weight:600;padding:8px 14px;border-radius:8px;border:1px solid transparent;cursor:pointer;transition:transform 0.1s ease,background 0.15s ease,border-color 0.15s ease,opacity 0.15s ease;}',
       '.ui-btn:active{transform:scale(0.97);}',
-      '.ui-btn-cancel{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.12);color:#E8E8E8;}',
-      '.ui-btn-cancel:hover{background:rgba(255,255,255,0.1);}',
-      '.ui-btn-confirm{background:#5CFFE0;color:#161618;}',
-      '.ui-btn-confirm:hover{background:#7dffe8;}',
-      '.ui-btn-confirm.ui-danger{background:#FF5252;color:#fff;}',
-      '.ui-btn-confirm.ui-danger:hover{background:#ff6b6b;}',
+      '.ui-btn-cancel{background:#1F1F23;border-color:#27272A;color:#FAFAFA;}',
+      '.ui-btn-cancel:hover{border-color:#3F3F46;}',
+      '.ui-btn-confirm{background:#5CFFE0;color:#0E0E10;}',
+      '.ui-btn-confirm:hover{opacity:0.88;}',
+      '.ui-btn-confirm.ui-danger{background:#FF5C5C;color:#0E0E10;}',
       '.ui-btn:focus-visible{outline:2px solid #5CFFE0;outline-offset:2px;}',
       '.ui-toast-stack{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;align-items:center;z-index:10001;}',
-      '.ui-toast{font-size:13px;font-weight:600;padding:10px 16px;border-radius:10px;max-width:300px;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,0.4);animation:ui-rise 0.2s ease;}',
-      '.ui-toast.ui-error{background:rgba(255,82,82,0.15);border:1px solid rgba(255,82,82,0.35);color:#FF5252;}',
-      '.ui-toast.ui-success{background:rgba(92,255,224,0.12);border:1px solid rgba(92,255,224,0.35);color:#5CFFE0;}',
-      '.ui-toast.ui-info{background:rgba(123,92,255,0.15);border:1px solid rgba(123,92,255,0.35);color:#c3b5ff;}',
+      '.ui-toast{font-size:12.5px;font-weight:600;padding:10px 14px;border-radius:8px;max-width:300px;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,0.5);animation:ui-rise 0.2s ease;}',
+      '.ui-toast.ui-error{background:rgba(255,92,92,0.12);border:1px solid rgba(255,92,92,0.35);color:#FF5C5C;}',
+      '.ui-toast.ui-success{background:rgba(92,255,224,0.1);border:1px solid rgba(92,255,224,0.4);color:#5CFFE0;}',
+      '.ui-toast.ui-info{background:#1F1F23;border:1px solid #27272A;color:#A1A1AA;}',
       '@keyframes ui-fade{from{opacity:0;}to{opacity:1;}}',
-      '@keyframes ui-rise{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}'
+      '@keyframes ui-rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}'
     ].join('');
 
     document.head.appendChild(style);

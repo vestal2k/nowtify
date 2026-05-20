@@ -31,20 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadTeamsManagement();
   await loadHistory();
   setupEventListeners();
-  setupMouseFollowEffect();
 });
-
-function setupMouseFollowEffect() {
-  document.querySelectorAll('.section').forEach(section => {
-    section.addEventListener('mousemove', (e) => {
-      const rect = section.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 100;
-      const y = ((e.clientY - rect.top) / rect.height) * 100;
-      section.style.setProperty('--mouse-x', x + '%');
-      section.style.setProperty('--mouse-y', y + '%');
-    });
-  });
-}
 
 function setupEventListeners() {
   saveBtn.addEventListener('click', saveSettings);
@@ -231,9 +218,7 @@ async function loadHistory() {
             </div>
           ` : ''}
         </div>
-        <div style="color: rgba(232, 232, 232, 0.5); font-size: 12px;">
-          ${timeAgo}
-        </div>
+        <div class="history-time">${timeAgo}</div>
       `;
 
       historyList.appendChild(historyItem);
@@ -309,7 +294,7 @@ async function loadTeamsManagement() {
     const teamsManagement = document.getElementById('teamsManagement');
 
     if (Object.keys(teamsMap).length === 0) {
-      teamsManagement.innerHTML = '<p style="color: rgba(232, 232, 232, 0.5); padding: 20px; text-align: center;">Aucune team ajoutée</p>';
+      teamsManagement.innerHTML = '<p class="empty-teams">Aucune team ajoutée</p>';
       return;
     }
 
@@ -317,36 +302,43 @@ async function loadTeamsManagement() {
 
     Object.keys(teamsMap).sort().forEach(teamName => {
       const members = teamsMap[teamName];
+
       const teamCard = document.createElement('div');
       teamCard.className = 'team-card';
-      teamCard.style.cssText = 'background: rgba(30, 30, 40, 0.6); border-radius: 8px; padding: 16px; margin-bottom: 12px;';
 
       const teamHeader = document.createElement('div');
-      teamHeader.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;';
+      teamHeader.className = 'team-card-header';
 
       const teamTitle = document.createElement('h3');
-      teamTitle.style.cssText = 'margin: 0; font-size: 16px; color: rgba(92, 255, 224, 0.9);';
+      teamTitle.className = 'team-card-title';
       teamTitle.textContent = `${capitalizeTeamName(teamName)} (${members.length})`;
 
       const teamDeleteBtn = document.createElement('button');
       teamDeleteBtn.className = 'btn-danger-small';
       teamDeleteBtn.dataset.team = teamName;
-      teamDeleteBtn.style.cssText = 'padding: 6px 12px; font-size: 12px; background: rgba(255, 82, 82, 0.2); color: #ff5252; border: 1px solid rgba(255, 82, 82, 0.3); border-radius: 6px; cursor: pointer;';
       teamDeleteBtn.textContent = 'Supprimer la team';
 
       teamHeader.appendChild(teamTitle);
       teamHeader.appendChild(teamDeleteBtn);
 
       const membersList = document.createElement('div');
-      membersList.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;';
+      membersList.className = 'team-members';
 
       members.forEach(member => {
         const memberItem = document.createElement('div');
-        memberItem.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(20, 20, 30, 0.4); border-radius: 6px;';
-        memberItem.innerHTML = `
-          <span style="font-size: 13px; color: rgba(232, 232, 232, 0.9);">${escapeHtml(member.name)}</span>
-          <button class="delete-member-btn" data-id="${member.id}" style="background: none; border: none; color: rgba(255, 82, 82, 0.6); cursor: pointer; padding: 4px; font-size: 16px;">×</button>
-        `;
+        memberItem.className = 'team-member';
+
+        const memberName = document.createElement('span');
+        memberName.className = 'team-member-name';
+        memberName.textContent = member.name;
+
+        const memberDelete = document.createElement('button');
+        memberDelete.className = 'delete-member-btn';
+        memberDelete.dataset.id = member.id;
+        memberDelete.textContent = '×';
+
+        memberItem.appendChild(memberName);
+        memberItem.appendChild(memberDelete);
         membersList.appendChild(memberItem);
       });
 
