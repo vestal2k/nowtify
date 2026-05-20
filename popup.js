@@ -1047,9 +1047,9 @@ function showLoading(show) {
 function showError(message, isError = true) {
   errorMessage.textContent = message;
   errorMessage.classList.add('show');
-  errorMessage.style.background = isError ? 'rgba(255, 82, 82, 0.1)' : 'rgba(92, 255, 224, 0.1)';
-  errorMessage.style.borderColor = isError ? 'rgba(255, 82, 82, 0.3)' : 'rgba(92, 255, 224, 0.3)';
-  errorMessage.style.color = isError ? '#FF5252' : '#5CFFE0';
+  errorMessage.style.background = isError ? 'rgba(255, 82, 82, 0.1)' : 'rgba(250, 250, 250, 0.08)';
+  errorMessage.style.borderColor = isError ? 'rgba(255, 82, 82, 0.3)' : 'rgba(250, 250, 250, 0.25)';
+  errorMessage.style.color = isError ? '#FF5252' : '#FAFAFA';
   setTimeout(() => hideError(), 5000);
 }
 

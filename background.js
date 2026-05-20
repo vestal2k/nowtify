@@ -1295,8 +1295,8 @@ function updateBadge(liveCount) {
   if (liveCount > 0) {
     const badgeText = liveCount > 99 ? '99+' : liveCount.toString();
     chrome.action.setBadgeText({ text: badgeText });
-    chrome.action.setBadgeBackgroundColor({ color: '#5CFFE0' });
-    chrome.action.setBadgeTextColor({ color: '#161618' });
+    chrome.action.setBadgeBackgroundColor({ color: '#FAFAFA' });
+    chrome.action.setBadgeTextColor({ color: '#0E0E10' });
   } else {
     chrome.action.setBadgeText({ text: '' });
   }
