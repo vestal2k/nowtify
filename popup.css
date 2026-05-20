@@ -512,7 +512,7 @@ body {
   font-family: var(--mono);
   font-size: 10.5px;
   font-weight: 500;
-  color: var(--text-faint);
+  color: var(--text-dim);
 }
 
 .status-indicator.live {
@@ -521,10 +521,6 @@ body {
   padding: 3px 7px;
   border-radius: 5px;
   font-weight: 600;
-}
-
-.status-indicator.recent {
-  color: var(--text-dim);
 }
 
 .status-dot {
@@ -538,11 +534,6 @@ body {
 .status-dot.live {
   background: #0E0E10;
   animation: pulse 2s var(--ease) infinite;
-}
-
-.status-dot.recent {
-  background: transparent;
-  border: 1px solid var(--text-dim);
 }
 
 .streamer-secondary-line {
@@ -559,10 +550,6 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.streamer-title.ended {
-  color: var(--text-faint);
 }
 
 .team-info {
