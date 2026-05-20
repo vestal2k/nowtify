@@ -10,18 +10,32 @@ const compactBtn = document.getElementById('compactBtn');
 
 let autocompleteTimeout = null;
 let autocompleteList = null;
-let currentStreamersMap = new Map(); // Track rendered streamers for diffing
+let currentStreamersMap = new Map();
 let isInitialLoad = true;
 let currentFilter = 'all';
 let currentGroupFilter = '';
-let allStreamersData = []; // Store all streamers for filtering
-let allGroups = []; // Store groups for filtering
+let allStreamersData = [];
 let isCompactMode = false;
 const groupFilterWrapper = document.getElementById('groupFilterWrapper');
 const groupFilterBtn = document.getElementById('groupFilterBtn');
 const groupFilterDropdown = document.getElementById('groupFilterDropdown');
 const authErrorBanner = document.getElementById('authErrorBanner');
 const authErrorBtn = document.getElementById('authErrorBtn');
+
+const ICON_ADD = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>';
+const ICON_SPINNER = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>';
+const ICON_GAME = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13h4m-2-2v4m3 1h.01M17 16h.01M2 12V7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-5z"/></svg>';
+const ICON_VIEWERS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+
+function setAddBtnLoading() {
+  addBtn.disabled = true;
+  addBtn.innerHTML = `${ICON_SPINNER} Ajout...`;
+}
+
+function setAddBtnDefault() {
+  addBtn.disabled = false;
+  addBtn.innerHTML = `${ICON_ADD} Ajouter`;
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
   await checkAuthError();
@@ -44,22 +58,15 @@ async function loadGroups() {
   const groups = await DB.getGroups();
   const streamers = await DB.getStreamers();
 
-  allGroups = groups;
-
-  // Get unique teams from streamers (Twitch teams)
   const teamsSet = new Set();
   streamers.forEach(s => {
     if (s.team) teamsSet.add(s.team);
   });
   const teams = Array.from(teamsSet).sort();
 
-  // Build dropdown content
   let dropdownHTML = '';
-
-  // Clear filter option
   dropdownHTML += '<div class="filter-group-dropdown-item clear-filter" data-value="">Tous les groupes</div>';
 
-  // Add custom groups
   if (groups.length > 0) {
     dropdownHTML += '<div class="filter-group-dropdown-label">Groupes</div>';
     groups.forEach(group => {
@@ -67,7 +74,6 @@ async function loadGroups() {
     });
   }
 
-  // Add Twitch teams
   if (teams.length > 0) {
     dropdownHTML += '<div class="filter-group-dropdown-label">Teams</div>';
     teams.forEach(teamName => {
@@ -77,7 +83,6 @@ async function loadGroups() {
 
   groupFilterDropdown.innerHTML = dropdownHTML;
 
-  // Hide the filter button if no groups/teams
   if (groups.length === 0 && teams.length === 0) {
     groupFilterWrapper.style.display = 'none';
   } else {
@@ -86,7 +91,6 @@ async function loadGroups() {
 }
 
 function sortStreamers(streamersData) {
-  // Sort: live first, then recently live, then offline
   return [...streamersData].sort((a, b) => {
     if (a.isLive !== b.isLive) return b.isLive - a.isLive;
     if (a.wasLiveRecently !== b.wasLiveRecently) return b.wasLiveRecently - a.wasLiveRecently;
@@ -117,7 +121,6 @@ function setupEventListeners() {
     chrome.runtime.openOptionsPage();
   });
 
-  // Filter buttons
   filtersBar.addEventListener('click', (e) => {
     const btn = e.target.closest('.filter-btn');
     if (!btn) return;
@@ -125,16 +128,13 @@ function setupEventListeners() {
     const filter = btn.dataset.filter;
     if (filter === currentFilter) return;
 
-    // Update active state
     filtersBar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     currentFilter = filter;
 
-    // Apply filter
     applyFilter();
   });
 
-  // Compact mode toggle
   compactBtn.addEventListener('click', async () => {
     isCompactMode = !isCompactMode;
     compactBtn.classList.toggle('active', isCompactMode);
@@ -153,7 +153,6 @@ function setupEventListeners() {
     }
   });
 
-  // Group filter dropdown
   groupFilterBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     groupFilterWrapper.classList.toggle('open');
@@ -166,21 +165,17 @@ function setupEventListeners() {
     const value = item.dataset.value;
     currentGroupFilter = value;
 
-    // Update selected state
     groupFilterDropdown.querySelectorAll('.filter-group-dropdown-item').forEach(i => {
       i.classList.toggle('selected', i.dataset.value === value);
     });
 
-    // Update button state
     groupFilterBtn.classList.toggle('active', value !== '');
 
-    // Close dropdown
     groupFilterWrapper.classList.remove('open');
 
     applyFilter();
   });
 
-  // Close dropdown when clicking outside
   document.addEventListener('click', (e) => {
     if (!groupFilterWrapper.contains(e.target)) {
       groupFilterWrapper.classList.remove('open');
@@ -199,7 +194,6 @@ function applyFilter() {
   const filteredStreamers = filterStreamers(allStreamersData, currentFilter);
 
   if (filteredStreamers.length === 0 && allStreamersData.length > 0) {
-    // Show "no results" message for this filter
     showEmptyState(false);
     streamersList.innerHTML = '<div class="no-filter-results">Aucun streamer ne correspond à ce filtre</div>';
     return;
@@ -307,7 +301,6 @@ function updateStreamersWithDiff(newStreamers) {
   const existingIds = new Set(currentStreamersMap.keys());
   const newIds = new Set(newStreamersMap.keys());
 
-  // Remove streamers that are no longer in the list
   for (const id of existingIds) {
     if (!newIds.has(id)) {
       const card = streamersList.querySelector(`[data-streamer-id="${id}"]`);
@@ -319,21 +312,17 @@ function updateStreamersWithDiff(newStreamers) {
     }
   }
 
-  // Clear skeletons if any
   const skeletons = streamersList.querySelectorAll('.skeleton');
   skeletons.forEach(s => s.remove());
 
-  // Update or add streamers
   newStreamers.forEach((streamer, index) => {
     const existingData = currentStreamersMap.get(streamer.id);
     const existingCard = streamersList.querySelector(`[data-streamer-id="${streamer.id}"]`);
 
     if (existingCard && existingData) {
-      // Update existing card if data changed
       if (hasStreamerChanged(existingData, streamer)) {
         updateStreamerCard(existingCard, existingData, streamer);
       }
-      // Reorder if needed
       const currentIndex = Array.from(streamersList.children).indexOf(existingCard);
       if (currentIndex !== index) {
         const referenceNode = streamersList.children[index];
@@ -342,7 +331,6 @@ function updateStreamersWithDiff(newStreamers) {
         }
       }
     } else {
-      // Create new card
       const card = createStreamerCard(streamer);
       if (index < streamersList.children.length) {
         streamersList.insertBefore(card, streamersList.children[index]);
@@ -367,7 +355,6 @@ function hasStreamerChanged(oldData, newData) {
 }
 
 function updateStreamerCard(card, oldData, newData) {
-  // Handle live status change with animation
   if (oldData.isLive !== newData.isLive) {
     if (newData.isLive) {
       card.classList.add('going-live');
@@ -387,14 +374,12 @@ function updateStreamerCard(card, oldData, newData) {
     }
   }
 
-  // Update ended state
   if (!newData.isLive && newData.wasLiveRecently && !card.classList.contains('ended')) {
     card.classList.add('ended');
   } else if (!newData.wasLiveRecently && card.classList.contains('ended')) {
     card.classList.remove('ended');
   }
 
-  // Update status indicator
   const statusIndicator = card.querySelector('.status-indicator');
   const statusDot = card.querySelector('.status-dot');
   if (statusIndicator && statusDot) {
@@ -404,7 +389,6 @@ function updateStreamerCard(card, oldData, newData) {
     statusIndicator.className = `status-indicator ${statusClass}`;
     statusDot.className = `status-dot ${statusClass}`;
 
-    // Update text content smoothly
     const textNode = statusIndicator.childNodes[statusIndicator.childNodes.length - 1];
     if (textNode && textNode.nodeType === Node.TEXT_NODE) {
       textNode.textContent = statusText;
@@ -413,7 +397,6 @@ function updateStreamerCard(card, oldData, newData) {
     }
   }
 
-  // Update title if changed
   if (oldData.title !== newData.title) {
     const titleEl = card.querySelector('.streamer-title');
     if (titleEl && newData.title) {
@@ -422,7 +405,6 @@ function updateStreamerCard(card, oldData, newData) {
     }
   }
 
-  // Update avatar if changed
   if (oldData.avatar !== newData.avatar && newData.avatar) {
     const avatarEl = card.querySelector('.streamer-avatar');
     if (avatarEl) {
@@ -430,41 +412,35 @@ function updateStreamerCard(card, oldData, newData) {
     }
   }
 
-  // Update stream preview
   const existingPreview = card.querySelector('.stream-preview');
   if (newData.isLive && newData.thumbnail) {
     if (existingPreview) {
-      // Update existing preview
       const thumbnailEl = existingPreview.querySelector('.stream-preview-thumbnail');
       if (thumbnailEl) thumbnailEl.src = newData.thumbnail;
 
       const gameEl = existingPreview.querySelector('.stream-preview-game');
       if (gameEl) {
-        const gameIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13h4m-2-2v4m3 1h.01M17 16h.01M2 12V7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-5z"/></svg>`;
-        gameEl.innerHTML = `${gameIcon} ${escapeHtml(newData.game || 'Stream en cours')}`;
+        gameEl.innerHTML = `${ICON_GAME} ${escapeHtml(newData.game || 'Stream en cours')}`;
       }
 
       const viewersEl = existingPreview.querySelector('.stream-preview-viewers');
       if (newData.viewerCount) {
-        const viewersIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
         if (viewersEl) {
-          viewersEl.innerHTML = `${viewersIcon} ${formatViewers(newData.viewerCount)} spectateurs`;
+          viewersEl.innerHTML = `${ICON_VIEWERS} ${formatViewers(newData.viewerCount)} spectateurs`;
         } else {
           const infoEl = existingPreview.querySelector('.stream-preview-info');
           if (infoEl) {
             const viewersDiv = document.createElement('div');
             viewersDiv.className = 'stream-preview-viewers';
-            viewersDiv.innerHTML = `${viewersIcon} ${formatViewers(newData.viewerCount)} spectateurs`;
+            viewersDiv.innerHTML = `${ICON_VIEWERS} ${formatViewers(newData.viewerCount)} spectateurs`;
             infoEl.appendChild(viewersDiv);
           }
         }
       }
     } else {
-      // Add new preview
       const preview = createStreamPreview(newData);
       card.appendChild(preview);
 
-      // Position preview to the left of the card on hover
       card.addEventListener('mouseenter', () => {
         const rect = card.getBoundingClientRect();
         const previewWidth = 280;
@@ -487,16 +463,15 @@ function updateStreamerCard(card, oldData, newData) {
       });
     }
   } else if (existingPreview) {
-    // Remove preview when going offline
     existingPreview.remove();
   }
 }
 
 function handleAutocomplete(e) {
   const query = streamerInput.value.trim();
-  
+
   clearTimeout(autocompleteTimeout);
-  
+
   if (query.length < 2) {
     hideAutocomplete();
     return;
@@ -511,7 +486,7 @@ function handleAutocomplete(e) {
           if (chrome.runtime.lastError) {
             return;
           }
-          
+
           if (response && response.results && response.results.length > 0) {
             showTeamAutocomplete(response.results);
           } else {
@@ -530,7 +505,7 @@ function handleAutocomplete(e) {
         if (chrome.runtime.lastError) {
           return;
         }
-        
+
         if (response && response.results && response.results.length > 0) {
           showAutocomplete(response.results);
         } else {
@@ -548,7 +523,7 @@ function showTeamAutocomplete(teams) {
   teams.forEach(team => {
     const item = document.createElement('div');
     item.className = 'autocomplete-item team-item';
-    
+
     item.innerHTML = `
       <div class="team-icon">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -581,10 +556,9 @@ function showAutocomplete(results) {
   results.forEach(result => {
     const item = document.createElement('div');
     item.className = 'autocomplete-item';
-    
-    const platformIcon = getPlatformIcon(result.platform);
+
     const platformLabel = result.platform.charAt(0).toUpperCase() + result.platform.slice(1);
-    
+
     const img = document.createElement('img');
     img.src = result.avatar || 'icons/avatars/default.svg';
     img.alt = result.name;
@@ -592,10 +566,10 @@ function showAutocomplete(results) {
     img.addEventListener('error', () => {
       img.src = 'icons/avatars/default.svg';
     });
-    
+
     const infoDiv = document.createElement('div');
     infoDiv.className = 'autocomplete-info';
-    
+
     let badges = `<span class="platform-badge-small platform-${result.platform}">${platformLabel}</span>`;
     if (result.isLive) {
       badges += '<span class="live-badge"><svg width="8" height="8" viewBox="0 0 24 24" fill="#ef4444" stroke="none"><circle cx="12" cy="12" r="10"/></svg> Live</span>';
@@ -603,7 +577,7 @@ function showAutocomplete(results) {
     if (result.isPartner) {
       badges += '<span class="partner-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Partner</span>';
     }
-    
+
     infoDiv.innerHTML = `
       <div class="autocomplete-name">${escapeHtml(result.name)}</div>
       <div class="autocomplete-meta">
@@ -634,20 +608,18 @@ function getPlatformIcon(platform) {
 async function addTwitchTeamFromAutocomplete(teamName) {
   hideAutocomplete();
   streamerInput.value = '';
-  
-  addBtn.disabled = true;
-  addBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Ajout...';
+
+  setAddBtnLoading();
 
   chrome.runtime.sendMessage(
     { action: 'addTwitchTeam', teamName: teamName },
     async (response) => {
       if (chrome.runtime.lastError) {
         showError('Erreur lors de l\'ajout de la team');
-        addBtn.disabled = false;
-        addBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Ajouter';
+        setAddBtnDefault();
         return;
       }
-      
+
       if (response && response.success) {
         hideError();
         await loadStreamers();
@@ -656,8 +628,7 @@ async function addTwitchTeamFromAutocomplete(teamName) {
         showError(response?.error || 'Erreur lors de l\'ajout de la team');
       }
 
-      addBtn.disabled = false;
-      addBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Ajouter';
+      setAddBtnDefault();
     }
   );
 }
@@ -665,17 +636,16 @@ async function addTwitchTeamFromAutocomplete(teamName) {
 async function addStreamerFromAutocomplete(result) {
   hideAutocomplete();
   streamerInput.value = '';
-  
+
   try {
-    addBtn.disabled = true;
-    addBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Ajout...';
+    setAddBtnLoading();
 
     const streamers = await DB.getStreamers();
 
     const exists = streamers.some(s =>
       s.platform === result.platform && s.username.toLowerCase() === result.username.toLowerCase()
     );
-    
+
     if (exists) {
       showError('Ce streamer est déjà dans votre liste');
       return;
@@ -704,22 +674,20 @@ async function addStreamerFromAutocomplete(result) {
   } catch (error) {
     showError('Erreur lors de l\'ajout du streamer');
   } finally {
-    addBtn.disabled = false;
-    addBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Ajouter';
+    setAddBtnDefault();
   }
 }
 
 async function handleAddStreamer() {
   const input = streamerInput.value.trim();
-  
+
   if (!input) {
     showError('Veuillez entrer une URL ou un nom');
     return;
   }
 
   try {
-    addBtn.disabled = true;
-    addBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Ajout...';
+    setAddBtnLoading();
 
     if (input.includes('twitch.tv/team/') || input.toLowerCase().startsWith('team/')) {
       const teamMatch = input.match(/(?:twitch\.tv\/team\/|^team\/)([a-zA-Z0-9_-]+)/);
@@ -730,7 +698,7 @@ async function handleAddStreamer() {
     }
 
     const streamerData = parseStreamerInput(input);
-    
+
     if (!streamerData) {
       showError('URL ou format non reconnu');
       return;
@@ -741,7 +709,7 @@ async function handleAddStreamer() {
     const exists = streamers.some(s =>
       s.platform === streamerData.platform && s.username.toLowerCase() === streamerData.username.toLowerCase()
     );
-    
+
     if (exists) {
       showError('Ce streamer est déjà dans votre liste');
       return;
@@ -771,8 +739,7 @@ async function handleAddStreamer() {
   } catch (error) {
     showError('Erreur lors de l\'ajout');
   } finally {
-    addBtn.disabled = false;
-    addBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Ajouter';
+    setAddBtnDefault();
   }
 }
 
@@ -838,7 +805,7 @@ function createStreamerCard(streamer) {
     </div>
     ${streamer.isLive && streamer.viewerCount ? `
       <div class="grid-viewers">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        ${ICON_VIEWERS}
         ${formatViewers(streamer.viewerCount)}
       </div>
     ` : ''}
@@ -881,27 +848,22 @@ function createStreamerCard(streamer) {
   card.appendChild(deleteBtn);
   card.appendChild(gridPlatform);
 
-  // Add stream preview for live streamers with thumbnail
   if (streamer.isLive && streamer.thumbnail) {
     const preview = createStreamPreview(streamer);
     card.appendChild(preview);
 
-    // Position preview to the left of the card on hover
     card.addEventListener('mouseenter', () => {
       const rect = card.getBoundingClientRect();
       const previewWidth = 280;
       const previewHeight = preview.offsetHeight || 200;
 
-      // Position to the left of the card
       let left = rect.left - previewWidth - 12;
       let top = rect.top + (rect.height / 2) - (previewHeight / 2);
 
-      // If it goes off the left edge, position to the right instead
       if (left < 8) {
         left = rect.right + 12;
       }
 
-      // Keep it within vertical bounds
       if (top < 8) top = 8;
       if (top + previewHeight > window.innerHeight - 8) {
         top = window.innerHeight - previewHeight - 8;
@@ -918,7 +880,6 @@ function createStreamerCard(streamer) {
     card.style.transform = 'translateX(0)';
   }, 50);
 
-  // Mouse follow effect for gradient
   card.addEventListener('mousemove', (e) => {
     const rect = card.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -940,7 +901,6 @@ function createStreamerCard(streamer) {
     const shouldConfirm = settings.confirmDelete !== false;
 
     if (streamer.team) {
-      // Give user choice: delete just this streamer OR the entire team
       if (!shouldConfirm) {
         await deleteStreamer(streamer.id, card);
       } else {
@@ -964,9 +924,6 @@ function createStreamPreview(streamer) {
   const preview = document.createElement('div');
   preview.className = 'stream-preview';
 
-  const gameIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13h4m-2-2v4m3 1h.01M17 16h.01M2 12V7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-5z"/></svg>`;
-  const viewersIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
-
   const gameText = streamer.game ? escapeHtml(streamer.game) : 'Stream en cours';
   const viewersText = streamer.viewerCount ? formatViewers(streamer.viewerCount) + ' spectateurs' : '';
 
@@ -974,8 +931,8 @@ function createStreamPreview(streamer) {
     <div class="stream-preview-live-badge">Live</div>
     <img src="${streamer.thumbnail}" alt="Stream preview" class="stream-preview-thumbnail" onerror="this.style.display='none'">
     <div class="stream-preview-info">
-      <div class="stream-preview-game">${gameIcon} ${gameText}</div>
-      ${viewersText ? `<div class="stream-preview-viewers">${viewersIcon} ${viewersText}</div>` : ''}
+      <div class="stream-preview-game">${ICON_GAME} ${gameText}</div>
+      ${viewersText ? `<div class="stream-preview-viewers">${ICON_VIEWERS} ${viewersText}</div>` : ''}
     </div>
   `;
 
@@ -1039,7 +996,6 @@ async function deleteTeam(teamName) {
 }
 
 function showDeleteTeamModal(streamer, cardElement) {
-  // Remove existing modal if any
   const existingModal = document.querySelector('.delete-modal');
   if (existingModal) existingModal.remove();
 
@@ -1061,7 +1017,6 @@ function showDeleteTeamModal(streamer, cardElement) {
 
   document.body.appendChild(modal);
 
-  // Event listeners
   modal.querySelector('.delete-modal-close').addEventListener('click', () => modal.remove());
   modal.addEventListener('click', (e) => {
     if (e.target === modal) modal.remove();

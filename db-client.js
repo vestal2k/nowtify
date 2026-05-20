@@ -1,4 +1,4 @@
-const DB = {
+globalThis.DB = {
   _send(message) {
     return new Promise((resolve) => {
       try {

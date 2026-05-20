@@ -1341,21 +1341,21 @@ async function removeNotificationUrl(notificationId) {
 }
 
 async function sendNotification(streamer) {
-  return new Promise(async (resolve) => {
-    try {
-      const notificationId = `live-${streamer.id}-${Date.now()}`;
-      const url = getStreamerUrl(streamer);
+  try {
+    const notificationId = `live-${streamer.id}-${Date.now()}`;
+    const url = getStreamerUrl(streamer);
 
-      if (url) {
-        await saveNotificationUrl(notificationId, url);
-      }
+    if (url) {
+      await saveNotificationUrl(notificationId, url);
+    }
 
-      const iconUrl = streamer.avatar && streamer.avatar.startsWith('http')
-        ? streamer.avatar
-        : chrome.runtime.getURL('icons/logo.png');
+    const iconUrl = streamer.avatar && streamer.avatar.startsWith('http')
+      ? streamer.avatar
+      : chrome.runtime.getURL('icons/logo.png');
 
-      const { settings = {} } = await chrome.storage.sync.get('settings');
+    const { settings = {} } = await chrome.storage.sync.get('settings');
 
+    await new Promise((resolve) => {
       chrome.notifications.create(notificationId, {
         type: 'basic',
         iconUrl: iconUrl,
@@ -1370,13 +1370,12 @@ async function sendNotification(streamer) {
         }
         resolve(createdId);
       });
+    });
 
-      await saveToHistory(streamer);
-    } catch (error) {
-      console.error('[Nowtify] sendNotification error:', error);
-      resolve(null);
-    }
-  });
+    await saveToHistory(streamer);
+  } catch (error) {
+    console.error('[Nowtify] sendNotification error:', error);
+  }
 }
 
 chrome.notifications.onClicked.addListener(async (notificationId) => {
