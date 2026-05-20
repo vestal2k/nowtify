@@ -7,6 +7,7 @@ const errorMessage = document.getElementById('errorMessage');
 const loadingState = document.getElementById('loadingState');
 const filtersBar = document.getElementById('filtersBar');
 const compactBtn = document.getElementById('compactBtn');
+const refreshBtn = document.getElementById('refreshBtn');
 
 let autocompleteTimeout = null;
 let autocompleteList = null;
@@ -43,6 +44,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadStreamers();
   setupEventListeners();
   createAutocompleteList();
+  refreshStreamers();
 });
 
 async function checkAuthError() {
@@ -120,6 +122,12 @@ function setupEventListeners() {
 
   authErrorBtn.addEventListener('click', () => {
     chrome.runtime.openOptionsPage();
+  });
+
+  refreshBtn.addEventListener('click', () => {
+    if (!refreshBtn.classList.contains('loading')) {
+      refreshStreamers();
+    }
   });
 
   filtersBar.addEventListener('click', (e) => {
@@ -279,6 +287,17 @@ async function loadStreamers() {
     showError('Erreur lors du chargement');
     showLoading(false);
   }
+}
+
+function refreshStreamers() {
+  refreshBtn.classList.add('loading');
+  chrome.runtime.sendMessage({ action: 'checkNow' }, async () => {
+    if (!chrome.runtime.lastError) {
+      await loadStreamers();
+      await checkAuthError();
+    }
+    refreshBtn.classList.remove('loading');
+  });
 }
 
 function showSkeletons(count) {
