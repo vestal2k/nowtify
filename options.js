@@ -76,7 +76,7 @@ function setupEventListeners() {
 
 async function loadSettings() {
   try {
-    const { settings = {} } = await chrome.storage.sync.get('settings');
+    const settings = await DB.getSettings();
 
     notificationsEnabled.checked = settings.notifications !== false;
     persistentNotifications.checked = settings.persistentNotifications === true;
@@ -157,7 +157,7 @@ async function saveSettings(showMessage = true) {
       refreshInterval: refreshInterval.value
     };
 
-    await chrome.storage.sync.set({ settings });
+    await DB.saveSettings(settings);
 
     chrome.runtime.sendMessage({ action: 'settingsUpdated', settings });
 
@@ -183,13 +183,7 @@ function updateAlarm() {
 
 async function loadHistory() {
   try {
-    const bgHistory = await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: 'getHistory', limit: 50 }, (response) => {
-        if (chrome.runtime.lastError || !response) resolve(null);
-        else resolve(response.history);
-      });
-    });
-    const history = bgHistory || (await chrome.storage.local.get('history')).history || [];
+    const history = await DB.getHistory(50);
 
     if (history.length === 0) {
       historyList.innerHTML = `
@@ -260,10 +254,7 @@ async function clearHistory() {
   }
 
   try {
-    await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: 'clearHistory' }, () => resolve());
-    });
-    await chrome.storage.local.set({ history: [] });
+    await DB.clearHistory();
     await loadHistory();
   } catch (error) {
     alert('Erreur lors de l\'effacement de l\'historique');
@@ -298,19 +289,7 @@ function escapeHtml(text) {
 
 async function loadTeamsManagement() {
   try {
-    let streamers = [];
-    const bgResponse = await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: 'getStreamers' }, (response) => {
-        if (chrome.runtime.lastError || !response) resolve(null);
-        else resolve(response.streamers);
-      });
-    });
-    if (bgResponse) {
-      streamers = bgResponse;
-    } else {
-      const syncData = await chrome.storage.sync.get('streamers');
-      streamers = syncData.streamers || [];
-    }
+    const streamers = await DB.getStreamers();
     const teamsMap = {};
 
     streamers.forEach(streamer => {
@@ -392,36 +371,14 @@ async function loadTeamsManagement() {
 
 async function deleteTeamFromSettings(teamName) {
   try {
-    const bgStreamers = await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: 'getStreamers' }, (response) => {
-        if (chrome.runtime.lastError || !response) resolve(null);
-        else resolve(response.streamers);
-      });
-    });
-    const streamers = bgStreamers || (await chrome.storage.sync.get('streamers')).streamers || [];
-    const filtered = streamers.filter(s => s.team !== teamName);
-    await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: 'saveStreamers', streamers: filtered }, () => resolve());
-    });
-    await chrome.storage.local.remove(`teamLogo_${teamName.toLowerCase()}`);
+    await DB.deleteTeam(teamName);
     await loadTeamsManagement();
   } catch (error) {}
 }
 
 async function deleteMemberFromSettings(streamerId) {
   try {
-    const bgStreamers = await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: 'getStreamers' }, (response) => {
-        if (chrome.runtime.lastError || !response) resolve(null);
-        else resolve(response.streamers);
-      });
-    });
-    const streamers = bgStreamers || (await chrome.storage.sync.get('streamers')).streamers || [];
-    const filtered = streamers.filter(s => s.id !== streamerId);
-    await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: 'saveStreamers', streamers: filtered }, () => resolve());
-    });
-    await chrome.storage.local.remove(`avatar_${streamerId}`);
+    await DB.deleteStreamer(streamerId);
     await loadTeamsManagement();
   } catch (error) {}
 }
@@ -438,27 +395,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 async function loadGroups() {
   try {
-    let groups = [];
-    let streamers = [];
-    const bgGroups = await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: 'getGroups' }, (response) => {
-        if (chrome.runtime.lastError || !response) resolve(null);
-        else resolve(response.groups);
-      });
-    });
-    const bgStreamers = await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: 'getStreamers' }, (response) => {
-        if (chrome.runtime.lastError || !response) resolve(null);
-        else resolve(response.streamers);
-      });
-    });
-    if (bgGroups) groups = bgGroups;
-    if (bgStreamers) streamers = bgStreamers;
-    if (groups.length === 0 || streamers.length === 0) {
-      const syncData = await chrome.storage.sync.get(['groups', 'streamers']);
-      if (groups.length === 0) groups = syncData.groups || [];
-      if (streamers.length === 0) streamers = syncData.streamers || [];
-    }
+    const groups = await DB.getGroups();
+    const streamers = await DB.getStreamers();
 
     if (groups.length === 0) {
       groupsList.innerHTML = '<div class="empty-groups">Aucun groupe créé</div>';
@@ -506,13 +444,7 @@ async function addGroup() {
   if (!name) return;
 
   try {
-    const bgGroups = await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: 'getGroups' }, (response) => {
-        if (chrome.runtime.lastError || !response) resolve(null);
-        else resolve(response.groups);
-      });
-    });
-    const groups = bgGroups || (await chrome.storage.sync.get('groups')).groups || [];
+    const groups = await DB.getGroups();
 
     if (groups.some(g => g.name.toLowerCase() === name.toLowerCase())) {
       alert('Un groupe avec ce nom existe déjà');
@@ -526,10 +458,7 @@ async function addGroup() {
       createdAt: Date.now()
     };
 
-    groups.push(newGroup);
-    await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: 'saveGroups', groups }, () => resolve());
-    });
+    await DB.addGroup(newGroup);
 
     newGroupName.value = '';
     await loadGroups();
@@ -545,41 +474,8 @@ async function deleteGroup(groupId) {
   }
 
   try {
-    const bgGroups = await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: 'getGroups' }, (response) => {
-        if (chrome.runtime.lastError || !response) resolve(null);
-        else resolve(response.groups);
-      });
-    });
-    const bgStreamers = await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: 'getStreamers' }, (response) => {
-        if (chrome.runtime.lastError || !response) resolve(null);
-        else resolve(response.streamers);
-      });
-    });
-    const groups = bgGroups || (await chrome.storage.sync.get('groups')).groups || [];
-    const streamers = bgStreamers || (await chrome.storage.sync.get('streamers')).streamers || [];
-
-    const filteredGroups = groups.filter(g => g.id !== groupId);
-
-    const updatedStreamers = streamers.map(s => {
-      if (s.group === groupId) {
-        const { group, ...rest } = s;
-        return rest;
-      }
-      return s;
-    });
-
-    await Promise.all([
-      new Promise((resolve) => {
-        chrome.runtime.sendMessage({ action: 'saveGroups', groups: filteredGroups }, () => resolve());
-      }),
-      new Promise((resolve) => {
-        chrome.runtime.sendMessage({ action: 'saveStreamers', streamers: updatedStreamers }, () => resolve());
-      })
-    ]);
+    await DB.deleteGroup(groupId);
     await loadGroups();
-
   } catch (error) {
     alert('Erreur lors de la suppression du groupe');
   }
@@ -587,28 +483,10 @@ async function deleteGroup(groupId) {
 
 async function exportData() {
   try {
-    const bgStreamers = await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: 'getStreamers' }, (response) => {
-        if (chrome.runtime.lastError || !response) resolve(null);
-        else resolve(response.streamers);
-      });
-    });
-    const bgGroups = await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: 'getGroups' }, (response) => {
-        if (chrome.runtime.lastError || !response) resolve(null);
-        else resolve(response.groups);
-      });
-    });
-    const bgHistory = await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: 'getHistory', limit: 100 }, (response) => {
-        if (chrome.runtime.lastError || !response) resolve(null);
-        else resolve(response.history);
-      });
-    });
-    const { settings = {} } = await chrome.storage.sync.get('settings');
-    const streamers = bgStreamers || (await chrome.storage.sync.get('streamers')).streamers || [];
-    const groups = bgGroups || (await chrome.storage.sync.get('groups')).groups || [];
-    const history = bgHistory || (await chrome.storage.local.get('history')).history || [];
+    const streamers = await DB.getStreamers();
+    const groups = await DB.getGroups();
+    const history = await DB.getHistory(100);
+    const settings = await DB.getSettings();
 
     const exportObj = {
       version: '1.0',
@@ -652,20 +530,8 @@ async function importData(event) {
       return;
     }
 
-    const bgCurrentStreamers = await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: 'getStreamers' }, (response) => {
-        if (chrome.runtime.lastError || !response) resolve(null);
-        else resolve(response.streamers);
-      });
-    });
-    const bgCurrentGroups = await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: 'getGroups' }, (response) => {
-        if (chrome.runtime.lastError || !response) resolve(null);
-        else resolve(response.groups);
-      });
-    });
-    const currentStreamers = bgCurrentStreamers || (await chrome.storage.sync.get('streamers')).streamers || [];
-    const currentGroups = bgCurrentGroups || (await chrome.storage.sync.get('groups')).groups || [];
+    const currentStreamers = await DB.getStreamers();
+    const currentGroups = await DB.getGroups();
 
     const importedStreamers = importObj.data.streamers || [];
     const mergedStreamers = [...currentStreamers];
@@ -690,14 +556,8 @@ async function importData(event) {
       }
     });
 
-    await Promise.all([
-      new Promise((resolve) => {
-        chrome.runtime.sendMessage({ action: 'saveStreamers', streamers: mergedStreamers }, () => resolve());
-      }),
-      new Promise((resolve) => {
-        chrome.runtime.sendMessage({ action: 'saveGroups', groups: mergedGroups }, () => resolve());
-      })
-    ]);
+    await DB.saveStreamers(mergedStreamers);
+    await DB.saveGroups(mergedGroups);
 
     await loadGroups();
     await loadHistory();

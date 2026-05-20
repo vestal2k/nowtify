@@ -33,48 +33,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function checkAuthError() {
   try {
-    const response = await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: 'getAuthError' }, (res) => {
-        if (chrome.runtime.lastError || !res) resolve(null);
-        else resolve(res);
-      });
-    });
-    if (response && response.hasAuthError) {
-      authErrorBanner.classList.remove('hidden');
-    } else {
-      authErrorBanner.classList.add('hidden');
-    }
+    const hasAuthError = await DB.getAuthError();
+    authErrorBanner.classList.toggle('hidden', !hasAuthError);
   } catch {
     authErrorBanner.classList.add('hidden');
   }
 }
 
 async function loadGroups() {
-  let groups = [];
-  let streamers = [];
-
-  try {
-    const bgGroups = await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: 'getGroups' }, (response) => {
-        if (chrome.runtime.lastError || !response) resolve(null);
-        else resolve(response.groups);
-      });
-    });
-    const bgStreamers = await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: 'getStreamers' }, (response) => {
-        if (chrome.runtime.lastError || !response) resolve(null);
-        else resolve(response.streamers);
-      });
-    });
-    if (bgGroups) groups = bgGroups;
-    if (bgStreamers) streamers = bgStreamers;
-  } catch {}
-
-  if (groups.length === 0 || streamers.length === 0) {
-    const syncData = await chrome.storage.sync.get(['groups', 'streamers']);
-    if (groups.length === 0) groups = syncData.groups || [];
-    if (streamers.length === 0) streamers = syncData.streamers || [];
-  }
+  const groups = await DB.getGroups();
+  const streamers = await DB.getStreamers();
 
   allGroups = groups;
 
@@ -167,20 +135,17 @@ function setupEventListeners() {
   });
 
   // Compact mode toggle
-  compactBtn.addEventListener('click', () => {
+  compactBtn.addEventListener('click', async () => {
     isCompactMode = !isCompactMode;
     compactBtn.classList.toggle('active', isCompactMode);
     streamersList.classList.toggle('compact', isCompactMode);
 
-    // Save preference
-    chrome.storage.sync.get('settings', ({ settings = {} }) => {
-      settings.compactMode = isCompactMode;
-      chrome.storage.sync.set({ settings });
-    });
+    const settings = await DB.getSettings();
+    settings.compactMode = isCompactMode;
+    await DB.saveSettings(settings);
   });
 
-  // Load compact mode preference
-  chrome.storage.sync.get('settings', ({ settings = {} }) => {
+  DB.getSettings().then((settings) => {
     if (settings.compactMode) {
       isCompactMode = true;
       compactBtn.classList.add('active');
@@ -275,23 +240,7 @@ async function loadStreamers() {
   try {
     const scrollTop = document.body.scrollTop || document.documentElement.scrollTop;
 
-    const baseStreamers = await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: 'getStreamers' }, (response) => {
-        if (chrome.runtime.lastError || !response || !response.streamers) {
-          resolve(null);
-        } else {
-          resolve(response.streamers);
-        }
-      });
-    });
-
-    let streamers;
-    if (baseStreamers && baseStreamers.length > 0) {
-      streamers = baseStreamers;
-    } else {
-      const syncData = await chrome.storage.sync.get('streamers');
-      streamers = syncData.streamers || [];
-    }
+    const streamers = await DB.getStreamers();
 
     if (streamers.length === 0) {
       showEmptyState(true);
@@ -309,28 +258,27 @@ async function loadStreamers() {
       showSkeletons(streamers.length);
     }
 
-    chrome.runtime.sendMessage({ action: 'getStreamersData' }, (response) => {
-      const streamersData = (response && response.streamers) ? response.streamers : streamers;
+    const streamersData = await DB.getStreamersData();
+    const resolved = streamersData.length > 0 ? streamersData : streamers;
 
-      const sortedStreamers = sortStreamers(streamersData);
+    const sortedStreamers = sortStreamers(resolved);
 
-      allStreamersData = sortedStreamers;
+    allStreamersData = sortedStreamers;
 
-      const filteredStreamers = filterStreamers(sortedStreamers, currentFilter);
+    const filteredStreamers = filterStreamers(sortedStreamers, currentFilter);
 
-      if (filteredStreamers.length === 0 && sortedStreamers.length > 0) {
-        streamersList.innerHTML = '<div class="no-filter-results">Aucun streamer ne correspond à ce filtre</div>';
-      } else {
-        updateStreamersWithDiff(filteredStreamers);
-      }
+    if (filteredStreamers.length === 0 && sortedStreamers.length > 0) {
+      streamersList.innerHTML = '<div class="no-filter-results">Aucun streamer ne correspond à ce filtre</div>';
+    } else {
+      updateStreamersWithDiff(filteredStreamers);
+    }
 
-      showLoading(false);
-      isInitialLoad = false;
+    showLoading(false);
+    isInitialLoad = false;
 
-      requestAnimationFrame(() => {
-        document.body.scrollTop = scrollTop;
-        document.documentElement.scrollTop = scrollTop;
-      });
+    requestAnimationFrame(() => {
+      document.body.scrollTop = scrollTop;
+      document.documentElement.scrollTop = scrollTop;
     });
   } catch (error) {
     showError('Erreur lors du chargement');
@@ -722,9 +670,9 @@ async function addStreamerFromAutocomplete(result) {
     addBtn.disabled = true;
     addBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Ajout...';
 
-    const { streamers = [] } = await chrome.storage.sync.get('streamers');
-    
-    const exists = streamers.some(s => 
+    const streamers = await DB.getStreamers();
+
+    const exists = streamers.some(s =>
       s.platform === result.platform && s.username.toLowerCase() === result.username.toLowerCase()
     );
     
@@ -746,8 +694,7 @@ async function addStreamerFromAutocomplete(result) {
       priority: 'high'
     };
 
-    streamers.push(newStreamer);
-    await chrome.storage.sync.set({ streamers });
+    await DB.addStreamer(newStreamer);
 
     hideError();
     await loadStreamers();
@@ -789,9 +736,9 @@ async function handleAddStreamer() {
       return;
     }
 
-    const { streamers = [] } = await chrome.storage.sync.get('streamers');
-    
-    const exists = streamers.some(s => 
+    const streamers = await DB.getStreamers();
+
+    const exists = streamers.some(s =>
       s.platform === streamerData.platform && s.username.toLowerCase() === streamerData.username.toLowerCase()
     );
     
@@ -813,8 +760,7 @@ async function handleAddStreamer() {
       priority: 'high'
     };
 
-    streamers.push(newStreamer);
-    await chrome.storage.sync.set({ streamers });
+    await DB.addStreamer(newStreamer);
 
     streamerInput.value = '';
     hideError();
@@ -990,7 +936,7 @@ function createStreamerCard(streamer) {
   deleteBtn.addEventListener('click', async (e) => {
     e.stopPropagation();
 
-    const { settings = {} } = await chrome.storage.sync.get('settings');
+    const settings = await DB.getSettings();
     const shouldConfirm = settings.confirmDelete !== false;
 
     if (streamer.team) {
@@ -1062,9 +1008,7 @@ function formatViewers(count) {
 
 async function deleteStreamer(id, cardElement) {
   try {
-    const { streamers = [] } = await chrome.storage.sync.get('streamers');
-    const filtered = streamers.filter(s => s.id !== id);
-    await chrome.storage.sync.set({ streamers: filtered });
+    await DB.deleteStreamer(id);
 
     currentStreamersMap.delete(id);
 
@@ -1075,7 +1019,7 @@ async function deleteStreamer(id, cardElement) {
 
     setTimeout(() => {
       cardElement.remove();
-      if (filtered.length === 0) {
+      if (currentStreamersMap.size === 0) {
         showEmptyState(true);
         isInitialLoad = true;
       }
@@ -1087,9 +1031,7 @@ async function deleteStreamer(id, cardElement) {
 
 async function deleteTeam(teamName) {
   try {
-    const { streamers = [] } = await chrome.storage.sync.get('streamers');
-    const filtered = streamers.filter(s => s.team !== teamName);
-    await chrome.storage.sync.set({ streamers: filtered });
+    await DB.deleteTeam(teamName);
     await loadStreamers();
   } catch (error) {
     showError('Erreur lors de la suppression de la team');
