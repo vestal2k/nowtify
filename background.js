@@ -127,33 +127,89 @@ async function getStreamersFromDB() {
   }
 }
 
-async function saveStreamersToDB(streamers, skipSync = false) {
-  try {
-    const db = await openDB();
-    await new Promise((resolve, reject) => {
-      const transaction = db.transaction(['streamers'], 'readwrite');
-      const store = transaction.objectStore('streamers');
+async function saveStreamersToDB(streamers) {
+  const db = await openDB();
+  await new Promise((resolve, reject) => {
+    const transaction = db.transaction(['streamers'], 'readwrite');
+    const store = transaction.objectStore('streamers');
 
-      store.clear();
-      for (const streamer of streamers) {
-        store.put(streamer);
-      }
-
-      transaction.oncomplete = () => resolve();
-      transaction.onerror = () => reject(transaction.error);
-    });
-
-    if (!skipSync) {
-      try {
-        await chrome.storage.sync.set({ streamers });
-      } catch (syncError) {
-        console.warn('Could not sync to chrome.storage.sync:', syncError);
-      }
+    store.clear();
+    for (const streamer of streamers) {
+      store.put(streamer);
     }
-  } catch (error) {
-    console.warn('IndexedDB write failed, falling back to chrome.storage:', error);
-    await chrome.storage.sync.set({ streamers });
-  }
+
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
+}
+
+async function putStreamersToDB(streamers) {
+  const db = await openDB();
+  await new Promise((resolve, reject) => {
+    const transaction = db.transaction(['streamers'], 'readwrite');
+    const store = transaction.objectStore('streamers');
+
+    for (const streamer of streamers) {
+      store.put(streamer);
+    }
+
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
+}
+
+async function deleteStreamerFromDB(id) {
+  const db = await openDB();
+  await new Promise((resolve, reject) => {
+    const transaction = db.transaction(['streamers'], 'readwrite');
+    transaction.objectStore('streamers').delete(id);
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
+  await chrome.storage.local.remove([`avatar_${id}`, `thumbnail_${id}`]);
+}
+
+async function deleteTeamFromDB(teamName) {
+  const db = await openDB();
+  await new Promise((resolve, reject) => {
+    const transaction = db.transaction(['streamers'], 'readwrite');
+    const store = transaction.objectStore('streamers');
+    const request = store.openCursor();
+
+    request.onsuccess = (event) => {
+      const cursor = event.target.result;
+      if (cursor) {
+        if (cursor.value.team === teamName) {
+          cursor.delete();
+        }
+        cursor.continue();
+      }
+    };
+
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
+  await chrome.storage.local.remove(`teamLogo_${teamName.toLowerCase().trim()}`);
+}
+
+async function syncCheckedStreamers(updatedStreamers) {
+  const db = await openDB();
+  await new Promise((resolve, reject) => {
+    const transaction = db.transaction(['streamers'], 'readwrite');
+    const store = transaction.objectStore('streamers');
+
+    for (const streamer of updatedStreamers) {
+      const getRequest = store.get(streamer.id);
+      getRequest.onsuccess = () => {
+        if (getRequest.result) {
+          store.put(streamer);
+        }
+      };
+    }
+
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
 }
 
 async function migrateToIndexedDB() {
@@ -301,23 +357,53 @@ async function getGroupsFromDB() {
 }
 
 async function saveGroupsToDB(groups) {
-  try {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(['groups'], 'readwrite');
-      const store = transaction.objectStore('groups');
+  const db = await openDB();
+  await new Promise((resolve, reject) => {
+    const transaction = db.transaction(['groups'], 'readwrite');
+    const store = transaction.objectStore('groups');
 
-      store.clear();
-      for (const group of groups) {
-        store.put(group);
+    store.clear();
+    for (const group of groups) {
+      store.put(group);
+    }
+
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
+}
+
+async function putGroupToDB(group) {
+  const db = await openDB();
+  await new Promise((resolve, reject) => {
+    const transaction = db.transaction(['groups'], 'readwrite');
+    transaction.objectStore('groups').put(group);
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
+}
+
+async function deleteGroupFromDB(groupId) {
+  const db = await openDB();
+  await new Promise((resolve, reject) => {
+    const transaction = db.transaction(['streamers', 'groups'], 'readwrite');
+    transaction.objectStore('groups').delete(groupId);
+
+    const streamerStore = transaction.objectStore('streamers');
+    const request = streamerStore.openCursor();
+    request.onsuccess = (event) => {
+      const cursor = event.target.result;
+      if (cursor) {
+        if (cursor.value.group === groupId) {
+          const { group, ...rest } = cursor.value;
+          cursor.update(rest);
+        }
+        cursor.continue();
       }
+    };
 
-      transaction.oncomplete = () => resolve();
-      transaction.onerror = () => reject(transaction.error);
-    });
-  } catch (error) {
-    await chrome.storage.sync.set({ groups });
-  }
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
 }
 
 function applyDefaultIcon() {
@@ -424,7 +510,30 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === 'saveStreamers') {
-    saveStreamersToDB(request.streamers).then(() => sendResponse({ success: true }));
+    saveStreamersToDB(request.streamers)
+      .then(() => sendResponse({ success: true }))
+      .catch(() => sendResponse({ success: false }));
+    return true;
+  }
+
+  if (request.action === 'addStreamer') {
+    putStreamersToDB([request.streamer])
+      .then(() => sendResponse({ success: true }))
+      .catch(() => sendResponse({ success: false }));
+    return true;
+  }
+
+  if (request.action === 'deleteStreamer') {
+    deleteStreamerFromDB(request.id)
+      .then(() => sendResponse({ success: true }))
+      .catch(() => sendResponse({ success: false }));
+    return true;
+  }
+
+  if (request.action === 'deleteTeam') {
+    deleteTeamFromDB(request.teamName)
+      .then(() => sendResponse({ success: true }))
+      .catch(() => sendResponse({ success: false }));
     return true;
   }
 
@@ -434,7 +543,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === 'saveGroups') {
-    saveGroupsToDB(request.groups).then(() => sendResponse({ success: true }));
+    saveGroupsToDB(request.groups)
+      .then(() => sendResponse({ success: true }))
+      .catch(() => sendResponse({ success: false }));
+    return true;
+  }
+
+  if (request.action === 'addGroup') {
+    putGroupToDB(request.group)
+      .then(() => sendResponse({ success: true }))
+      .catch(() => sendResponse({ success: false }));
+    return true;
+  }
+
+  if (request.action === 'deleteGroup') {
+    deleteGroupFromDB(request.groupId)
+      .then(() => sendResponse({ success: true }))
+      .catch(() => sendResponse({ success: false }));
     return true;
   }
 
@@ -520,6 +645,7 @@ async function addTwitchTeam(teamName) {
     }
 
     const streamers = await getStreamersFromDB();
+    const touched = [];
     let addedCount = 0;
 
     for (const user of teamUsers) {
@@ -530,6 +656,7 @@ async function addTwitchTeam(teamName) {
       if (existingIndex >= 0) {
         streamers[existingIndex].team = teamName;
         if (teamLogoUrl) streamers[existingIndex].teamLogo = teamLogoUrl;
+        touched.push(streamers[existingIndex]);
       } else {
         const newStreamer = {
           id: `twitch_${user.user_login}_${Date.now()}_${addedCount}`,
@@ -545,11 +672,12 @@ async function addTwitchTeam(teamName) {
           priority: 'high'
         };
         streamers.push(newStreamer);
+        touched.push(newStreamer);
         addedCount++;
       }
     }
 
-    await saveStreamersToDB(streamers);
+    await putStreamersToDB(touched);
     checkAllStreamers();
 
     return { success: true, count: addedCount };
@@ -586,6 +714,7 @@ async function checkAllStreamers() {
     }
 
     const updatedStreamers = [];
+    const mediaCache = {};
     let liveCount = 0;
 
     for (const streamer of streamers) {
@@ -654,11 +783,11 @@ async function checkAllStreamers() {
         updatedStreamers.push(updated);
 
         if (updated.avatar) {
-          await chrome.storage.local.set({ [`avatar_${updated.id}`]: updated.avatar });
+          mediaCache[`avatar_${updated.id}`] = updated.avatar;
         }
 
         if (updated.thumbnail) {
-          await chrome.storage.local.set({ [`thumbnail_${updated.id}`]: updated.thumbnail });
+          mediaCache[`thumbnail_${updated.id}`] = updated.thumbnail;
         }
 
         streamersCache[streamer.id] = updated;
@@ -667,8 +796,12 @@ async function checkAllStreamers() {
       }
     }
 
+    if (Object.keys(mediaCache).length > 0) {
+      await chrome.storage.local.set(mediaCache);
+    }
+
     updateBadge(liveCount);
-    await saveStreamersToDB(updatedStreamers);
+    await syncCheckedStreamers(updatedStreamers);
 
     await updateAlarmInterval(liveCount);
 
@@ -1232,16 +1365,5 @@ async function saveToHistory(streamer) {
 
   await saveHistoryToDB(entry);
 }
-
-chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName === 'sync') {
-    if (changes.streamers?.newValue) {
-      saveStreamersToDB(changes.streamers.newValue, true).catch(() => {});
-    }
-    if (changes.groups?.newValue) {
-      saveGroupsToDB(changes.groups.newValue).catch(() => {});
-    }
-  }
-});
 
 migrateToIndexedDB().then(() => checkAllStreamers());
