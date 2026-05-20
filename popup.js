@@ -938,17 +938,25 @@ function getStatusText(streamer) {
   if (streamer.isLive) {
     return streamer.viewerCount ? formatViewers(streamer.viewerCount) : 'Live';
   }
-  if (streamer.lastLiveDate && !streamer.isLive) {
-    const hoursSince = Math.floor((Date.now() - streamer.lastLiveDate) / (1000 * 60 * 60));
-    if (hoursSince < 24) {
-      return hoursSince === 0 ? '< 1h' : `${hoursSince}h`;
-    }
+  if (streamer.lastLiveDate) {
+    return formatTimeSince(streamer.lastLiveDate);
   }
-  if (streamer.wasLiveRecently && streamer.lastLiveDate) {
-    const hoursSince = Math.floor((Date.now() - streamer.lastLiveDate) / (1000 * 60 * 60));
-    return hoursSince === 0 ? '< 1h' : `${hoursSince}h`;
-  }
-  return 'Offline';
+  return 'Hors ligne';
+}
+
+function formatTimeSince(timestamp) {
+  const diff = Date.now() - timestamp;
+  const hours = Math.floor(diff / 3600000);
+  if (hours < 1) return '< 1h';
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(diff / 86400000);
+  if (days < 7) return `${days}j`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 5) return `${weeks}sem`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mois`;
+  const years = Math.floor(days / 365);
+  return `${years}an${years > 1 ? 's' : ''}`;
 }
 
 function formatViewers(count) {
