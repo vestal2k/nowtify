@@ -1,8 +1,4 @@
 const notificationsEnabled = document.getElementById('notificationsEnabled');
-const notificationSound = document.getElementById('notificationSound');
-const notificationSoundType = document.getElementById('notificationSoundType');
-const soundSelectContainer = document.getElementById('soundSelectContainer');
-const playSoundBtn = document.getElementById('playSoundBtn');
 const persistentNotifications = document.getElementById('persistentNotifications');
 const confirmDelete = document.getElementById('confirmDelete');
 const refreshInterval = document.getElementById('refreshInterval');
@@ -23,7 +19,6 @@ const exportBtn = document.getElementById('exportBtn');
 const importBtn = document.getElementById('importBtn');
 const importFile = document.getElementById('importFile');
 
-// Group colors palette
 const GROUP_COLORS = [
   '#5CFFE0', '#7B5CFF', '#FF4F8B', '#FF3366', '#10B981',
   '#3B82F6', '#F59E0B', '#EC4899', '#8B5CF6', '#06B6D4'
@@ -61,37 +56,20 @@ function setupEventListeners() {
     });
   });
 
-  // Sound toggle with visibility control
-  notificationSound.addEventListener('change', () => {
-    soundSelectContainer.style.display = notificationSound.checked ? 'flex' : 'none';
-    saveSettings(false);
-  });
-
-  notificationSoundType.addEventListener('change', () => {
-    saveSettings(false);
-  });
-
-  playSoundBtn.addEventListener('click', () => {
-    playNotificationSound(notificationSoundType.value);
-  });
-
   refreshInterval.addEventListener('change', () => {
     saveSettings(false);
     updateAlarm();
   });
 
-  // Groups
   addGroupBtn.addEventListener('click', addGroup);
   newGroupName.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') addGroup();
   });
 
-  // Export/Import
   exportBtn.addEventListener('click', exportData);
   importBtn.addEventListener('click', () => importFile.click());
   importFile.addEventListener('change', importData);
 
-  // Twitch OAuth
   twitchLoginBtn.addEventListener('click', handleTwitchLogin);
   twitchLogoutBtn.addEventListener('click', handleTwitchLogout);
 }
@@ -101,9 +79,6 @@ async function loadSettings() {
     const { settings = {} } = await chrome.storage.sync.get('settings');
 
     notificationsEnabled.checked = settings.notifications !== false;
-    notificationSound.checked = settings.notificationSound === true;
-    notificationSoundType.value = settings.notificationSoundType || 'default';
-    soundSelectContainer.style.display = settings.notificationSound ? 'flex' : 'none';
     persistentNotifications.checked = settings.persistentNotifications === true;
     confirmDelete.checked = settings.confirmDelete !== false;
     refreshInterval.value = settings.refreshInterval || '5';
@@ -177,8 +152,6 @@ async function saveSettings(showMessage = true) {
   try {
     const settings = {
       notifications: notificationsEnabled.checked,
-      notificationSound: notificationSound.checked,
-      notificationSoundType: notificationSoundType.value,
       persistentNotifications: persistentNotifications.checked,
       confirmDelete: confirmDelete.checked,
       refreshInterval: refreshInterval.value
@@ -229,7 +202,6 @@ async function loadHistory() {
 
     historyList.innerHTML = '';
 
-    // Afficher les 10 derniers
     const recentHistory = history.slice(0, 10);
 
     recentHistory.forEach(item => {
@@ -239,7 +211,6 @@ async function loadHistory() {
       const timeAgo = getTimeAgo(item.timestamp);
       const platformClass = `platform-${item.platform}`;
 
-      // Format duration if available
       let durationText = '';
       if (item.duration) {
         const hours = Math.floor(item.duration / 3600000);
@@ -311,11 +282,11 @@ function getTimeAgo(timestamp) {
   if (minutes < 60) return `Il y a ${minutes} min`;
   if (hours < 24) return `Il y a ${hours}h`;
   if (days < 7) return `Il y a ${days}j`;
-  
+
   const date = new Date(timestamp);
-  return date.toLocaleDateString('fr-FR', { 
-    day: 'numeric', 
-    month: 'short' 
+  return date.toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'short'
   });
 }
 
@@ -341,7 +312,7 @@ async function loadTeamsManagement() {
       streamers = syncData.streamers || [];
     }
     const teamsMap = {};
-    
+
     streamers.forEach(streamer => {
       if (streamer.team) {
         if (!teamsMap[streamer.team]) {
@@ -352,32 +323,39 @@ async function loadTeamsManagement() {
     });
 
     const teamsManagement = document.getElementById('teamsManagement');
-    
+
     if (Object.keys(teamsMap).length === 0) {
       teamsManagement.innerHTML = '<p style="color: rgba(232, 232, 232, 0.5); padding: 20px; text-align: center;">Aucune team ajoutée</p>';
       return;
     }
 
     teamsManagement.innerHTML = '';
-    
+
     Object.keys(teamsMap).sort().forEach(teamName => {
       const members = teamsMap[teamName];
       const teamCard = document.createElement('div');
       teamCard.className = 'team-card';
       teamCard.style.cssText = 'background: rgba(30, 30, 40, 0.6); border-radius: 8px; padding: 16px; margin-bottom: 12px;';
-      
+
       const teamHeader = document.createElement('div');
       teamHeader.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;';
-      teamHeader.innerHTML = `
-        <h3 style="margin: 0; font-size: 16px; color: rgba(92, 255, 224, 0.9);">${capitalizeTeamName(teamName)} (${members.length})</h3>
-        <button class="btn-danger-small" data-team="${teamName}" style="padding: 6px 12px; font-size: 12px; background: rgba(255, 82, 82, 0.2); color: #ff5252; border: 1px solid rgba(255, 82, 82, 0.3); border-radius: 6px; cursor: pointer;">
-          Supprimer la team
-        </button>
-      `;
-      
+
+      const teamTitle = document.createElement('h3');
+      teamTitle.style.cssText = 'margin: 0; font-size: 16px; color: rgba(92, 255, 224, 0.9);';
+      teamTitle.textContent = `${capitalizeTeamName(teamName)} (${members.length})`;
+
+      const teamDeleteBtn = document.createElement('button');
+      teamDeleteBtn.className = 'btn-danger-small';
+      teamDeleteBtn.dataset.team = teamName;
+      teamDeleteBtn.style.cssText = 'padding: 6px 12px; font-size: 12px; background: rgba(255, 82, 82, 0.2); color: #ff5252; border: 1px solid rgba(255, 82, 82, 0.3); border-radius: 6px; cursor: pointer;';
+      teamDeleteBtn.textContent = 'Supprimer la team';
+
+      teamHeader.appendChild(teamTitle);
+      teamHeader.appendChild(teamDeleteBtn);
+
       const membersList = document.createElement('div');
       membersList.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;';
-      
+
       members.forEach(member => {
         const memberItem = document.createElement('div');
         memberItem.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(20, 20, 30, 0.4); border-radius: 6px;';
@@ -387,7 +365,7 @@ async function loadTeamsManagement() {
         `;
         membersList.appendChild(memberItem);
       });
-      
+
       teamCard.appendChild(teamHeader);
       teamCard.appendChild(membersList);
       teamsManagement.appendChild(teamCard);
@@ -458,10 +436,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// ============================================
-// Groups Management
-// ============================================
-
 async function loadGroups() {
   try {
     let groups = [];
@@ -493,7 +467,7 @@ async function loadGroups() {
 
     groupsList.innerHTML = '';
 
-    groups.forEach((group, index) => {
+    groups.forEach((group) => {
       const memberCount = streamers.filter(s => s.group === group.id).length;
       const groupItem = document.createElement('div');
       groupItem.className = 'group-item';
@@ -515,7 +489,6 @@ async function loadGroups() {
       groupsList.appendChild(groupItem);
     });
 
-    // Add delete event listeners
     document.querySelectorAll('.btn-group-action.delete').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const groupId = e.currentTarget.dataset.groupId;
@@ -612,10 +585,6 @@ async function deleteGroup(groupId) {
   }
 }
 
-// ============================================
-// Export/Import
-// ============================================
-
 async function exportData() {
   try {
     const bgStreamers = await new Promise((resolve) => {
@@ -695,15 +664,8 @@ async function importData(event) {
         else resolve(response.groups);
       });
     });
-    const bgCurrentHistory = await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: 'getHistory', limit: 100 }, (response) => {
-        if (chrome.runtime.lastError || !response) resolve(null);
-        else resolve(response.history);
-      });
-    });
     const currentStreamers = bgCurrentStreamers || (await chrome.storage.sync.get('streamers')).streamers || [];
     const currentGroups = bgCurrentGroups || (await chrome.storage.sync.get('groups')).groups || [];
-    const currentHistory = bgCurrentHistory || (await chrome.storage.local.get('history')).history || [];
 
     const importedStreamers = importObj.data.streamers || [];
     const mergedStreamers = [...currentStreamers];
@@ -728,11 +690,6 @@ async function importData(event) {
       }
     });
 
-    const importedHistory = importObj.data.history || [];
-    const mergedHistory = [...currentHistory, ...importedHistory]
-      .sort((a, b) => b.timestamp - a.timestamp)
-      .slice(0, 100);
-
     await Promise.all([
       new Promise((resolve) => {
         chrome.runtime.sendMessage({ action: 'saveStreamers', streamers: mergedStreamers }, () => resolve());
@@ -742,17 +699,14 @@ async function importData(event) {
       })
     ]);
 
-    // Reload everything
     await loadGroups();
     await loadHistory();
     await loadTeamsManagement();
 
     showSaveMessage(`Import réussi ! ${importedStreamers.length} streamer(s) traités.`);
 
-    // Reset file input
     importFile.value = '';
 
-    // Trigger refresh
     chrome.runtime.sendMessage({ action: 'checkNow' });
 
   } catch (error) {
@@ -767,64 +721,4 @@ function showSaveMessage(text) {
   setTimeout(() => {
     saveMessage.classList.remove('show');
   }, 2000);
-}
-
-// ============================================
-// Sound Management
-// ============================================
-
-function playNotificationSound(soundType) {
-  // Generate sounds using Web Audio API
-  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-  const sounds = {
-    default: () => playTone(audioContext, [440, 550, 660], 0.15, 'sine'),
-    chime: () => playTone(audioContext, [523, 659, 784, 1047], 0.2, 'sine'),
-    bell: () => playTone(audioContext, [880, 1100], 0.3, 'triangle'),
-    pop: () => playPop(audioContext),
-    ding: () => playTone(audioContext, [1000], 0.15, 'sine')
-  };
-
-  if (sounds[soundType]) {
-    sounds[soundType]();
-  }
-}
-
-function playTone(audioContext, frequencies, duration, type) {
-  frequencies.forEach((freq, i) => {
-    setTimeout(() => {
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      oscillator.frequency.value = freq;
-      oscillator.type = type;
-
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + duration);
-    }, i * 100);
-  });
-}
-
-function playPop(audioContext) {
-  const oscillator = audioContext.createOscillator();
-  const gainNode = audioContext.createGain();
-
-  oscillator.connect(gainNode);
-  gainNode.connect(audioContext.destination);
-
-  oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
-  oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.1);
-  oscillator.type = 'sine';
-
-  gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
-  gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-
-  oscillator.start(audioContext.currentTime);
-  oscillator.stop(audioContext.currentTime + 0.1);
 }

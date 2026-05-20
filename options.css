@@ -632,37 +632,6 @@ input:checked + .slider:before {
   background: rgba(123, 92, 255, 0.5);
 }
 
-/* Sound Select */
-.sound-select-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.btn-play-sound {
-  background: rgba(123, 92, 255, 0.15);
-  border: 1px solid rgba(123, 92, 255, 0.3);
-  border-radius: 8px;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: var(--transition-normal);
-  color: var(--purple);
-}
-
-.btn-play-sound:hover {
-  background: rgba(123, 92, 255, 0.25);
-  border-color: var(--purple);
-  transform: scale(1.05);
-}
-
-.btn-play-sound:active {
-  transform: scale(0.95);
-}
-
 /* Groups Management */
 .groups-management {
   display: flex;

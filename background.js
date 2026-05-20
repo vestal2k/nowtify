@@ -1,12 +1,7 @@
 const TWITCH_CLIENT_ID = 'bel47qfvj0ib2a4tclxon7f263uf4o';
-const NOWTIFY_SERVER_URL = 'https://nowtify-server.vercel.app';
 
-let CONFIG = {
-  CHECK_INTERVAL_FAST: 30 * 1000,
-  CHECK_INTERVAL_NORMAL: 3 * 60 * 1000,
-  CHECK_INTERVAL_SLOW: 5 * 60 * 1000,
+const CONFIG = {
   RECENT_LIVE_THRESHOLD: 12 * 60 * 60 * 1000,
-  AUTO_REFRESH_INTERVAL: 5 * 60 * 1000,
   NOTIFICATION_COOLDOWN: 30 * 60 * 1000
 };
 
@@ -18,7 +13,21 @@ const CHECK_TIMEOUT = 2 * 60 * 1000;
 let cachedToken = null;
 let tokenValidatedAt = 0;
 const TOKEN_REVALIDATE_INTERVAL = 30 * 60 * 1000;
-let lastCheckHadAuthError = false;
+
+async function setAuthErrorFlag(hasError) {
+  try {
+    await chrome.storage.session.set({ lastCheckHadAuthError: hasError });
+  } catch {}
+}
+
+async function getAuthErrorFlag() {
+  try {
+    const { lastCheckHadAuthError = false } = await chrome.storage.session.get('lastCheckHadAuthError');
+    return lastCheckHadAuthError;
+  } catch {
+    return false;
+  }
+}
 
 async function getNotifiedStreamers() {
   try {
@@ -64,7 +73,6 @@ async function clearStreamerNotified(streamerId) {
   } catch {}
 }
 
-// IndexedDB for large data storage
 const DB_NAME = 'NowtifyDB';
 const DB_VERSION = 1;
 let dbInstance = null;
@@ -85,18 +93,15 @@ async function openDB() {
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
 
-      // Store for streamers list
       if (!db.objectStoreNames.contains('streamers')) {
         db.createObjectStore('streamers', { keyPath: 'id' });
       }
 
-      // Store for history
       if (!db.objectStoreNames.contains('history')) {
         const historyStore = db.createObjectStore('history', { keyPath: 'id', autoIncrement: true });
         historyStore.createIndex('timestamp', 'timestamp', { unique: false });
       }
 
-      // Store for groups
       if (!db.objectStoreNames.contains('groups')) {
         db.createObjectStore('groups', { keyPath: 'id' });
       }
@@ -104,7 +109,6 @@ async function openDB() {
   });
 }
 
-// Get all streamers from IndexedDB
 async function getStreamersFromDB() {
   try {
     const db = await openDB();
@@ -123,7 +127,6 @@ async function getStreamersFromDB() {
   }
 }
 
-// Save all streamers to IndexedDB and sync to chrome.storage
 async function saveStreamersToDB(streamers, skipSync = false) {
   try {
     const db = await openDB();
@@ -131,7 +134,6 @@ async function saveStreamersToDB(streamers, skipSync = false) {
       const transaction = db.transaction(['streamers'], 'readwrite');
       const store = transaction.objectStore('streamers');
 
-      // Clear existing and add all
       store.clear();
       for (const streamer of streamers) {
         store.put(streamer);
@@ -141,12 +143,10 @@ async function saveStreamersToDB(streamers, skipSync = false) {
       transaction.onerror = () => reject(transaction.error);
     });
 
-    // Sync to chrome.storage.sync for popup/options compatibility
     if (!skipSync) {
       try {
         await chrome.storage.sync.set({ streamers });
       } catch (syncError) {
-        // chrome.storage.sync has size limits, ignore if too large
         console.warn('Could not sync to chrome.storage.sync:', syncError);
       }
     }
@@ -156,22 +156,18 @@ async function saveStreamersToDB(streamers, skipSync = false) {
   }
 }
 
-// Migrate data from chrome.storage.sync to IndexedDB
 async function migrateToIndexedDB() {
   try {
     const db = await openDB();
     const existingStreamers = await getStreamersFromDB();
 
-    // Only migrate if IndexedDB is empty
     if (existingStreamers.length === 0) {
       const { streamers = [] } = await chrome.storage.sync.get('streamers');
       if (streamers.length > 0) {
         await saveStreamersToDB(streamers);
-        console.log(`Migrated ${streamers.length} streamers to IndexedDB`);
       }
     }
 
-    // Migrate history
     const { history = [] } = await chrome.storage.local.get('history');
     if (history.length > 0) {
       const transaction = db.transaction(['history'], 'readwrite');
@@ -187,7 +183,6 @@ async function migrateToIndexedDB() {
       };
     }
 
-    // Migrate groups
     const { groups = [] } = await chrome.storage.sync.get('groups');
     if (groups.length > 0) {
       const transaction = db.transaction(['groups'], 'readwrite');
@@ -207,7 +202,6 @@ async function migrateToIndexedDB() {
   }
 }
 
-// Get history from IndexedDB
 async function getHistoryFromDB(limit = 50) {
   try {
     const db = await openDB();
@@ -235,7 +229,6 @@ async function getHistoryFromDB(limit = 50) {
   }
 }
 
-// Save history entry to IndexedDB
 async function saveHistoryToDB(entry) {
   try {
     const db = await openDB();
@@ -246,7 +239,6 @@ async function saveHistoryToDB(entry) {
       entry.id = entry.id || Date.now() + Math.random();
       store.put(entry);
 
-      // Clean up old entries (keep last 100)
       const index = store.index('timestamp');
       const countRequest = store.count();
       countRequest.onsuccess = () => {
@@ -270,7 +262,6 @@ async function saveHistoryToDB(entry) {
       transaction.onerror = () => reject(transaction.error);
     });
   } catch (error) {
-    // Fallback to chrome.storage.local
     const { history = [] } = await chrome.storage.local.get('history');
     history.unshift(entry);
     await chrome.storage.local.set({ history: history.slice(0, 50) });
@@ -309,7 +300,6 @@ async function getGroupsFromDB() {
   }
 }
 
-// Save groups to IndexedDB
 async function saveGroupsToDB(groups) {
   try {
     const db = await openDB();
@@ -330,7 +320,7 @@ async function saveGroupsToDB(groups) {
   }
 }
 
-chrome.runtime.onInstalled.addListener(async () => {
+function applyDefaultIcon() {
   chrome.action.setIcon({
     path: {
       16: 'icons/logo.png',
@@ -339,10 +329,11 @@ chrome.runtime.onInstalled.addListener(async () => {
       128: 'icons/logo.png'
     }
   });
+}
 
-  await migrateToIndexedDB();
+chrome.runtime.onInstalled.addListener(async () => {
+  applyDefaultIcon();
 
-  // Initialize settings in chrome.storage.sync (small data)
   const { settings } = await chrome.storage.sync.get('settings');
   if (!settings) {
     await chrome.storage.sync.set({
@@ -356,22 +347,10 @@ chrome.runtime.onInstalled.addListener(async () => {
   }
 
   chrome.alarms.create('checkStreams', { periodInMinutes: 5 });
-  setTimeout(() => checkAllStreamers(), 2000);
 });
 
-chrome.runtime.onStartup.addListener(async () => {
-  chrome.action.setIcon({
-    path: {
-      16: 'icons/logo.png',
-      32: 'icons/logo.png',
-      48: 'icons/logo.png',
-      128: 'icons/logo.png'
-    }
-  });
-
-  await migrateToIndexedDB();
-  await syncWithServer();
-  checkAllStreamers();
+chrome.runtime.onStartup.addListener(() => {
+  applyDefaultIcon();
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
@@ -379,12 +358,13 @@ chrome.alarms.onAlarm.addListener((alarm) => {
     checkAllStreamers();
   }
 });
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'checkNow') {
     checkAllStreamers().then(() => sendResponse({ success: true }));
     return true;
   }
-  
+
   if (request.action === 'getStreamersData') {
     getStreamersWithData().then(data => sendResponse({ streamers: data }));
     return true;
@@ -438,7 +418,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
-  // IndexedDB CRUD operations for popup/options
   if (request.action === 'getStreamers') {
     getStreamersFromDB().then(streamers => sendResponse({ streamers }));
     return true;
@@ -470,7 +449,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === 'getAuthError') {
-    sendResponse({ hasAuthError: lastCheckHadAuthError });
+    getAuthErrorFlag().then(hasAuthError => sendResponse({ hasAuthError }));
     return true;
   }
 
@@ -484,42 +463,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
+const KNOWN_TEAMS = [
+  { name: 'solary', display_name: 'Solary' },
+  { name: 'koi', display_name: 'KOI' },
+  { name: 'karminecorp', display_name: 'Karmine Corp' },
+  { name: 'mandatory', display_name: 'Mandatory' },
+  { name: 'ogaming', display_name: "O'Gaming" }
+];
+
 async function searchTwitchTeams(query) {
   if (!query || query.length < 2) return [];
 
-  try {
-    const token = await getTwitchToken();
-    if (!token) return [];
-
-    const response = await fetch(
-      `https://api.twitch.tv/helix/search/categories?query=${encodeURIComponent(query)}&first=5`,
-      {
-        headers: {
-          'Client-ID': TWITCH_CLIENT_ID,
-          'Authorization': `Bearer ${token}`
-        }
-      }
-    );
-
-    if (response.ok) {
-      const knownTeams = [
-        { name: 'solary', display_name: 'Solary' },
-        { name: 'koi', display_name: 'KOI' },
-        { name: 'karminecorp', display_name: 'Karmine Corp' },
-        { name: 'mandatory', display_name: 'Mandatory' },
-        { name: 'ogaming', display_name: 'O\'Gaming' }
-      ];
-
-      return knownTeams.filter(team => 
-        team.name.toLowerCase().includes(query.toLowerCase()) ||
-        team.display_name.toLowerCase().includes(query.toLowerCase())
-      );
-    }
-    
-    return [];
-  } catch (error) {
-    return [];
-  }
+  const q = query.toLowerCase();
+  return KNOWN_TEAMS.filter(team =>
+    team.name.toLowerCase().includes(q) ||
+    team.display_name.toLowerCase().includes(q)
+  );
 }
 
 async function addTwitchTeam(teamName) {
@@ -732,19 +691,6 @@ async function updateAlarmInterval(liveCount) {
   } catch {}
 }
 
-
-async function checkStreamerStatus(streamer) {
-  try {
-    if (streamer.platform === 'twitch') {
-      return await checkTwitchStatus(streamer.username);
-    }
-    return { isLive: false };
-  } catch (error) {
-    return { isLive: false, error: true };
-  }
-}
-
-// Batch check Twitch status for multiple users (up to 100 per request)
 async function checkTwitchStatusBatch(usernames) {
   const results = {};
 
@@ -756,13 +702,12 @@ async function checkTwitchStatusBatch(usernames) {
   try {
     const token = await getTwitchToken();
     if (!token) {
-      lastCheckHadAuthError = true;
+      await setAuthErrorFlag(true);
       usernames.forEach(u => results[u.toLowerCase()] = { isLive: false, error: true });
       return results;
     }
-    lastCheckHadAuthError = false;
+    await setAuthErrorFlag(false);
 
-    // Twitch API supports up to 100 user_login parameters per request
     const chunks = [];
     for (let i = 0; i < usernames.length; i += 100) {
       chunks.push(usernames.slice(i, i + 100));
@@ -781,7 +726,7 @@ async function checkTwitchStatusBatch(usernames) {
         if (response.status === 401) {
           cachedToken = null;
           tokenValidatedAt = 0;
-          lastCheckHadAuthError = true;
+          await setAuthErrorFlag(true);
           await chrome.storage.local.remove('twitchAuth');
         }
         chunk.forEach(u => results[u.toLowerCase()] = { isLive: false, error: true });
@@ -790,7 +735,6 @@ async function checkTwitchStatusBatch(usernames) {
 
       const data = await response.json();
 
-      // Map live streams by username
       const liveStreams = new Map();
       for (const stream of data.data) {
         liveStreams.set(stream.user_login.toLowerCase(), {
@@ -805,7 +749,6 @@ async function checkTwitchStatusBatch(usernames) {
         });
       }
 
-      // Fill results for this chunk
       for (const username of chunk) {
         const lowerUsername = username.toLowerCase();
         if (liveStreams.has(lowerUsername)) {
@@ -820,57 +763,6 @@ async function checkTwitchStatusBatch(usernames) {
   }
 
   return results;
-}
-
-async function checkTwitchStatus(username) {
-  try {
-    if (!TWITCH_CLIENT_ID) {
-      return { isLive: false, error: true };
-    }
-
-    const token = await getTwitchToken();
-    if (!token) {
-      return { isLive: false, error: true };
-    }
-
-    const response = await fetch(`https://api.twitch.tv/helix/streams?user_login=${username}`, {
-      headers: {
-        'Client-ID': TWITCH_CLIENT_ID,
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        cachedToken = null;
-        await chrome.storage.local.remove('twitchAuth');
-      }
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
-    const stream = data.data[0];
-
-    if (stream) {
-      return {
-        isLive: true,
-        title: stream.title,
-        game: stream.game_name,
-        viewerCount: stream.viewer_count,
-        thumbnail: stream.thumbnail_url.replace('{width}', '320').replace('{height}', '180'),
-        startedAt: new Date(stream.started_at).getTime(),
-        lastLiveDate: Date.now(),
-        endedAt: null
-      };
-    }
-
-    return { 
-      isLive: false,
-      endedAt: Date.now()
-    };
-  } catch (error) {
-    return { isLive: false, error: true };
-  }
 }
 
 async function getTwitchToken() {
@@ -939,6 +831,7 @@ async function loginWithTwitch() {
       });
       cachedToken = accessToken;
       tokenValidatedAt = Date.now();
+      await setAuthErrorFlag(false);
 
       const userInfo = await getTwitchUserInfo(accessToken);
 
@@ -991,8 +884,8 @@ async function getTwitchAuthStatus() {
     return { connected: false };
   }
 
-  const isValid = await validateTwitchToken(twitchAuth.access_token);
-  if (!isValid) {
+  const validationResult = await validateTwitchToken(twitchAuth.access_token);
+  if (validationResult === 'invalid') {
     await chrome.storage.local.remove('twitchAuth');
     return { connected: false };
   }
@@ -1000,7 +893,6 @@ async function getTwitchAuthStatus() {
   const userInfo = await getTwitchUserInfo(twitchAuth.access_token);
   return { connected: true, user: userInfo };
 }
-
 
 async function getStreamerAvatar(platform, username) {
   try {
@@ -1072,26 +964,21 @@ async function searchTwitchStreamers(query) {
           isPartner: channel.broadcaster_type === 'partner'
         }));
     }
-    
+
     return [];
   } catch (error) {
     return [];
   }
 }
 
-
 function getTeamNameVariants(teamName) {
   const base = teamName.toLowerCase().trim();
   const variants = new Set([base]);
 
   variants.add(base.replace(/\s+/g, ''));
-
   variants.add(base.replace(/\s+/g, '_'));
-
   variants.add(base.replace(/\s+/g, '-'));
-
   variants.add(base.replace(/[^a-z0-9]/g, ''));
-
   variants.add(base.replace(/^team\s*/i, '').replace(/\s+/g, ''));
 
   return [...variants].filter(v => v.length > 0);
@@ -1115,7 +1002,6 @@ async function getTeamLogo(teamName) {
   try {
     const token = await getTwitchToken();
     if (!token) {
-      console.warn('[Nowtify] No Twitch token available for team logo fetch');
       return null;
     }
 
@@ -1142,25 +1028,20 @@ async function getTeamLogo(teamName) {
             if (logoUrl) {
               teamLogosCache[cacheKey] = logoUrl;
               await chrome.storage.local.set({ [`teamLogo_${cacheKey}`]: logoUrl });
-              console.log(`[Nowtify] Team logo found for "${teamName}" using variant "${variant}"`);
               return logoUrl;
             }
           }
         } else if (response.status === 404) {
           continue;
         } else if (response.status === 401 || response.status === 403) {
-          console.warn(`[Nowtify] Auth error fetching team logo: ${response.status}`);
           break;
         }
       } catch (fetchError) {
-        console.warn(`[Nowtify] Network error fetching team "${variant}": ${fetchError.message}`);
         continue;
       }
     }
 
     teamLogosCache[cacheKey] = null;
-    console.log(`[Nowtify] No team logo found for "${teamName}" after trying ${variants.length} variants`);
-
   } catch (error) {
     console.error(`[Nowtify] Error fetching team logo for "${teamName}":`, error);
   }
@@ -1231,16 +1112,13 @@ async function getStreamersWithData() {
   return enriched;
 }
 
-async function updateBadge(liveCount) {
+function updateBadge(liveCount) {
   if (liveCount > 0) {
-    // Show count in native Chrome badge with Nowtify colors
     const badgeText = liveCount > 99 ? '99+' : liveCount.toString();
     chrome.action.setBadgeText({ text: badgeText });
-    // Use cyan color from Nowtify palette for better brand consistency
     chrome.action.setBadgeBackgroundColor({ color: '#5CFFE0' });
     chrome.action.setBadgeTextColor({ color: '#161618' });
   } else {
-    // Clear badge when no one is live
     chrome.action.setBadgeText({ text: '' });
   }
 }
@@ -1310,8 +1188,6 @@ async function sendNotification(streamer) {
       }, (createdId) => {
         if (chrome.runtime.lastError) {
           console.error('[Nowtify] Notification error:', chrome.runtime.lastError.message);
-        } else {
-          console.log('[Nowtify] Notification sent:', createdId, streamer.name);
         }
         resolve(createdId);
       });
@@ -1338,7 +1214,6 @@ chrome.notifications.onClosed.addListener(async (notificationId) => {
 });
 
 async function saveToHistory(streamer) {
-  // Calculate duration if we have startedAt
   let duration = null;
   if (streamer.startedAt) {
     duration = Date.now() - streamer.startedAt;
@@ -1358,70 +1233,15 @@ async function saveToHistory(streamer) {
   await saveHistoryToDB(entry);
 }
 
-// Sync chrome.storage.sync changes to IndexedDB (for popup/options changes)
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName === 'sync') {
-    // Use skipSync=true to avoid infinite loop
     if (changes.streamers?.newValue) {
       saveStreamersToDB(changes.streamers.newValue, true).catch(() => {});
     }
     if (changes.groups?.newValue) {
-      saveGroupsToDB(changes.groups.newValue, true).catch(() => {});
+      saveGroupsToDB(changes.groups.newValue).catch(() => {});
     }
   }
 });
 
-async function syncWithServer() {
-  try {
-    const streamers = await getStreamersFromDB();
-    if (streamers.length === 0) return;
-
-    await fetch(`${NOWTIFY_SERVER_URL}/api/sync`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ streamers })
-    });
-
-    const response = await fetch(`${NOWTIFY_SERVER_URL}/api/status`);
-    if (!response.ok) return;
-
-    const { statuses } = await response.json();
-    if (!statuses || Object.keys(statuses).length === 0) return;
-
-    let updated = false;
-    for (const streamer of streamers) {
-      const serverStatus = statuses[streamer.username.toLowerCase()];
-      if (!serverStatus) continue;
-
-      if (serverStatus.lastLiveDate) {
-        const localLastLive = streamer.lastLiveDate || 0;
-        const serverLastLive = serverStatus.lastLiveDate;
-
-        if (serverLastLive > localLastLive) {
-          streamer.lastLiveDate = serverLastLive;
-          streamer.wasLiveRecently = (Date.now() - serverLastLive) < CONFIG.RECENT_LIVE_THRESHOLD;
-
-          if (serverStatus.lastStreamTitle) {
-            streamer.title = serverStatus.lastStreamTitle;
-          }
-          if (serverStatus.lastStreamGame) {
-            streamer.game = serverStatus.lastStreamGame;
-          }
-
-          updated = true;
-        }
-      }
-    }
-
-    if (updated) {
-      await saveStreamersToDB(streamers);
-    }
-  } catch (error) {
-    console.warn('[Nowtify] Server sync failed:', error.message);
-  }
-}
-
-migrateToIndexedDB().then(async () => {
-  await syncWithServer();
-  checkAllStreamers();
-});
+migrateToIndexedDB().then(() => checkAllStreamers());
