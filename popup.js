@@ -823,12 +823,6 @@ function createStreamerCard(streamer) {
         ${statusText}
       </span>
     </div>
-    ${streamer.isLive && streamer.viewerCount ? `
-      <div class="grid-viewers">
-        ${ICON_VIEWERS}
-        ${formatViewers(streamer.viewerCount)}
-      </div>
-    ` : ''}
   `;
 
   let secondaryLineHTML = '<div class="streamer-secondary-line">';

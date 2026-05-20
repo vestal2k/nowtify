@@ -610,7 +610,6 @@ body {
   height: 12px;
 }
 
-.grid-viewers,
 .grid-platform {
   display: none;
 }
@@ -746,21 +745,6 @@ body {
 
 .streamers-list.compact .stream-preview {
   display: none !important;
-}
-
-.streamers-list.compact .grid-viewers {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--accent);
-}
-
-.streamers-list.compact .grid-viewers svg {
-  width: 9px;
-  height: 9px;
 }
 
 .streamers-list.compact .grid-platform {
