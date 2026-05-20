@@ -1,0 +1,14 @@
+{
+  "name": "nowtify",
+  "version": "3.1.0",
+  "description": "Extension Chrome de notification de lives Twitch",
+  "private": true,
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.4.0",
+    "globals": "^17.6.0"
+  }
+}
