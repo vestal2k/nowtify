@@ -1057,12 +1057,12 @@ function openStream(streamer) {
 
 function showEmptyState(show) {
   emptyState.classList.toggle('hidden', !show);
-  streamersList.style.display = show ? 'none' : 'flex';
+  streamersList.style.display = show ? 'none' : '';
 }
 
 function showLoading(show) {
   loadingState.style.display = show ? 'block' : 'none';
-  streamersList.style.display = show ? 'none' : 'flex';
+  streamersList.style.display = show ? 'none' : '';
 }
 
 function showError(message, isError = true) {
