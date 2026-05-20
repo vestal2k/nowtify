@@ -1420,3 +1420,12 @@ h1 {
   letter-spacing: 0.5px;
 }
 
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #5CFFE0 !important;
+  outline-offset: 2px;
+}
+

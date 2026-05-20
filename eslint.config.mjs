@@ -25,7 +25,8 @@ export default [
     files: ['popup.js', 'options.js'],
     languageOptions: {
       globals: {
-        DB: 'readonly'
+        DB: 'readonly',
+        UI: 'readonly'
       }
     }
   }

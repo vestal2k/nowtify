@@ -906,10 +906,12 @@ function createStreamerCard(streamer) {
       } else {
         showDeleteTeamModal(streamer, card);
       }
-    } else {
-      if (!shouldConfirm || confirm(`Supprimer ${streamer.name} ?`)) {
-        await deleteStreamer(streamer.id, card);
-      }
+    } else if (!shouldConfirm || await UI.confirm(`${streamer.name} sera retiré de votre liste.`, {
+      title: 'Supprimer le streamer',
+      confirmLabel: 'Supprimer',
+      danger: true
+    })) {
+      await deleteStreamer(streamer.id, card);
     }
   });
 

@@ -123,10 +123,10 @@ async function handleTwitchLogin() {
       showSaveMessage('Connecté à Twitch !');
       chrome.runtime.sendMessage({ action: 'checkNow' });
     } else {
-      alert('Erreur de connexion : ' + (response?.error || 'Inconnue'));
+      UI.toast('Erreur de connexion : ' + (response?.error || 'Inconnue'), 'error');
     }
   } catch (error) {
-    alert('Erreur de connexion : ' + error.message);
+    UI.toast('Erreur de connexion : ' + error.message, 'error');
   } finally {
     twitchLoginBtn.disabled = false;
     twitchLoginBtn.innerHTML = `
@@ -144,7 +144,7 @@ async function handleTwitchLogout() {
     showTwitchDisconnected();
     showSaveMessage('Déconnecté de Twitch');
   } catch (error) {
-    alert('Erreur lors de la déconnexion');
+    UI.toast('Erreur lors de la déconnexion', 'error');
   }
 }
 
@@ -169,7 +169,7 @@ async function saveSettings(showMessage = true) {
     }
 
   } catch (error) {
-    alert('Erreur lors de la sauvegarde des paramètres');
+    UI.toast('Erreur lors de la sauvegarde des paramètres', 'error');
   }
 }
 
@@ -249,7 +249,12 @@ async function loadHistory() {
 }
 
 async function clearHistory() {
-  if (!confirm('Êtes-vous sûr de vouloir effacer tout l\'historique ?')) {
+  const confirmed = await UI.confirm('Tout l\'historique des lives détectés sera effacé.', {
+    title: 'Effacer l\'historique',
+    confirmLabel: 'Effacer',
+    danger: true
+  });
+  if (!confirmed) {
     return;
   }
 
@@ -257,7 +262,7 @@ async function clearHistory() {
     await DB.clearHistory();
     await loadHistory();
   } catch (error) {
-    alert('Erreur lors de l\'effacement de l\'historique');
+    UI.toast('Erreur lors de l\'effacement de l\'historique', 'error');
   }
 }
 
@@ -353,7 +358,12 @@ async function loadTeamsManagement() {
     document.querySelectorAll('.btn-danger-small').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const teamName = e.target.dataset.team;
-        if (confirm(`Supprimer tous les membres de ${teamName} ?`)) {
+        const confirmed = await UI.confirm(`Tous les membres de la team ${teamName} seront retirés de votre liste.`, {
+          title: 'Supprimer la team',
+          confirmLabel: 'Supprimer',
+          danger: true
+        });
+        if (confirmed) {
           await deleteTeamFromSettings(teamName);
         }
       });
@@ -447,7 +457,7 @@ async function addGroup() {
     const groups = await DB.getGroups();
 
     if (groups.some(g => g.name.toLowerCase() === name.toLowerCase())) {
-      alert('Un groupe avec ce nom existe déjà');
+      UI.toast('Un groupe avec ce nom existe déjà', 'error');
       return;
     }
 
@@ -464,12 +474,17 @@ async function addGroup() {
     await loadGroups();
 
   } catch (error) {
-    alert('Erreur lors de la création du groupe');
+    UI.toast('Erreur lors de la création du groupe', 'error');
   }
 }
 
 async function deleteGroup(groupId) {
-  if (!confirm('Supprimer ce groupe ? Les streamers ne seront pas supprimés.')) {
+  const confirmed = await UI.confirm('Le groupe sera supprimé. Les streamers qu\'il contient ne seront pas supprimés.', {
+    title: 'Supprimer le groupe',
+    confirmLabel: 'Supprimer',
+    danger: true
+  });
+  if (!confirmed) {
     return;
   }
 
@@ -477,7 +492,7 @@ async function deleteGroup(groupId) {
     await DB.deleteGroup(groupId);
     await loadGroups();
   } catch (error) {
-    alert('Erreur lors de la suppression du groupe');
+    UI.toast('Erreur lors de la suppression du groupe', 'error');
   }
 }
 
@@ -513,7 +528,7 @@ async function exportData() {
     showSaveMessage('Export réussi !');
 
   } catch (error) {
-    alert('Erreur lors de l\'export');
+    UI.toast('Erreur lors de l\'export', 'error');
   }
 }
 
@@ -526,7 +541,7 @@ async function importData(event) {
     const importObj = JSON.parse(text);
 
     if (!importObj.data) {
-      alert('Format de fichier invalide');
+      UI.toast('Format de fichier invalide', 'error');
       return;
     }
 
@@ -570,7 +585,7 @@ async function importData(event) {
     chrome.runtime.sendMessage({ action: 'checkNow' });
 
   } catch (error) {
-    alert('Erreur lors de l\'import : ' + error.message);
+    UI.toast('Erreur lors de l\'import : ' + error.message, 'error');
     importFile.value = '';
   }
 }
