@@ -29,20 +29,20 @@ and no data leaves your machine.
 - Instant desktop notifications when a streamer goes live
 - Toolbar badge showing how many streamers are currently live
 - Popup dashboard with live, recently live, and offline states
-- Streamer search with autocomplete powered by the Twitch API
-- Twitch teams: add every member of a team at once
-- Custom groups to organize your streamers
+- Streamer search with autocomplete, ranked by relevance and filtered against lookalike/inactive accounts
+- Twitch teams: add every member of a team at once, filter your list by team
 - Live thumbnail, category, and viewer count on hover
 - History of the last detected lives
 - Import and export of your data as JSON
 - Compact grid mode
-- Native dark interface
+- Settings save automatically, no manual save step
+- Inline Twitch connect prompt right in the popup when not authenticated
 
 ## Tech stack
 
 - Chrome Extension Manifest V3, service worker background
 - Vanilla JavaScript, no framework, no build step
-- IndexedDB as the single source of truth for streamers, groups, and history
+- IndexedDB as the single source of truth for streamers and history
 - Twitch Helix API
 - `chrome.identity` OAuth (implicit grant, no client secret)
 - ESLint flat config
@@ -88,7 +88,7 @@ background.js     Service worker: Twitch polling, notifications, IndexedDB
 db-client.js      Unified data-access layer used by the UI pages
 ui.js             Shared confirm modal and toast component
 popup.html/js/css Toolbar popup dashboard
-options.html/js/css Settings, groups, teams, history, import/export
+options.html/js/css Settings, teams, history, import/export
 icons/            Icons and default avatars
 landing/          Static landing page
 ```

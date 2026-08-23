@@ -354,7 +354,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 async function exportData() {
   try {
     const streamers = await DB.getStreamers();
-    const groups = await DB.getGroups();
     const history = await DB.getHistory(100);
     const settings = await DB.getSettings();
 
@@ -363,7 +362,6 @@ async function exportData() {
       exportDate: new Date().toISOString(),
       data: {
         streamers,
-        groups,
         settings,
         history
       }
@@ -401,7 +399,6 @@ async function importData(event) {
     }
 
     const currentStreamers = await DB.getStreamers();
-    const currentGroups = await DB.getGroups();
 
     const importedStreamers = importObj.data.streamers || [];
     const mergedStreamers = [...currentStreamers];
@@ -416,18 +413,7 @@ async function importData(event) {
       }
     });
 
-    const importedGroups = importObj.data.groups || [];
-    const mergedGroups = [...currentGroups];
-
-    importedGroups.forEach(imported => {
-      const exists = mergedGroups.some(g => g.name.toLowerCase() === imported.name.toLowerCase());
-      if (!exists) {
-        mergedGroups.push({ ...imported, id: `group_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` });
-      }
-    });
-
     await DB.saveStreamers(mergedStreamers);
-    await DB.saveGroups(mergedGroups);
 
     await loadHistory();
     await loadTeamsManagement();

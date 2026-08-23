@@ -41,23 +41,6 @@ globalThis.DB = {
     await this._send({ action: 'deleteTeam', teamName });
   },
 
-  async getGroups() {
-    const response = await this._send({ action: 'getGroups' });
-    return response?.groups || [];
-  },
-
-  async saveGroups(groups) {
-    await this._send({ action: 'saveGroups', groups });
-  },
-
-  async addGroup(group) {
-    await this._send({ action: 'addGroup', group });
-  },
-
-  async deleteGroup(groupId) {
-    await this._send({ action: 'deleteGroup', groupId });
-  },
-
   async getHistory(limit = 50) {
     const response = await this._send({ action: 'getHistory', limit });
     return response?.history || [];

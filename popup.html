@@ -11,7 +11,6 @@
 </head>
 <body>
   <div class="container">
-    <!-- Header -->
     <header class="header">
       <div class="logo-section">
         <h1>Now<span class="brand-accent">tify</span></h1>
@@ -42,7 +41,6 @@
       </div>
     </header>
 
-    <!-- Add Streamer Section -->
     <div class="add-section" id="addSection">
       <input 
         type="text" 
@@ -60,7 +58,6 @@
       </button>
     </div>
 
-    <!-- Auth Error Banner -->
     <div class="auth-error-banner hidden" id="authErrorBanner">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
@@ -71,7 +68,6 @@
       <button class="auth-error-btn" id="authErrorBtn">Reconnexion</button>
     </div>
 
-    <!-- Twitch Connect Banner -->
     <div class="twitch-connect-banner hidden" id="twitchConnectBanner">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
         <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
@@ -80,10 +76,8 @@
       <button class="twitch-connect-btn" id="twitchConnectBtn">Se connecter</button>
     </div>
 
-    <!-- Error Message -->
     <div class="error-message" id="errorMessage"></div>
 
-    <!-- Filters -->
     <div class="filters-bar" id="filtersBar">
       <button class="filter-btn active" data-filter="all">Tous</button>
       <div class="filter-group-wrapper" id="groupFilterWrapper">
@@ -102,12 +96,8 @@
       </div>
     </div>
 
-    <!-- Streamers List -->
-    <div class="streamers-list" id="streamersList">
-      <!-- Les streamers seront injectés ici dynamiquement -->
-    </div>
+    <div class="streamers-list" id="streamersList"></div>
 
-    <!-- Empty State -->
     <div class="empty-state" id="emptyState">
       <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M23 7l-7 5 7 5V7z"></path>
@@ -117,7 +107,6 @@
       <p>Ajoutez vos streamers favoris pour être notifié de leurs lives !</p>
     </div>
 
-    <!-- Loading State -->
     <div class="loading-state" id="loadingState" style="display: none;">
       <div class="spinner"></div>
       <p>Chargement...</p>

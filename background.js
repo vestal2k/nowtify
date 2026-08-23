@@ -156,10 +156,6 @@ async function openDB() {
         const historyStore = db.createObjectStore('history', { keyPath: 'id', autoIncrement: true });
         historyStore.createIndex('timestamp', 'timestamp', { unique: false });
       }
-
-      if (!db.objectStoreNames.contains('groups')) {
-        db.createObjectStore('groups', { keyPath: 'id' });
-      }
     };
   });
 }
@@ -293,21 +289,6 @@ async function migrateToIndexedDB() {
         }
       };
     }
-
-    const { groups = [] } = await chrome.storage.sync.get('groups');
-    if (groups.length > 0) {
-      const transaction = db.transaction(['groups'], 'readwrite');
-      const store = transaction.objectStore('groups');
-
-      const countRequest = store.count();
-      countRequest.onsuccess = async () => {
-        if (countRequest.result === 0) {
-          for (const group of groups) {
-            store.put(group);
-          }
-        }
-      };
-    }
   } catch (error) {
     console.warn('Migration to IndexedDB failed:', error);
   }
@@ -392,73 +373,6 @@ async function clearHistoryFromDB() {
   } catch (error) {
     await chrome.storage.local.set({ history: [] });
   }
-}
-
-async function getGroupsFromDB() {
-  try {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(['groups'], 'readonly');
-      const store = transaction.objectStore('groups');
-      const request = store.getAll();
-
-      request.onsuccess = () => resolve(request.result || []);
-      request.onerror = () => reject(request.error);
-    });
-  } catch (error) {
-    const { groups = [] } = await chrome.storage.sync.get('groups');
-    return groups;
-  }
-}
-
-async function saveGroupsToDB(groups) {
-  const db = await openDB();
-  await new Promise((resolve, reject) => {
-    const transaction = db.transaction(['groups'], 'readwrite');
-    const store = transaction.objectStore('groups');
-
-    store.clear();
-    for (const group of groups) {
-      store.put(group);
-    }
-
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
-  });
-}
-
-async function putGroupToDB(group) {
-  const db = await openDB();
-  await new Promise((resolve, reject) => {
-    const transaction = db.transaction(['groups'], 'readwrite');
-    transaction.objectStore('groups').put(group);
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
-  });
-}
-
-async function deleteGroupFromDB(groupId) {
-  const db = await openDB();
-  await new Promise((resolve, reject) => {
-    const transaction = db.transaction(['streamers', 'groups'], 'readwrite');
-    transaction.objectStore('groups').delete(groupId);
-
-    const streamerStore = transaction.objectStore('streamers');
-    const request = streamerStore.openCursor();
-    request.onsuccess = (event) => {
-      const cursor = event.target.result;
-      if (cursor) {
-        if (cursor.value.group === groupId) {
-          const { group, ...rest } = cursor.value;
-          cursor.update(rest);
-        }
-        cursor.continue();
-      }
-    };
-
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
-  });
 }
 
 function applyDefaultIcon() {
@@ -586,32 +500,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   if (request.action === 'deleteTeam') {
     deleteTeamFromDB(request.teamName)
-      .then(() => sendResponse({ success: true }))
-      .catch(() => sendResponse({ success: false }));
-    return true;
-  }
-
-  if (request.action === 'getGroups') {
-    getGroupsFromDB().then(groups => sendResponse({ groups }));
-    return true;
-  }
-
-  if (request.action === 'saveGroups') {
-    saveGroupsToDB(request.groups)
-      .then(() => sendResponse({ success: true }))
-      .catch(() => sendResponse({ success: false }));
-    return true;
-  }
-
-  if (request.action === 'addGroup') {
-    putGroupToDB(request.group)
-      .then(() => sendResponse({ success: true }))
-      .catch(() => sendResponse({ success: false }));
-    return true;
-  }
-
-  if (request.action === 'deleteGroup') {
-    deleteGroupFromDB(request.groupId)
       .then(() => sendResponse({ success: true }))
       .catch(() => sendResponse({ success: false }));
     return true;
@@ -1220,9 +1108,7 @@ async function getExactTwitchStreamer(username) {
         const streamData = await streamResponse.json();
         isLive = streamData.data && streamData.data.length > 0;
       }
-    } catch {
-      // isLive stays false, refreshed on next status check
-    }
+    } catch {}
 
     return {
       name: user.display_name,
