@@ -10,7 +10,7 @@
   </p>
 
   <p>
-    <a href="https://nowtify.vercel.app"><strong>nowtify.vercel.app</strong></a>
+    <a href="https://nowtify.qyrn.dev"><strong>nowtify.qyrn.dev</strong></a>
   </p>
 
   <p align="center">
