@@ -1,104 +1,54 @@
 <div align="center">
 
-  <img src="icons/logo.png" alt="Nowtify" width="72" height="72" />
+  <img src="icons/logo.png" alt="Nowtify" width="76" height="76" />
   <h1>Nowtify</h1>
-  <p><em>Get notified the moment your favorite Twitch streamers go live.</em></p>
+  <p><em>Never miss a stream again.</em></p>
 
   <p>
     <img src="https://img.shields.io/badge/Manifest-V3-5CFFE0?style=flat-square" alt="Manifest V3"/>
     <img src="https://img.shields.io/badge/License-MIT-7B5CFF?style=flat-square" alt="MIT License"/>
   </p>
 
+  <p>
+    <a href="https://nowtify.vercel.app"><strong>nowtify.vercel.app</strong></a>
+  </p>
+
   <p align="center">
-    <img alt="Nowtify screenshot" src="icons/screenshot.png" width="100%" style="max-width:900px;border-radius:12px;">
+    <img alt="Nowtify popup" src="icons/screenshot.png" width="100%" style="max-width:900px;border-radius:14px;">
   </p>
 
 </div>
 
 ---
 
-## Overview
+## What it does
 
-Nowtify is a Chrome extension (Manifest V3) that watches your favorite Twitch
-streamers and sends a native desktop notification as soon as one of them goes
-live. Everything runs locally in the browser: there is no backend, no account,
-and no data leaves your machine.
+Nowtify watches your favorite Twitch streamers in the background and sends a
+native desktop notification when one of them goes live. It lives in your
+Chrome toolbar and stays out of your way otherwise.
+
+No account, no backend, no analytics. Everything stays on your machine.
 
 ## Features
 
-- Instant desktop notifications when a streamer goes live
+- Desktop notification when a streamer goes live
 - Toolbar badge showing how many streamers are currently live
-- Popup dashboard with live, recently live, and offline states
-- Streamer search with autocomplete, ranked by relevance and filtered against lookalike/inactive accounts
-- Twitch teams: add every member of a team at once, filter your list by team
-- Live thumbnail, category, and viewer count on hover
-- History of the last detected lives
-- Import and export of your data as JSON
-- Compact grid mode
-- Settings save automatically, no manual save step
-- Inline Twitch connect prompt right in the popup when not authenticated
-
-## Tech stack
-
-- Chrome Extension Manifest V3, service worker background
-- Vanilla JavaScript, no framework, no build step
-- IndexedDB as the single source of truth for streamers and history
-- Twitch Helix API
-- `chrome.identity` OAuth (implicit grant, no client secret)
-- ESLint flat config
+- Live, recently live, and offline streamers, all in one popup
+- Search with autocomplete to add streamers in a click
+- Import an entire Twitch team at once, then filter your list by team
+- Live thumbnail, category, and viewer count without leaving the popup
+- History of the streams you've caught
+- Back up and restore your data as a single file
+- Compact grid view for a denser list
 
 ## Installation
 
-1. Clone the repository:
-   ```
-   git clone https://github.com/qyrn/nowtify.git
-   ```
+1. Download or clone this repository.
 2. Open `chrome://extensions` in Chrome.
-3. Enable **Developer mode** (top right).
+3. Turn on **Developer mode** in the top right corner.
 4. Click **Load unpacked** and select the project folder.
 
-The extension needs a Twitch application to query the API. See the next section.
-
-## Twitch API configuration
-
-The extension authenticates against Twitch with its own registered Twitch
-application (`TWITCH_CLIENT_ID` in `background.js`). No client secret is
-required: the OAuth implicit flow runs entirely client-side, and each user's
-access token stays local to their browser.
-
-The extension's ID is pinned via the `key` field in `manifest.json`, so it's
-identical whether loaded unpacked or installed from the Chrome Web Store:
-`fejiomgldmdpflpichnebdecnhjghgde`. Its OAuth redirect URL
-(`https://fejiomgldmdpflpichnebdecnhjghgde.chromiumapp.org/`) is already
-registered on the Twitch application behind `TWITCH_CLIENT_ID` — no setup
-needed, just load the extension and click **Se connecter avec Twitch** in
-the options page.
-
-If you fork this project and want to run your own Twitch application instead
-(recommended if you plan to distribute your own build), replace the `key` in
-`manifest.json` with your own (see `nowtify-key.pem` generation via
-`openssl genrsa` / `openssl rsa -pubout`), register a Twitch app with a
-redirect URL matching your new extension ID, and swap `TWITCH_CLIENT_ID` in
-`background.js` accordingly.
-
-## Project structure
-
-```
-background.js     Service worker: Twitch polling, notifications, IndexedDB
-db-client.js      Unified data-access layer used by the UI pages
-ui.js             Shared confirm modal and toast component
-popup.html/js/css Toolbar popup dashboard
-options.html/js/css Settings, teams, history, import/export
-icons/            Icons and default avatars
-landing/          Static landing page
-```
-
-## Development
-
-```
-pnpm install
-pnpm lint
-```
+That's it, Nowtify connects to Twitch on its own, no setup or API key needed.
 
 ## License
 
