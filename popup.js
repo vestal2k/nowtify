@@ -22,11 +22,14 @@ const groupFilterBtn = document.getElementById('groupFilterBtn');
 const groupFilterDropdown = document.getElementById('groupFilterDropdown');
 const authErrorBanner = document.getElementById('authErrorBanner');
 const authErrorBtn = document.getElementById('authErrorBtn');
+const twitchConnectBanner = document.getElementById('twitchConnectBanner');
+const twitchConnectBtn = document.getElementById('twitchConnectBtn');
 
 const ICON_ADD = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>';
 const ICON_SPINNER = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>';
 const ICON_GAME = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13h4m-2-2v4m3 1h.01M17 16h.01M2 12V7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-5z"/></svg>';
 const ICON_VIEWERS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+const ICON_CHEVRON = '<svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
 
 function setAddBtnLoading() {
   addBtn.disabled = true;
@@ -40,6 +43,7 @@ function setAddBtnDefault() {
 
 document.addEventListener('DOMContentLoaded', async () => {
   await checkAuthError();
+  await checkTwitchConnection();
   await loadGroups();
   await loadStreamers();
   setupEventListeners();
@@ -56,8 +60,39 @@ async function checkAuthError() {
   }
 }
 
+async function checkTwitchConnection() {
+  try {
+    const response = await chrome.runtime.sendMessage({ action: 'getTwitchAuthStatus' });
+    twitchConnectBanner.classList.toggle('hidden', !!(response && response.connected));
+  } catch {
+    twitchConnectBanner.classList.add('hidden');
+  }
+}
+
+async function handleTwitchConnect() {
+  twitchConnectBtn.disabled = true;
+  twitchConnectBtn.textContent = 'Connexion...';
+
+  try {
+    const response = await chrome.runtime.sendMessage({ action: 'twitchLogin' });
+
+    if (response && response.success) {
+      twitchConnectBanner.classList.add('hidden');
+      UI.toast('Connecté à Twitch !', 'success');
+      await loadGroups();
+      refreshStreamers();
+    } else {
+      UI.toast('Erreur de connexion : ' + (response?.error || 'Inconnue'), 'error');
+    }
+  } catch (error) {
+    UI.toast('Erreur de connexion : ' + error.message, 'error');
+  } finally {
+    twitchConnectBtn.disabled = false;
+    twitchConnectBtn.textContent = 'Se connecter';
+  }
+}
+
 async function loadGroups() {
-  const groups = await DB.getGroups();
   const streamers = await DB.getStreamers();
 
   const teamsSet = new Set();
@@ -67,29 +102,15 @@ async function loadGroups() {
   const teams = Array.from(teamsSet).sort();
 
   let dropdownHTML = '';
-  dropdownHTML += '<div class="filter-group-dropdown-item clear-filter" data-value="">Tous les groupes</div>';
+  dropdownHTML += '<div class="filter-group-dropdown-item clear-filter" data-value="">Toutes les teams</div>';
 
-  if (groups.length > 0) {
-    dropdownHTML += '<div class="filter-group-dropdown-label">Groupes</div>';
-    groups.forEach(group => {
-      dropdownHTML += `<div class="filter-group-dropdown-item" data-value="group:${group.id}">${escapeHtml(group.name)}</div>`;
-    });
-  }
-
-  if (teams.length > 0) {
-    dropdownHTML += '<div class="filter-group-dropdown-label">Teams</div>';
-    teams.forEach(teamName => {
-      dropdownHTML += `<div class="filter-group-dropdown-item" data-value="team:${teamName}">${escapeHtml(capitalizeTeamName(teamName))}</div>`;
-    });
-  }
+  teams.forEach(teamName => {
+    dropdownHTML += `<div class="filter-group-dropdown-item" data-value="team:${teamName}">${escapeHtml(capitalizeTeamName(teamName))}</div>`;
+  });
 
   groupFilterDropdown.innerHTML = dropdownHTML;
 
-  if (groups.length === 0 && teams.length === 0) {
-    groupFilterWrapper.style.display = 'none';
-  } else {
-    groupFilterWrapper.style.display = 'block';
-  }
+  groupFilterWrapper.style.display = teams.length === 0 ? 'none' : 'block';
 }
 
 function sortStreamers(streamersData) {
@@ -123,6 +144,8 @@ function setupEventListeners() {
   authErrorBtn.addEventListener('click', () => {
     chrome.runtime.openOptionsPage();
   });
+
+  twitchConnectBtn.addEventListener('click', handleTwitchConnect);
 
   refreshBtn.addEventListener('click', () => {
     if (!refreshBtn.classList.contains('loading')) {
@@ -226,14 +249,9 @@ function filterStreamers(streamers, filter) {
     filtered = filtered.filter(s => !s.isLive);
   }
 
-  if (currentGroupFilter) {
-    if (currentGroupFilter.startsWith('group:')) {
-      const groupId = currentGroupFilter.replace('group:', '');
-      filtered = filtered.filter(s => s.group === groupId);
-    } else if (currentGroupFilter.startsWith('team:')) {
-      const teamName = currentGroupFilter.replace('team:', '');
-      filtered = filtered.filter(s => s.team === teamName);
-    }
+  if (currentGroupFilter.startsWith('team:')) {
+    const teamName = currentGroupFilter.replace('team:', '');
+    filtered = filtered.filter(s => s.team === teamName);
   }
 
   return filtered;
@@ -401,20 +419,12 @@ function updateStreamerCard(card, oldData, newData) {
   }
 
   const statusIndicator = card.querySelector('.status-indicator');
-  const statusDot = card.querySelector('.status-dot');
-  if (statusIndicator && statusDot) {
+  if (statusIndicator) {
     const statusText = getStatusText(newData);
     const statusClass = newData.isLive ? 'live' : (newData.wasLiveRecently ? 'recent' : 'offline');
 
     statusIndicator.className = `status-indicator ${statusClass}`;
-    statusDot.className = `status-dot ${statusClass}`;
-
-    const textNode = statusIndicator.childNodes[statusIndicator.childNodes.length - 1];
-    if (textNode && textNode.nodeType === Node.TEXT_NODE) {
-      textNode.textContent = statusText;
-    } else {
-      statusIndicator.innerHTML = `<span class="status-dot ${statusClass}"></span>${statusText}`;
-    }
+    statusIndicator.innerHTML = `<span class="status-dot ${statusClass}"></span>${statusText}`;
   }
 
   if (oldData.title !== newData.title) {
@@ -461,29 +471,21 @@ function updateStreamerCard(card, oldData, newData) {
       const preview = createStreamPreview(newData);
       card.appendChild(preview);
 
-      card.addEventListener('mouseenter', () => {
-        const rect = card.getBoundingClientRect();
-        const previewWidth = 280;
-        const previewHeight = preview.offsetHeight || 200;
-
-        let left = rect.left - previewWidth - 12;
-        let top = rect.top + (rect.height / 2) - (previewHeight / 2);
-
-        if (left < 8) {
-          left = rect.right + 12;
-        }
-
-        if (top < 8) top = 8;
-        if (top + previewHeight > window.innerHeight - 8) {
-          top = window.innerHeight - previewHeight - 8;
-        }
-
-        preview.style.left = left + 'px';
-        preview.style.top = top + 'px';
-      });
+      const mainLine = card.querySelector('.streamer-main-line');
+      if (mainLine && !mainLine.querySelector('.preview-toggle')) {
+        const toggleBtn = document.createElement('button');
+        toggleBtn.type = 'button';
+        toggleBtn.className = 'preview-toggle';
+        toggleBtn.title = 'Aperçu du stream';
+        toggleBtn.innerHTML = ICON_CHEVRON;
+        mainLine.appendChild(toggleBtn);
+      }
     }
   } else if (existingPreview) {
     existingPreview.remove();
+    card.classList.remove('preview-open');
+    const toggleBtn = card.querySelector('.preview-toggle');
+    if (toggleBtn) toggleBtn.remove();
   }
 }
 
@@ -577,8 +579,6 @@ function showAutocomplete(results) {
     const item = document.createElement('div');
     item.className = 'autocomplete-item';
 
-    const platformLabel = result.platform.charAt(0).toUpperCase() + result.platform.slice(1);
-
     const img = document.createElement('img');
     img.src = result.avatar || 'icons/avatars/default.svg';
     img.alt = result.name;
@@ -590,7 +590,7 @@ function showAutocomplete(results) {
     const infoDiv = document.createElement('div');
     infoDiv.className = 'autocomplete-info';
 
-    let badges = `<span class="platform-badge-small platform-${result.platform}">${platformLabel}</span>`;
+    let badges = '';
     if (result.isLive) {
       badges += '<span class="live-badge"><svg width="8" height="8" viewBox="0 0 24 24" fill="#ef4444" stroke="none"><circle cx="12" cy="12" r="10"/></svg> Live</span>';
     }
@@ -735,13 +735,29 @@ async function handleAddStreamer() {
       return;
     }
 
+    let streamerInfo = null;
+    if (streamerData.platform === 'twitch') {
+      const exactResponse = await new Promise(resolve => {
+        chrome.runtime.sendMessage(
+          { action: 'getExactStreamer', username: streamerData.username },
+          (response) => resolve(chrome.runtime.lastError ? null : response)
+        );
+      });
+      streamerInfo = exactResponse?.streamer || null;
+    }
+
+    if (!streamerInfo) {
+      showError('Streamer introuvable sur Twitch, vérifie le pseudo ou le lien');
+      return;
+    }
+
     const newStreamer = {
-      id: `${streamerData.platform}_${streamerData.username}_${Date.now()}`,
-      name: streamerData.username,
-      username: streamerData.username,
+      id: `${streamerData.platform}_${streamerInfo.username}_${Date.now()}`,
+      name: streamerInfo.name,
+      username: streamerInfo.username,
       platform: streamerData.platform,
-      avatar: '',
-      isLive: false,
+      avatar: streamerInfo.avatar || '',
+      isLive: streamerInfo.isLive || false,
       wasLiveRecently: false,
       team: null,
       addedDate: Date.now(),
@@ -794,6 +810,7 @@ function createStreamerCard(streamer) {
 
   const statusText = getStatusText(streamer);
   const statusClass = streamer.isLive ? 'live' : (streamer.wasLiveRecently ? 'recent' : 'offline');
+  const isToggleable = streamer.isLive && !!streamer.thumbnail;
   const platformIcon = getPlatformIcon(streamer.platform);
   const avatarUrl = streamer.avatar && streamer.avatar !== '' ? streamer.avatar : 'icons/avatars/default.svg';
 
@@ -814,14 +831,12 @@ function createStreamerCard(streamer) {
 
   const mainLineHTML = `
     <div class="streamer-main-line">
-      <span class="platform-icon platform-${streamer.platform}" title="${streamer.platform}">
-        ${platformIcon}
-      </span>
       <div class="streamer-name" title="${escapeHtml(streamer.name)}">${escapeHtml(streamer.name)}</div>
       <span class="status-indicator ${statusClass}">
         <span class="status-dot ${statusClass}"></span>
         ${statusText}
       </span>
+      ${isToggleable ? `<button type="button" class="preview-toggle" title="Aperçu du stream">${ICON_CHEVRON}</button>` : ''}
     </div>
   `;
 
@@ -835,7 +850,7 @@ function createStreamerCard(streamer) {
   secondaryLineHTML += `
     <div class="team-info">
       ${streamer.team ? `<img src="${teamLogoUrl}" alt="${teamName}" class="team-logo" onerror="this.src='icons/teams/default.svg'">` : ''}
-      <span class="team-name ${!streamer.team ? 'no-team' : ''}">${teamName}</span>
+      <span class="team-name ${!streamer.team ? 'no-team' : ''}" title="${escapeHtml(teamName)}">${teamName}</span>
     </div>
   `;
 
@@ -857,35 +872,18 @@ function createStreamerCard(streamer) {
   gridPlatform.className = `grid-platform platform-${streamer.platform}`;
   gridPlatform.innerHTML = platformIcon;
 
-  card.appendChild(img);
-  card.appendChild(infoDiv);
+  const mainRow = document.createElement('div');
+  mainRow.className = 'card-main-row';
+  mainRow.appendChild(img);
+  mainRow.appendChild(infoDiv);
+
+  card.appendChild(mainRow);
   card.appendChild(deleteBtn);
   card.appendChild(gridPlatform);
 
-  if (streamer.isLive && streamer.thumbnail) {
+  if (isToggleable) {
     const preview = createStreamPreview(streamer);
     card.appendChild(preview);
-
-    card.addEventListener('mouseenter', () => {
-      const rect = card.getBoundingClientRect();
-      const previewWidth = 280;
-      const previewHeight = preview.offsetHeight || 200;
-
-      let left = rect.left - previewWidth - 12;
-      let top = rect.top + (rect.height / 2) - (previewHeight / 2);
-
-      if (left < 8) {
-        left = rect.right + 12;
-      }
-
-      if (top < 8) top = 8;
-      if (top + previewHeight > window.innerHeight - 8) {
-        top = window.innerHeight - previewHeight - 8;
-      }
-
-      preview.style.left = left + 'px';
-      preview.style.top = top + 'px';
-    });
   }
 
   setTimeout(() => {
@@ -894,8 +892,22 @@ function createStreamerCard(streamer) {
     card.style.transform = 'translateX(0)';
   }, 50);
 
+  setTimeout(() => {
+    card.style.transition = '';
+    card.style.opacity = '';
+    card.style.transform = '';
+  }, 400);
+
   card.addEventListener('click', (e) => {
-    if (!e.target.closest('.delete-btn')) {
+    if (e.target.closest('.delete-btn')) return;
+
+    if (e.target.closest('.preview-toggle')) {
+      e.stopPropagation();
+      toggleStreamPreview(card);
+      return;
+    }
+
+    if (!e.target.closest('.stream-preview')) {
       openStream(streamer);
     }
   });
@@ -928,6 +940,14 @@ function capitalizeTeamName(teamName) {
   return teamName.charAt(0).toUpperCase() + teamName.slice(1).toLowerCase();
 }
 
+function toggleStreamPreview(card) {
+  const preview = card.querySelector('.stream-preview');
+  if (!preview) return;
+
+  const isOpen = preview.classList.toggle('open');
+  card.classList.toggle('preview-open', isOpen);
+}
+
 function createStreamPreview(streamer) {
   const preview = document.createElement('div');
   preview.className = 'stream-preview';
@@ -936,7 +956,6 @@ function createStreamPreview(streamer) {
   const viewersText = streamer.viewerCount ? formatViewers(streamer.viewerCount) + ' spectateurs' : '';
 
   preview.innerHTML = `
-    <div class="stream-preview-live-badge">Live</div>
     <img src="${streamer.thumbnail}" alt="Stream preview" class="stream-preview-thumbnail" onerror="this.style.display='none'">
     <div class="stream-preview-info">
       <div class="stream-preview-game">${ICON_GAME} ${gameText}</div>

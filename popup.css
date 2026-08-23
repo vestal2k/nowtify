@@ -7,9 +7,9 @@
   --text: #FAFAFA;
   --text-dim: #A1A1AA;
   --text-faint: #52525B;
-  --accent: #FAFAFA;
-  --accent-soft: rgba(250, 250, 250, 0.1);
-  --accent-border: rgba(250, 250, 250, 0.4);
+  --accent: #FCD34D;
+  --accent-soft: rgba(252, 211, 77, 0.12);
+  --accent-border: rgba(252, 211, 77, 0.4);
   --danger: #FF5C5C;
   --danger-soft: rgba(255, 92, 92, 0.1);
   --danger-border: rgba(255, 92, 92, 0.35);
@@ -31,6 +31,7 @@ body {
   color: var(--text);
   width: 350px;
   max-height: 600px;
+  overflow-x: hidden;
   overflow-y: auto;
   font-size: 13px;
   -webkit-font-smoothing: antialiased;
@@ -56,15 +57,19 @@ body {
 }
 
 .logo {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
 }
 
 .header h1 {
   font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.02em;
+}
+
+.brand-accent {
+  color: var(--accent);
 }
 
 .header-actions {
@@ -298,6 +303,56 @@ body {
   cursor: pointer;
 }
 
+.twitch-connect-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-sm);
+  padding: 9px 11px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.twitch-connect-banner svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.twitch-connect-banner span {
+  flex: 1;
+}
+
+.twitch-connect-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--accent);
+  color: #0E0E10;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: opacity 0.15s var(--ease);
+}
+
+.twitch-connect-btn:hover {
+  opacity: 0.88;
+}
+
+.twitch-connect-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .hidden {
   display: none !important;
 }
@@ -416,14 +471,25 @@ body {
 .streamer-card {
   position: relative;
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 10px 11px;
   cursor: pointer;
   transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
+}
+
+.card-main-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-right: 0;
+  transition: padding-right 0.15s var(--ease);
+}
+
+.streamer-card:hover .card-main-row {
+  padding-right: 28px;
 }
 
 .streamer-card:hover {
@@ -433,11 +499,11 @@ body {
 
 .streamer-card.live {
   background: var(--surface-hover);
-  border-color: rgba(250, 250, 250, 0.55);
+  border-color: rgba(252, 211, 77, 0.55);
 }
 
 .streamer-card.live:hover {
-  border-color: rgba(250, 250, 250, 0.7);
+  border-color: rgba(252, 211, 77, 0.7);
 }
 
 .streamer-card.going-live {
@@ -523,6 +589,37 @@ body {
   font-weight: 600;
 }
 
+.chevron-icon {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  transition: transform 0.15s var(--ease);
+}
+
+.streamer-card.preview-open .chevron-icon {
+  transform: rotate(180deg);
+}
+
+.preview-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+
+.preview-toggle:hover {
+  background: var(--surface-hover);
+  color: var(--text-dim);
+}
+
 .status-dot {
   width: 6px;
   height: 6px;
@@ -557,6 +654,7 @@ body {
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
+  max-width: 40%;
 }
 
 .team-logo {
@@ -564,6 +662,7 @@ body {
   height: 14px;
   border-radius: 3px;
   object-fit: cover;
+  flex-shrink: 0;
 }
 
 .team-name {
@@ -572,6 +671,9 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .team-name.no-team {
@@ -616,19 +718,21 @@ body {
 
 .stream-preview {
   display: none;
-  position: fixed;
-  width: 280px;
-  background: var(--surface);
+  margin-top: 10px;
+  background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   overflow: hidden;
-  z-index: 100;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
-  pointer-events: none;
 }
 
-.streamer-card:hover .stream-preview {
+.stream-preview.open {
   display: block;
+  animation: previewOpen 0.15s var(--ease);
+}
+
+@keyframes previewOpen {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .stream-preview-thumbnail {
@@ -667,21 +771,6 @@ body {
   color: var(--accent);
 }
 
-.stream-preview-live-badge {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  font-family: var(--mono);
-  font-size: 9px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  background: var(--accent);
-  color: #0E0E10;
-  padding: 3px 6px;
-  border-radius: 4px;
-}
-
 .streamers-list.compact {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -689,11 +778,14 @@ body {
 }
 
 .streamers-list.compact .streamer-card {
+  padding: 10px 6px;
+}
+
+.streamers-list.compact .card-main-row {
   flex-direction: column;
   align-items: center;
   text-align: center;
   gap: 6px;
-  padding: 10px 6px;
 }
 
 .streamers-list.compact .streamer-avatar {
@@ -732,6 +824,7 @@ body {
 }
 
 .streamers-list.compact .delete-btn {
+  position: absolute;
   top: 4px;
   right: 4px;
   width: 18px;
@@ -745,6 +838,10 @@ body {
 
 .streamers-list.compact .stream-preview {
   display: none !important;
+}
+
+.streamers-list.compact .preview-toggle {
+  display: none;
 }
 
 .streamers-list.compact .grid-platform {

@@ -15,10 +15,7 @@
     <header class="header">
       <div class="logo-section">
         <img src="icons/logo.png" alt="Nowtify Logo" class="logo">
-        <div>
-          <h1>Nowtify</h1>
-          <p class="subtitle">Paramètres de l'extension</p>
-        </div>
+        <h1>Now<span class="brand-accent">tify</span></h1>
       </div>
     </header>
 
@@ -34,7 +31,6 @@
             </svg>
             Notifications
           </h2>
-          <p>Configurez vos préférences de notifications</p>
         </div>
         
         <div class="settings-group">
@@ -48,18 +44,6 @@
               <span class="slider"></span>
             </label>
           </div>
-
-          <div class="setting-item">
-            <div class="setting-info">
-              <h3>Notifications persistantes</h3>
-              <p>Les notifications restent affichées jusqu'à ce que vous les fermiez</p>
-            </div>
-            <label class="toggle">
-              <input type="checkbox" id="persistentNotifications">
-              <span class="slider"></span>
-            </label>
-          </div>
-
         </div>
       </section>
 
@@ -74,23 +58,9 @@
             </svg>
             Interface
           </h2>
-          <p>Personnalisez le comportement de l'extension</p>
         </div>
 
         <div class="settings-group">
-          <div class="setting-item">
-            <div class="setting-info">
-              <h3>Intervalle de rafraîchissement</h3>
-              <p>Fréquence de vérification des statuts</p>
-            </div>
-            <select id="refreshInterval" class="select-field">
-              <option value="3">3 minutes</option>
-              <option value="5" selected>5 minutes</option>
-              <option value="10">10 minutes</option>
-              <option value="15">15 minutes</option>
-            </select>
-          </div>
-
           <div class="setting-item">
             <div class="setting-info">
               <h3>Confirmer la suppression</h3>
@@ -113,7 +83,6 @@
             </svg>
             Connexion Twitch
           </h2>
-          <p>Connectez-vous avec votre compte Twitch</p>
         </div>
 
         <div class="settings-group">
@@ -143,35 +112,6 @@
         </div>
       </section>
 
-      <!-- Groups/Categories Section -->
-      <section class="section">
-        <div class="section-header">
-          <h2>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-            </svg>
-            Groupes personnalisés
-          </h2>
-          <p>Créez des catégories pour organiser vos streamers</p>
-        </div>
-
-        <div class="groups-management">
-          <div class="add-group-form">
-            <input type="text" id="newGroupName" class="input-field" placeholder="Nom du groupe (ex: Favoris, Esport...)">
-            <button type="button" class="btn-add-group" id="addGroupBtn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              Ajouter
-            </button>
-          </div>
-          <div id="groupsList" class="groups-list">
-            <!-- Groupes injectés dynamiquement -->
-          </div>
-        </div>
-      </section>
-
       <!-- Teams Management Section -->
       <section class="section">
         <div class="section-header">
@@ -184,7 +124,6 @@
             </svg>
             Gestion des Teams
           </h2>
-          <p>Gérer vos teams et leurs membres</p>
         </div>
 
         <div id="teamsManagement" class="teams-management">
@@ -202,7 +141,6 @@
             </svg>
             Historique
           </h2>
-          <p>Les 10 derniers lives détectés</p>
         </div>
         
         <div class="history-list" id="historyList">
@@ -231,7 +169,6 @@
             </svg>
             Export / Import
           </h2>
-          <p>Sauvegardez ou restaurez votre liste de streamers</p>
         </div>
 
         <div class="export-import-section">
@@ -279,7 +216,7 @@
         </div>
 
         <div class="about-content">
-          <p><strong>Nowtify</strong> v3.1.0</p>
+          <p><strong>Nowtify</strong> v3.2.0</p>
           <p>Extension Chrome pour suivre vos streamers Twitch favoris.</p>
           <div class="about-links">
             <a href="https://github.com/qyrn/nowtify" class="link">
@@ -313,25 +250,25 @@
               </svg>
               Nous soutenir
             </a>
+            <span>•</span>
+            <a href="https://nowtify.qyrn.dev" target="_blank" class="link">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+              Site web
+            </a>
+            <span>•</span>
+            <a href="https://nowtify.qyrn.dev/privacy.html" target="_blank" class="link">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"></path>
+              </svg>
+              Confidentialité
+            </a>
           </div>
         </div>
       </section>
-
-      <!-- Save Button -->
-      <div class="save-section">
-        <button class="btn-primary" id="saveBtn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 6px;">
-            <polyline points="20 6 9 17 4 12"></polyline>
-          </svg>
-          Enregistrer les paramètres
-        </button>
-        <div class="save-message" id="saveMessage">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
-            <polyline points="20 6 9 17 4 12"></polyline>
-          </svg>
-          Paramètres enregistrés !
-        </div>
-      </div>
     </main>
   </div>
 

@@ -14,8 +14,7 @@
     <!-- Header -->
     <header class="header">
       <div class="logo-section">
-        <img src="icons/logo.png" alt="Nowtify Logo" class="logo">
-        <h1>Nowtify</h1>
+        <h1>Now<span class="brand-accent">tify</span></h1>
       </div>
       <div class="header-actions">
         <button class="icon-btn refresh-btn" id="refreshBtn" title="Actualiser">
@@ -72,6 +71,15 @@
       <button class="auth-error-btn" id="authErrorBtn">Reconnexion</button>
     </div>
 
+    <!-- Twitch Connect Banner -->
+    <div class="twitch-connect-banner hidden" id="twitchConnectBanner">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
+      </svg>
+      <span>Connexion Twitch requise</span>
+      <button class="twitch-connect-btn" id="twitchConnectBtn">Se connecter</button>
+    </div>
+
     <!-- Error Message -->
     <div class="error-message" id="errorMessage"></div>
 
@@ -79,7 +87,7 @@
     <div class="filters-bar" id="filtersBar">
       <button class="filter-btn active" data-filter="all">Tous</button>
       <div class="filter-group-wrapper" id="groupFilterWrapper">
-        <button class="filter-btn filter-group-btn" id="groupFilterBtn" title="Filtrer par groupe">
+        <button class="filter-btn filter-group-btn" id="groupFilterBtn" title="Filtrer par team">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
             <circle cx="9" cy="7" r="4"/>

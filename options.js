@@ -1,7 +1,5 @@
 const notificationsEnabled = document.getElementById('notificationsEnabled');
-const persistentNotifications = document.getElementById('persistentNotifications');
 const confirmDelete = document.getElementById('confirmDelete');
-const refreshInterval = document.getElementById('refreshInterval');
 const twitchLoginBtn = document.getElementById('twitchLoginBtn');
 const twitchLogoutBtn = document.getElementById('twitchLogoutBtn');
 const twitchNotConnected = document.getElementById('twitchNotConnected');
@@ -10,47 +8,25 @@ const twitchUserAvatar = document.getElementById('twitchUserAvatar');
 const twitchUsername = document.getElementById('twitchUsername');
 const historyList = document.getElementById('historyList');
 const clearHistoryBtn = document.getElementById('clearHistoryBtn');
-const saveBtn = document.getElementById('saveBtn');
-const saveMessage = document.getElementById('saveMessage');
-const newGroupName = document.getElementById('newGroupName');
-const addGroupBtn = document.getElementById('addGroupBtn');
-const groupsList = document.getElementById('groupsList');
 const exportBtn = document.getElementById('exportBtn');
 const importBtn = document.getElementById('importBtn');
 const importFile = document.getElementById('importFile');
 
-const GROUP_COLORS = [
-  '#5CFFE0', '#7B5CFF', '#FF4F8B', '#FF3366', '#10B981',
-  '#3B82F6', '#F59E0B', '#EC4899', '#8B5CF6', '#06B6D4'
-];
-
 document.addEventListener('DOMContentLoaded', async () => {
   await loadSettings();
   await loadTwitchAuthStatus();
-  await loadGroups();
   await loadTeamsManagement();
   await loadHistory();
   setupEventListeners();
 });
 
 function setupEventListeners() {
-  saveBtn.addEventListener('click', saveSettings);
   clearHistoryBtn.addEventListener('click', clearHistory);
 
-  [notificationsEnabled, persistentNotifications, confirmDelete].forEach(toggle => {
+  [notificationsEnabled, confirmDelete].forEach(toggle => {
     toggle.addEventListener('change', () => {
-      saveSettings(false);
+      saveSettings();
     });
-  });
-
-  refreshInterval.addEventListener('change', () => {
-    saveSettings(false);
-    updateAlarm();
-  });
-
-  addGroupBtn.addEventListener('click', addGroup);
-  newGroupName.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') addGroup();
   });
 
   exportBtn.addEventListener('click', exportData);
@@ -66,9 +42,7 @@ async function loadSettings() {
     const settings = await DB.getSettings();
 
     notificationsEnabled.checked = settings.notifications !== false;
-    persistentNotifications.checked = settings.persistentNotifications === true;
     confirmDelete.checked = settings.confirmDelete !== false;
-    refreshInterval.value = settings.refreshInterval || '5';
   } catch (error) {}
 }
 
@@ -107,7 +81,7 @@ async function handleTwitchLogin() {
 
     if (response && response.success) {
       showTwitchConnected(response.user);
-      showSaveMessage('Connecté à Twitch !');
+      UI.toast('Connecté à Twitch !', 'success');
       chrome.runtime.sendMessage({ action: 'checkNow' });
     } else {
       UI.toast('Erreur de connexion : ' + (response?.error || 'Inconnue'), 'error');
@@ -129,43 +103,25 @@ async function handleTwitchLogout() {
   try {
     await chrome.runtime.sendMessage({ action: 'twitchLogout' });
     showTwitchDisconnected();
-    showSaveMessage('Déconnecté de Twitch');
+    UI.toast('Déconnecté de Twitch', 'success');
   } catch (error) {
     UI.toast('Erreur lors de la déconnexion', 'error');
   }
 }
 
-async function saveSettings(showMessage = true) {
+async function saveSettings() {
   try {
     const settings = {
       notifications: notificationsEnabled.checked,
-      persistentNotifications: persistentNotifications.checked,
-      confirmDelete: confirmDelete.checked,
-      refreshInterval: refreshInterval.value
+      confirmDelete: confirmDelete.checked
     };
 
     await DB.saveSettings(settings);
 
     chrome.runtime.sendMessage({ action: 'settingsUpdated', settings });
-
-    if (showMessage) {
-      saveMessage.classList.add('show');
-      setTimeout(() => {
-        saveMessage.classList.remove('show');
-      }, 2000);
-    }
-
   } catch (error) {
     UI.toast('Erreur lors de la sauvegarde des paramètres', 'error');
   }
-}
-
-function updateAlarm() {
-  const minutes = parseInt(refreshInterval.value);
-  chrome.runtime.sendMessage({
-    action: 'updateAlarm',
-    minutes
-  });
 }
 
 async function loadHistory() {
@@ -395,99 +351,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-async function loadGroups() {
-  try {
-    const groups = await DB.getGroups();
-    const streamers = await DB.getStreamers();
-
-    if (groups.length === 0) {
-      groupsList.innerHTML = '<div class="empty-groups">Aucun groupe créé</div>';
-      return;
-    }
-
-    groupsList.innerHTML = '';
-
-    groups.forEach((group) => {
-      const memberCount = streamers.filter(s => s.group === group.id).length;
-      const groupItem = document.createElement('div');
-      groupItem.className = 'group-item';
-      groupItem.innerHTML = `
-        <div class="group-info">
-          <span class="group-color" style="background: ${group.color}"></span>
-          <span class="group-name">${escapeHtml(group.name)}</span>
-          <span class="group-count">(${memberCount} streamer${memberCount > 1 ? 's' : ''})</span>
-        </div>
-        <div class="group-actions">
-          <button class="btn-group-action delete" data-group-id="${group.id}" title="Supprimer">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            </svg>
-          </button>
-        </div>
-      `;
-      groupsList.appendChild(groupItem);
-    });
-
-    document.querySelectorAll('.btn-group-action.delete').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const groupId = e.currentTarget.dataset.groupId;
-        await deleteGroup(groupId);
-      });
-    });
-
-  } catch (error) {
-    groupsList.innerHTML = '<div class="empty-groups">Erreur lors du chargement</div>';
-  }
-}
-
-async function addGroup() {
-  const name = newGroupName.value.trim();
-  if (!name) return;
-
-  try {
-    const groups = await DB.getGroups();
-
-    if (groups.some(g => g.name.toLowerCase() === name.toLowerCase())) {
-      UI.toast('Un groupe avec ce nom existe déjà', 'error');
-      return;
-    }
-
-    const newGroup = {
-      id: `group_${Date.now()}`,
-      name: name,
-      color: GROUP_COLORS[groups.length % GROUP_COLORS.length],
-      createdAt: Date.now()
-    };
-
-    await DB.addGroup(newGroup);
-
-    newGroupName.value = '';
-    await loadGroups();
-
-  } catch (error) {
-    UI.toast('Erreur lors de la création du groupe', 'error');
-  }
-}
-
-async function deleteGroup(groupId) {
-  const confirmed = await UI.confirm('Le groupe sera supprimé. Les streamers qu\'il contient ne seront pas supprimés.', {
-    title: 'Supprimer le groupe',
-    confirmLabel: 'Supprimer',
-    danger: true
-  });
-  if (!confirmed) {
-    return;
-  }
-
-  try {
-    await DB.deleteGroup(groupId);
-    await loadGroups();
-  } catch (error) {
-    UI.toast('Erreur lors de la suppression du groupe', 'error');
-  }
-}
-
 async function exportData() {
   try {
     const streamers = await DB.getStreamers();
@@ -517,7 +380,7 @@ async function exportData() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    showSaveMessage('Export réussi !');
+    UI.toast('Export réussi !', 'success');
 
   } catch (error) {
     UI.toast('Erreur lors de l\'export', 'error');
@@ -566,11 +429,10 @@ async function importData(event) {
     await DB.saveStreamers(mergedStreamers);
     await DB.saveGroups(mergedGroups);
 
-    await loadGroups();
     await loadHistory();
     await loadTeamsManagement();
 
-    showSaveMessage(`Import réussi ! ${importedStreamers.length} streamer(s) traités.`);
+    UI.toast(`Import réussi ! ${importedStreamers.length} streamer(s) traités.`, 'success');
 
     importFile.value = '';
 
@@ -580,12 +442,4 @@ async function importData(event) {
     UI.toast('Erreur lors de l\'import : ' + error.message, 'error');
     importFile.value = '';
   }
-}
-
-function showSaveMessage(text) {
-  saveMessage.textContent = text;
-  saveMessage.classList.add('show');
-  setTimeout(() => {
-    saveMessage.classList.remove('show');
-  }, 2000);
 }

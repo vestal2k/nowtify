@@ -3,19 +3,71 @@ const TWITCH_CLIENT_ID = 'bel47qfvj0ib2a4tclxon7f263uf4o';
 const CONFIG = {
   RECENT_LIVE_THRESHOLD: 12 * 60 * 60 * 1000,
   NOTIFICATION_COOLDOWN: 30 * 60 * 1000,
-  TEAM_RECHECK_INTERVAL: 24 * 60 * 60 * 1000
+  TEAM_RECHECK_INTERVAL: 24 * 60 * 60 * 1000,
+  VOD_RECHECK_INTERVAL: 60 * 60 * 1000,
+  REFRESH_INTERVAL_MINUTES: 5,
+  REFRESH_INTERVAL_MINUTES_LIVE: 1
 };
 
 let streamersCache = {};
 let teamLogosCache = {};
 let isChecking = false;
 let checkStartedAt = 0;
-const CHECK_TIMEOUT = 2 * 60 * 1000;
+const CHECK_TIMEOUT = 5 * 60 * 1000;
 let cachedToken = null;
 let tokenValidatedAt = 0;
 const TOKEN_REVALIDATE_INTERVAL = 30 * 60 * 1000;
 let lastSilentLoginAt = 0;
 const SILENT_LOGIN_INTERVAL = 5 * 60 * 1000;
+const TWITCH_FETCH_TIMEOUT = 10 * 1000;
+const TWITCH_MAX_RETRIES = 2;
+
+async function twitchFetch(url, token, retries = TWITCH_MAX_RETRIES) {
+  for (let attempt = 0; ; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), TWITCH_FETCH_TIMEOUT);
+    let response;
+
+    try {
+      response = await fetch(url, {
+        headers: {
+          'Client-ID': TWITCH_CLIENT_ID,
+          'Authorization': `Bearer ${token}`
+        },
+        signal: controller.signal
+      });
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (attempt >= retries) throw error;
+      await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+      continue;
+    }
+    clearTimeout(timeoutId);
+
+    if (response.status === 401) {
+      cachedToken = null;
+      tokenValidatedAt = 0;
+      await chrome.storage.local.remove('twitchAuth');
+      await setAuthErrorFlag(true);
+      return response;
+    }
+
+    if (response.status === 429 && attempt < retries) {
+      const resetHeader = response.headers.get('Ratelimit-Reset');
+      const resetAt = resetHeader ? parseInt(resetHeader, 10) * 1000 : Date.now() + 2000;
+      const waitMs = Math.min(Math.max(resetAt - Date.now(), 500), 15000);
+      await new Promise(resolve => setTimeout(resolve, waitMs));
+      continue;
+    }
+
+    if (response.status >= 500 && attempt < retries) {
+      await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+      continue;
+    }
+
+    return response;
+  }
+}
 
 async function setAuthErrorFlag(hasError) {
   try {
@@ -429,17 +481,17 @@ chrome.runtime.onInstalled.addListener(async () => {
       settings: {
         notifications: true,
         autoRefresh: true,
-        theme: 'dark',
-        refreshInterval: '5'
+        theme: 'dark'
       }
     });
   }
 
-  chrome.alarms.create('checkStreams', { periodInMinutes: 5 });
+  chrome.alarms.create('checkStreams', { periodInMinutes: CONFIG.REFRESH_INTERVAL_MINUTES });
 });
 
 chrome.runtime.onStartup.addListener(() => {
   applyDefaultIcon();
+  checkAllStreamers();
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
@@ -479,21 +531,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
-  if (request.action === 'updateAlarm') {
-    chrome.alarms.clear('checkStreams', () => {
-      chrome.alarms.create('checkStreams', {
-        periodInMinutes: request.minutes
-      });
-      sendResponse({ success: true });
-    });
-    return true;
-  }
-
   if (request.action === 'searchStreamers') {
     searchStreamers(request.query).then(results => {
       sendResponse({ results });
     }).catch(() => {
       sendResponse({ results: [] });
+    });
+    return true;
+  }
+
+  if (request.action === 'getExactStreamer') {
+    getExactTwitchStreamer(request.username).then(streamer => {
+      sendResponse({ streamer });
+    }).catch(() => {
+      sendResponse({ streamer: null });
     });
     return true;
   }
@@ -616,12 +667,7 @@ async function addTwitchTeam(teamName) {
       return { success: false, error: 'Token Twitch manquant' };
     }
 
-    const response = await fetch(`https://api.twitch.tv/helix/teams?name=${teamName}`, {
-      headers: {
-        'Client-ID': TWITCH_CLIENT_ID,
-        'Authorization': `Bearer ${token}`
-      }
-    });
+    const response = await twitchFetch(`https://api.twitch.tv/helix/teams?name=${teamName}`, token);
 
     if (!response.ok) {
       return { success: false, error: 'Team introuvable' };
@@ -765,6 +811,20 @@ async function checkAllStreamers() {
           updated.wasLiveRecently = timeSince < CONFIG.RECENT_LIVE_THRESHOLD;
         }
 
+        if (!data.isLive && streamer.platform === 'twitch' &&
+            (!updated.vodCheckedAt || Date.now() - updated.vodCheckedAt > CONFIG.VOD_RECHECK_INTERVAL)) {
+          const vod = await getLatestVodInfo(streamer.username, streamer.twitchId);
+          updated.vodCheckedAt = Date.now();
+          if (vod) {
+            updated.twitchId = vod.userId;
+            if (vod.date && (!updated.lastLiveDate || vod.date > updated.lastLiveDate)) {
+              updated.lastLiveDate = vod.date;
+              const timeSince = Date.now() - updated.lastLiveDate;
+              updated.wasLiveRecently = timeSince < CONFIG.RECENT_LIVE_THRESHOLD;
+            }
+          }
+        }
+
         const wasLiveBefore = streamer.isLive === true;
         const isLiveNow = data.isLive === true;
         const recentlyNotified = await wasRecentlyNotified(streamer.id);
@@ -821,10 +881,9 @@ async function checkAllStreamers() {
 
 async function updateAlarmInterval(liveCount) {
   try {
-    const { settings = {} } = await chrome.storage.sync.get('settings');
-    const userInterval = parseInt(settings.refreshInterval) || 5;
-
-    const intervalMinutes = liveCount > 0 ? 1 : userInterval;
+    const intervalMinutes = liveCount > 0
+      ? CONFIG.REFRESH_INTERVAL_MINUTES_LIVE
+      : CONFIG.REFRESH_INTERVAL_MINUTES;
 
     await chrome.alarms.clear('checkStreams');
     chrome.alarms.create('checkStreams', { periodInMinutes: intervalMinutes });
@@ -839,36 +898,25 @@ async function checkTwitchStatusBatch(usernames) {
     return results;
   }
 
-  try {
-    const token = await getTwitchToken();
-    if (!token) {
-      await setAuthErrorFlag(true);
-      usernames.forEach(u => results[u.toLowerCase()] = { isLive: false, error: true });
-      return results;
-    }
-    await setAuthErrorFlag(false);
+  const token = await getTwitchToken();
+  if (!token) {
+    await setAuthErrorFlag(true);
+    usernames.forEach(u => results[u.toLowerCase()] = { isLive: false, error: true });
+    return results;
+  }
+  await setAuthErrorFlag(false);
 
-    const chunks = [];
-    for (let i = 0; i < usernames.length; i += 100) {
-      chunks.push(usernames.slice(i, i + 100));
-    }
+  const chunks = [];
+  for (let i = 0; i < usernames.length; i += 100) {
+    chunks.push(usernames.slice(i, i + 100));
+  }
 
-    for (const chunk of chunks) {
+  for (const chunk of chunks) {
+    try {
       const params = chunk.map(u => `user_login=${encodeURIComponent(u)}`).join('&');
-      const response = await fetch(`https://api.twitch.tv/helix/streams?${params}`, {
-        headers: {
-          'Client-ID': TWITCH_CLIENT_ID,
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await twitchFetch(`https://api.twitch.tv/helix/streams?${params}`, token);
 
       if (!response.ok) {
-        if (response.status === 401) {
-          cachedToken = null;
-          tokenValidatedAt = 0;
-          await setAuthErrorFlag(true);
-          await chrome.storage.local.remove('twitchAuth');
-        }
         chunk.forEach(u => results[u.toLowerCase()] = { isLive: false, error: true });
         continue;
       }
@@ -897,9 +945,9 @@ async function checkTwitchStatusBatch(usernames) {
           results[lowerUsername] = { isLive: false, endedAt: Date.now() };
         }
       }
+    } catch (error) {
+      chunk.forEach(u => results[u.toLowerCase()] = { isLive: false, error: true });
     }
-  } catch (error) {
-    usernames.forEach(u => results[u.toLowerCase()] = { isLive: false, error: true });
   }
 
   return results;
@@ -953,15 +1001,21 @@ async function attemptSilentLogin() {
 }
 
 async function validateTwitchToken(token) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TWITCH_FETCH_TIMEOUT);
+
   try {
     const response = await fetch('https://id.twitch.tv/oauth2/validate', {
-      headers: { 'Authorization': `OAuth ${token}` }
+      headers: { 'Authorization': `OAuth ${token}` },
+      signal: controller.signal
     });
     if (response.ok) return 'valid';
     if (response.status === 401) return 'invalid';
     return 'network_error';
   } catch {
     return 'network_error';
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -1025,12 +1079,7 @@ async function loginWithTwitch() {
 
 async function getTwitchUserInfo(token) {
   try {
-    const response = await fetch('https://api.twitch.tv/helix/users', {
-      headers: {
-        'Client-ID': TWITCH_CLIENT_ID,
-        'Authorization': `Bearer ${token}`
-      }
-    });
+    const response = await twitchFetch('https://api.twitch.tv/helix/users', token);
 
     if (response.ok) {
       const data = await response.json();
@@ -1078,12 +1127,7 @@ async function getStreamerAvatar(platform, username) {
     const token = await getTwitchToken();
     if (!token) return '';
 
-    const response = await fetch(`https://api.twitch.tv/helix/users?login=${username}`, {
-      headers: {
-        'Client-ID': TWITCH_CLIENT_ID,
-        'Authorization': `Bearer ${token}`
-      }
-    });
+    const response = await twitchFetch(`https://api.twitch.tv/helix/users?login=${username}`, token);
 
     if (response.ok) {
       const data = await response.json();
@@ -1110,20 +1154,28 @@ async function searchTwitchStreamers(query) {
     const token = await getTwitchToken();
     if (!token) return [];
 
-    const response = await fetch(
+    const response = await twitchFetch(
       `https://api.twitch.tv/helix/search/channels?query=${encodeURIComponent(query)}&first=10`,
-      {
-        headers: {
-          'Client-ID': TWITCH_CLIENT_ID,
-          'Authorization': `Bearer ${token}`
-        }
-      }
+      token
     );
 
     if (response.ok) {
       const data = await response.json();
+      const q = query.toLowerCase();
+      const relevance = (channel) => {
+        const login = channel.broadcaster_login.toLowerCase();
+        const displayName = channel.display_name.toLowerCase();
+        if (login === q || displayName === q) return 4;
+        if (login.startsWith(q) || displayName.startsWith(q)) return 3;
+        if (login.includes(q) || displayName.includes(q)) return 2;
+        return 1;
+      };
+
       return data.data
+        .filter(channel => channel.broadcaster_type === 'partner' || relevance(channel) === 4)
         .sort((a, b) => {
+          const relDiff = relevance(b) - relevance(a);
+          if (relDiff !== 0) return relDiff;
           if (a.is_live !== b.is_live) return b.is_live - a.is_live;
           if (a.broadcaster_type !== b.broadcaster_type) {
             const priority = { partner: 3, affiliate: 2, '': 1 };
@@ -1145,6 +1197,70 @@ async function searchTwitchStreamers(query) {
     return [];
   } catch (error) {
     return [];
+  }
+}
+
+async function getExactTwitchStreamer(username) {
+  try {
+    const token = await getTwitchToken();
+    if (!token) return null;
+
+    const userResponse = await twitchFetch(`https://api.twitch.tv/helix/users?login=${encodeURIComponent(username)}`, token);
+
+    if (!userResponse.ok) return null;
+
+    const userData = await userResponse.json();
+    const user = userData.data && userData.data[0];
+    if (!user) return null;
+
+    let isLive = false;
+    try {
+      const streamResponse = await twitchFetch(`https://api.twitch.tv/helix/streams?user_id=${user.id}`, token);
+      if (streamResponse.ok) {
+        const streamData = await streamResponse.json();
+        isLive = streamData.data && streamData.data.length > 0;
+      }
+    } catch {
+      // isLive stays false, refreshed on next status check
+    }
+
+    return {
+      name: user.display_name,
+      username: user.login,
+      avatar: user.profile_image_url,
+      platform: 'twitch',
+      isLive,
+      isPartner: user.broadcaster_type === 'partner'
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
+async function getLatestVodInfo(username, twitchId) {
+  try {
+    const token = await getTwitchToken();
+    if (!token) return null;
+
+    let userId = twitchId;
+    if (!userId) {
+      const userResponse = await twitchFetch(`https://api.twitch.tv/helix/users?login=${encodeURIComponent(username)}`, token);
+      if (!userResponse.ok) return null;
+      const userData = await userResponse.json();
+      userId = userData.data && userData.data[0] && userData.data[0].id;
+      if (!userId) return null;
+    }
+
+    const videosResponse = await twitchFetch(`https://api.twitch.tv/helix/videos?user_id=${userId}&type=archive&first=1`, token);
+    if (!videosResponse.ok) return null;
+
+    const videosData = await videosResponse.json();
+    const latest = videosData.data && videosData.data[0];
+    if (!latest) return { userId, date: null };
+
+    return { userId, date: new Date(latest.created_at).getTime() };
+  } catch (error) {
+    return null;
   }
 }
 
@@ -1187,12 +1303,7 @@ async function getTeamLogo(teamName) {
 
     for (const variant of variants) {
       try {
-        const response = await fetch(`https://api.twitch.tv/helix/teams?name=${encodeURIComponent(variant)}`, {
-          headers: {
-            'Client-ID': TWITCH_CLIENT_ID,
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        const response = await twitchFetch(`https://api.twitch.tv/helix/teams?name=${encodeURIComponent(variant)}`, token);
 
         if (response.ok) {
           const data = await response.json();
@@ -1233,12 +1344,7 @@ async function getStreamerTeam(username) {
     const token = await getTwitchToken();
     if (!token) return null;
 
-    const userResponse = await fetch(`https://api.twitch.tv/helix/users?login=${username}`, {
-      headers: {
-        'Client-ID': TWITCH_CLIENT_ID,
-        'Authorization': `Bearer ${token}`
-      }
-    });
+    const userResponse = await twitchFetch(`https://api.twitch.tv/helix/users?login=${username}`, token);
 
     if (!userResponse.ok) return null;
 
@@ -1247,12 +1353,7 @@ async function getStreamerTeam(username) {
 
     const userId = userData.data[0].id;
 
-    const teamsResponse = await fetch(`https://api.twitch.tv/helix/teams/channel?broadcaster_id=${userId}`, {
-      headers: {
-        'Client-ID': TWITCH_CLIENT_ID,
-        'Authorization': `Bearer ${token}`
-      }
-    });
+    const teamsResponse = await twitchFetch(`https://api.twitch.tv/helix/teams/channel?broadcaster_id=${userId}`, token);
 
     if (!teamsResponse.ok) return null;
 
@@ -1295,7 +1396,7 @@ function updateBadge(liveCount) {
   if (liveCount > 0) {
     const badgeText = liveCount > 99 ? '99+' : liveCount.toString();
     chrome.action.setBadgeText({ text: badgeText });
-    chrome.action.setBadgeBackgroundColor({ color: '#FAFAFA' });
+    chrome.action.setBadgeBackgroundColor({ color: '#FCD34D' });
     chrome.action.setBadgeTextColor({ color: '#0E0E10' });
   } else {
     chrome.action.setBadgeText({ text: '' });
