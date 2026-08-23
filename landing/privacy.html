@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nowtify - Privacy Policy</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cyan: #5CFFE0;
+            --purple: #7B5CFF;
+            --bg: #0D0D0F;
+            --bg-card: #141416;
+            --text-primary: #FFFFFF;
+            --text-secondary: #9CA3AF;
+            --border: rgba(255, 255, 255, 0.06);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Manrope', sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            line-height: 1.7;
+        }
+
+        .container {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 80px 24px 120px;
+        }
+
+        a.back {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 40px;
+        }
+
+        a.back:hover {
+            color: var(--text-primary);
+        }
+
+        h1 {
+            font-size: clamp(2rem, 5vw, 2.75rem);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+
+        .updated {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 48px;
+        }
+
+        h2 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-top: 44px;
+            margin-bottom: 12px;
+            letter-spacing: -0.01em;
+        }
+
+        p, li {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        ul {
+            padding-left: 20px;
+            margin-top: 8px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        li strong {
+            color: var(--text-primary);
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 44px;
+        }
+
+        .card p {
+            color: var(--text-primary);
+        }
+
+        code {
+            background: rgba(255, 255, 255, 0.06);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        footer {
+            margin-top: 64px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        footer a {
+            color: var(--cyan);
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a class="back" href="index.html">&larr; Back to Nowtify</a>
+
+        <h1>Privacy Policy</h1>
+        <p class="updated">Last updated: August 23, 2026</p>
+
+        <p>Nowtify is a Chrome extension that notifies you when your favorite
+        Twitch streamers go live. This page explains exactly what data the
+        extension touches and where it goes.</p>
+
+        <h2>The short version</h2>
+        <p>Nowtify has no backend and no analytics. Everything the extension
+        knows about you stays on your device, and the only third party it
+        ever talks to is Twitch's own API, directly from your browser.</p>
+
+        <h2>What data Nowtify accesses</h2>
+        <ul>
+            <li><strong>Twitch login (OAuth).</strong> When you connect your
+            Twitch account, Nowtify uses Chrome's built-in <code>identity</code>
+            API to open Twitch's own login page and receive an access token.
+            Nowtify never sees your Twitch password. The token is stored
+            locally (<code>chrome.storage</code>) and sent only to
+            <code>api.twitch.tv</code> / <code>id.twitch.tv</code> to check
+            which of your streamers are live.</li>
+            <li><strong>The streamers, groups, and history you add.</strong>
+            Stored locally in your browser's IndexedDB. Nowtify never
+            uploads this list anywhere.</li>
+            <li><strong>Your settings</strong> (refresh interval, sounds,
+            compact mode, etc.). Stored via <code>chrome.storage.sync</code>,
+            which is Chrome's own account-sync mechanism — if you're signed
+            into Chrome, Google syncs this between your own devices the same
+            way it syncs your bookmarks. Nowtify's developer never receives
+            it.</li>
+        </ul>
+
+        <h2>What Nowtify does <em>not</em> do</h2>
+        <ul>
+            <li>No analytics, telemetry, or crash reporting</li>
+            <li>No advertising or ad tracking</li>
+            <li>No servers operated by Nowtify — there is nothing to breach
+            because there is nothing to store off-device</li>
+            <li>No selling or sharing of data with third parties, ever</li>
+        </ul>
+
+        <h2>Permissions explained</h2>
+        <ul>
+            <li><strong>notifications</strong> — to show a desktop
+            notification when a streamer goes live.</li>
+            <li><strong>storage</strong> — to save your streamers, groups,
+            history, and settings locally.</li>
+            <li><strong>alarms</strong> — to periodically check the Twitch
+            API in the background at the interval you choose.</li>
+            <li><strong>identity</strong> — to run the Twitch OAuth login
+            flow described above.</li>
+            <li><strong>host permissions for api.twitch.tv / id.twitch.tv</strong>
+            — the only two hosts Nowtify ever sends requests to.</li>
+        </ul>
+
+        <h2>Removing your data</h2>
+        <p>Uninstalling the extension removes everything it stored — there
+        is no account to delete anywhere else, because none exists. You can
+        also disconnect Twitch or clear your history at any time from the
+        options page.</p>
+
+        <div class="card">
+            <p>Questions about this policy? Contact
+            <a href="mailto:contact@qyrn.dev" style="color: var(--cyan);">contact@qyrn.dev</a>.</p>
+        </div>
+
+        <footer>
+            Nowtify &middot; <a href="index.html">nowtify</a> &middot;
+            <a href="https://github.com/qyrn/nowtify" target="_blank">GitHub</a>
+        </footer>
+    </div>
+</body>
+</html>

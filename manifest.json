@@ -1,5 +1,6 @@
 {
   "manifest_version": 3,
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArOsdQfx+Jx6ShPr6QQbyHi/I+89f3jxAyICnboNCsa0NbgrdAmZyKuKzhg1puPvjCAuGvRB/MMOyqsEZHzEMIRRYXwXvb9xS+IX3CYZL0OSLSozyUZ2vpBr4FwSiuV/MjvvGyByimHCBL6a+lVF2mMbvJ5SkgLFn+AKAv+kdxLDytu1lPQhkkAF+4sZZNVDW3te4TGC0o8epKkWk1zcVMnhUQ6TLwAsLYeXbnhZudetJyqlFMyOFPaGMN8gSss58xw86Xstacnl5FG77oOy+Ym2LoL5N1DfkvtIuULittocU4dR54aldnUylzVMI7I5Qytfedtb+4eS1xjnJgIwu6wIDAQAB",
   "name": "Nowtify",
   "version": "3.1.0",
   "description": "Soyez notifié instantanément quand vos streamers Twitch favoris passent en live",

@@ -61,20 +61,25 @@ The extension needs a Twitch application to query the API. See the next section.
 
 ## Twitch API configuration
 
-The extension authenticates against Twitch with your own Twitch application.
-No client secret is required: the OAuth implicit flow runs entirely client-side.
+The extension authenticates against Twitch with its own registered Twitch
+application (`TWITCH_CLIENT_ID` in `background.js`). No client secret is
+required: the OAuth implicit flow runs entirely client-side, and each user's
+access token stays local to their browser.
 
-1. After loading the extension, copy its ID from `chrome://extensions`.
-2. Go to the [Twitch Developer Console](https://dev.twitch.tv/console/apps)
-   and register a new application.
-3. Set the **OAuth Redirect URL** to:
-   ```
-   https://<your-extension-id>.chromiumapp.org/
-   ```
-4. Copy the generated **Client ID**.
-5. Open `background.js` and set the `TWITCH_CLIENT_ID` constant to your Client ID.
-6. Reload the extension from `chrome://extensions`.
-7. Open the extension options and click **Se connecter avec Twitch**.
+The extension's ID is pinned via the `key` field in `manifest.json`, so it's
+identical whether loaded unpacked or installed from the Chrome Web Store:
+`fejiomgldmdpflpichnebdecnhjghgde`. Its OAuth redirect URL
+(`https://fejiomgldmdpflpichnebdecnhjghgde.chromiumapp.org/`) is already
+registered on the Twitch application behind `TWITCH_CLIENT_ID` — no setup
+needed, just load the extension and click **Se connecter avec Twitch** in
+the options page.
+
+If you fork this project and want to run your own Twitch application instead
+(recommended if you plan to distribute your own build), replace the `key` in
+`manifest.json` with your own (see `nowtify-key.pem` generation via
+`openssl genrsa` / `openssl rsa -pubout`), register a Twitch app with a
+redirect URL matching your new extension ID, and swap `TWITCH_CLIENT_ID` in
+`background.js` accordingly.
 
 ## Project structure
 
@@ -101,7 +106,7 @@ Released under the [MIT license](LICENSE). Free to use with attribution.
 
 ## Author
 
-Developed by [Vestal](https://github.com/qyrn).
+Developed by [qyrn](https://github.com/qyrn).
 
 If you find Nowtify useful, you can support the project on
-[Ko-fi](https://ko-fi.com/qyrn).
+[Ko-fi](https://ko-fi.com/qyrnsec).
