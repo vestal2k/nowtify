@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nowtify - Never Miss a Stream</title>
-    <meta name="description" content="Nowtify is a Chrome extension that notifies you the instant your favorite Twitch streamers go live. No account, no backend, no data leaves your device.">
+    <meta name="description" content="Nowtify is a Chrome extension that notifies you when your favorite Twitch streamers go live. No account, no backend, no data leaves your device.">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -371,6 +371,7 @@
 
         .mock-filters {
             display: flex;
+            align-items: center;
             gap: 6px;
             margin-bottom: 12px;
         }
@@ -390,6 +391,20 @@
             border-color: var(--accent-border);
             color: var(--text);
         }
+
+        .mock-team-filter {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 8px;
+            border-radius: 7px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text-faint);
+        }
+
+        .mock-team-filter svg:first-child { width: 12px; height: 12px; }
+        .mock-team-filter svg:last-child { width: 8px; height: 8px; }
 
         .mock-list {
             display: flex;
@@ -780,8 +795,8 @@
                 <span>Now<span class="brand-accent">tify</span></span>
             </a>
             <div class="nav-links">
-                <a href="#features" class="text-link">Features</a>
-                <a href="#how-it-works" class="text-link">How it works</a>
+                <a href="#features" class="text-link" data-i18n="nav.features">Features</a>
+                <a href="#how-it-works" class="text-link" data-i18n="nav.how">How it works</a>
                 <a href="https://github.com/qyrn/nowtify" target="_blank" class="btn btn-secondary">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
@@ -795,9 +810,9 @@
     <div class="container">
         <section class="hero">
             <div class="hero-text">
-                <div class="pill"><span class="dot"></span>Manifest V3 &middot; No account required</div>
-                <h1>Never miss a stream.</h1>
-                <p class="hero-subtitle">Nowtify watches your favorite Twitch streamers in the background and fires a native desktop notification the second one goes live. No backend, no tracking, nothing leaves your machine.</p>
+                <div class="pill"><span class="dot"></span><span data-i18n="hero.badge">Manifest V3 &middot; No account required</span></div>
+                <h1 data-i18n="hero.title">Never miss a stream.</h1>
+                <p class="hero-subtitle" data-i18n="hero.subtitle">Nowtify watches your favorite Twitch streamers in the background and sends a native desktop notification shortly after one goes live. No backend, no tracking, nothing leaves your machine.</p>
                 <div class="hero-buttons">
                     <a href="https://github.com/qyrn/nowtify/releases" class="btn btn-primary">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -805,14 +820,14 @@
                             <polyline points="7 10 12 15 17 10"></polyline>
                             <line x1="12" y1="15" x2="12" y2="3"></line>
                         </svg>
-                        Get Nowtify
+                        <span data-i18n="hero.cta_primary">Get Nowtify</span>
                     </a>
-                    <a href="#how-it-works" class="btn btn-secondary">See how it works</a>
+                    <a href="#how-it-works" class="btn btn-secondary" data-i18n="hero.cta_secondary">See how it works</a>
                 </div>
                 <div class="trust-row">
-                    <span class="pill">100% local storage</span>
-                    <span class="pill">Zero analytics</span>
-                    <span class="pill">Open source</span>
+                    <span class="pill" data-i18n="hero.trust1">100% local storage</span>
+                    <span class="pill" data-i18n="hero.trust2">Zero analytics</span>
+                    <span class="pill" data-i18n="hero.trust3">Open source</span>
                 </div>
             </div>
 
@@ -844,7 +859,10 @@
 
                         <div class="mock-filters">
                             <div class="mock-chip active">Tous</div>
-                            <div class="mock-chip">Groupes</div>
+                            <div class="mock-team-filter">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"></path></svg>
+                            </div>
                         </div>
 
                         <div class="mock-list">
@@ -897,9 +915,9 @@
 
         <section class="features" id="features">
             <div class="section-header fade-in">
-                <div class="section-eyebrow">Features</div>
-                <h2>Everything the popup actually does</h2>
-                <p>No filler features. This is what ships in the extension today.</p>
+                <div class="section-eyebrow" data-i18n="features.eyebrow">Features</div>
+                <h2 data-i18n="features.title">Everything the popup actually does</h2>
+                <p data-i18n="features.subtitle">No filler features. This is what ships in the extension today.</p>
             </div>
 
             <div class="features-grid">
@@ -907,72 +925,72 @@
                     <div class="feature-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
                     </div>
-                    <h3>Instant notifications</h3>
-                    <p>A native desktop notification fires the moment a streamer you follow goes live. No polling delay you'll notice.</p>
+                    <h3 data-i18n="feat1.title">Background notifications</h3>
+                    <p data-i18n="feat1.desc">A native desktop notification fires as soon as Nowtify detects one of your streamers going live. Checked every few minutes, more often once someone's already live.</p>
                 </div>
 
                 <div class="feature-card fade-in">
                     <div class="feature-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                     </div>
-                    <h3>Twitch teams &amp; groups</h3>
-                    <p>Add an entire Twitch team in one click, or organize streamers into your own custom groups and filter by them.</p>
+                    <h3 data-i18n="feat2.title">Twitch team import</h3>
+                    <p data-i18n="feat2.desc">Add an entire Twitch team in one click, then filter your list by team whenever you want.</p>
                 </div>
 
                 <div class="feature-card fade-in">
                     <div class="feature-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                     </div>
-                    <h3>Live history</h3>
-                    <p>A running log of the last detected lives, so you can see who went live and when, even after the fact.</p>
+                    <h3 data-i18n="feat3.title">Live history</h3>
+                    <p data-i18n="feat3.desc">A running log of the last detected lives, so you can see who went live and when, even after the fact.</p>
                 </div>
 
                 <div class="feature-card fade-in">
                     <div class="feature-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect></svg>
                     </div>
-                    <h3>Compact grid mode</h3>
-                    <p>Switch to a dense 3-column grid to keep an eye on more streamers without scrolling.</p>
+                    <h3 data-i18n="feat4.title">Compact grid mode</h3>
+                    <p data-i18n="feat4.desc">Switch to a dense 3-column grid to keep an eye on more streamers without scrolling.</p>
                 </div>
 
                 <div class="feature-card fade-in">
                     <div class="feature-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                     </div>
-                    <h3>Import &amp; export</h3>
-                    <p>Back up your full configuration as JSON — streamers, groups, and settings — and restore it anytime, anywhere.</p>
+                    <h3 data-i18n="feat5.title">Import &amp; export</h3>
+                    <p data-i18n="feat5.desc">Back up your full configuration as JSON (streamers, history, and settings) and restore it anytime, anywhere.</p>
                 </div>
 
                 <div class="feature-card fade-in">
                     <div class="feature-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"></path><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
                     </div>
-                    <h3>Live thumbnail preview</h3>
-                    <p>Hover a live streamer to see their current thumbnail, category, and viewer count without leaving the popup.</p>
+                    <h3 data-i18n="feat6.title">Live thumbnail preview</h3>
+                    <p data-i18n="feat6.desc">Click a live streamer's card to see their current thumbnail, category, and viewer count without leaving the popup.</p>
                 </div>
             </div>
         </section>
 
         <section class="steps" id="how-it-works">
             <div class="section-header fade-in">
-                <div class="section-eyebrow">How it works</div>
-                <h2>Three steps, then it runs itself</h2>
+                <div class="section-eyebrow" data-i18n="steps.eyebrow">How it works</div>
+                <h2 data-i18n="steps.title">Three steps, then it runs itself</h2>
             </div>
             <div class="steps-grid">
                 <div class="step fade-in">
                     <div class="step-number">01</div>
-                    <h3>Connect Twitch</h3>
-                    <p>Sign in with your Twitch account via Chrome's built-in OAuth flow. Your credentials never touch Nowtify's code.</p>
+                    <h3 data-i18n="step1.title">Connect Twitch</h3>
+                    <p data-i18n="step1.desc">Sign in with your Twitch account via Chrome's built-in OAuth flow. Your credentials never touch Nowtify's code.</p>
                 </div>
                 <div class="step fade-in">
                     <div class="step-number">02</div>
-                    <h3>Add your streamers</h3>
-                    <p>Search and add streamers or whole teams. Organize them into groups if you follow a lot of people.</p>
+                    <h3 data-i18n="step2.title">Add your streamers</h3>
+                    <p data-i18n="step2.desc">Search and add streamers one by one, or import an entire Twitch team in a single click.</p>
                 </div>
                 <div class="step fade-in">
                     <div class="step-number">03</div>
-                    <h3>Get out of the way</h3>
-                    <p>The service worker checks Twitch in the background at the interval you set, and notifies you the moment someone's live.</p>
+                    <h3 data-i18n="step3.title">Get out of the way</h3>
+                    <p data-i18n="step3.desc">The service worker checks Twitch in the background every few minutes and notifies you as soon as it catches someone live.</p>
                 </div>
             </div>
         </section>
@@ -980,16 +998,16 @@
         <section class="privacy" id="privacy">
             <div class="privacy-card fade-in">
                 <div>
-                    <div class="section-eyebrow">Privacy</div>
-                    <h2>There's nowhere for your data to go.</h2>
-                    <p>Nowtify has no server. There's no account with Nowtify, no database, no analytics SDK — just your browser talking directly to Twitch's own API.</p>
+                    <div class="section-eyebrow" data-i18n="privacy.eyebrow">Privacy</div>
+                    <h2 data-i18n="privacy.title">There's nowhere for your data to go.</h2>
+                    <p data-i18n="privacy.desc">Nowtify has no server. There's no account with Nowtify, no database, no analytics SDK, just your browser talking directly to Twitch's own API.</p>
                     <ul class="privacy-list">
-                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Your streamer list and history stay in your browser's local storage</li>
-                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Your Twitch token is only ever sent to api.twitch.tv / id.twitch.tv</li>
-                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>No analytics, no telemetry, no third-party scripts</li>
+                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span data-i18n="privacy.li1">Your streamer list and history stay in your browser's local storage</span></li>
+                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span data-i18n="privacy.li2">Your Twitch token is only ever sent to api.twitch.tv / id.twitch.tv</span></li>
+                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span data-i18n="privacy.li3">No analytics, no telemetry, no third-party scripts</span></li>
                     </ul>
                     <div style="margin-top: 20px;">
-                        <a href="privacy.html" class="btn btn-secondary">Read the full privacy policy</a>
+                        <a href="privacy.html" class="btn btn-secondary" data-i18n="privacy.cta">Read the full privacy policy</a>
                     </div>
                 </div>
                 <div class="privacy-badge">
@@ -1000,8 +1018,8 @@
 
         <section class="cta">
             <div class="fade-in">
-                <h2>Ready to never miss a stream?</h2>
-                <p>Free, open source, and it stays that way.</p>
+                <h2 data-i18n="cta.title">Ready to never miss a stream?</h2>
+                <p data-i18n="cta.desc">Free, open source, and it stays that way.</p>
                 <div class="cta-buttons">
                     <a href="https://github.com/qyrn/nowtify/releases" class="btn btn-primary">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1009,9 +1027,9 @@
                             <polyline points="7 10 12 15 17 10"></polyline>
                             <line x1="12" y1="15" x2="12" y2="3"></line>
                         </svg>
-                        Get Nowtify
+                        <span data-i18n="cta.primary">Get Nowtify</span>
                     </a>
-                    <a href="https://github.com/qyrn/nowtify" target="_blank" class="btn btn-secondary">View source</a>
+                    <a href="https://github.com/qyrn/nowtify" target="_blank" class="btn btn-secondary" data-i18n="cta.secondary">View source</a>
                 </div>
             </div>
         </section>
@@ -1020,9 +1038,9 @@
     <footer>
         <div class="container">
             <div class="footer-content">
-                <div class="footer-left">Made by qyrn.</div>
+                <div class="footer-left" data-i18n="footer.made">Made by qyrn.</div>
                 <div class="footer-links">
-                    <a href="privacy.html">Privacy Policy</a>
+                    <a href="privacy.html" data-i18n="footer.privacy">Privacy Policy</a>
                     <a href="https://github.com/qyrn/nowtify" target="_blank">GitHub</a>
                     <a href="https://ko-fi.com/qyrnsec" target="_blank">Ko-fi</a>
                 </div>
@@ -1031,6 +1049,130 @@
     </footer>
 
     <script>
+        const translations = {
+            en: {
+                "doc.title": "Nowtify - Never Miss a Stream",
+                "doc.description": "Nowtify is a Chrome extension that notifies you when your favorite Twitch streamers go live. No account, no backend, no data leaves your device.",
+                "nav.features": "Features",
+                "nav.how": "How it works",
+                "hero.badge": "Manifest V3 · No account required",
+                "hero.title": "Never miss a stream.",
+                "hero.subtitle": "Nowtify watches your favorite Twitch streamers in the background and sends a native desktop notification shortly after one goes live. No backend, no tracking, nothing leaves your machine.",
+                "hero.cta_primary": "Get Nowtify",
+                "hero.cta_secondary": "See how it works",
+                "hero.trust1": "100% local storage",
+                "hero.trust2": "Zero analytics",
+                "hero.trust3": "Open source",
+                "features.eyebrow": "Features",
+                "features.title": "Everything the popup actually does",
+                "features.subtitle": "No filler features. This is what ships in the extension today.",
+                "feat1.title": "Background notifications",
+                "feat1.desc": "A native desktop notification fires as soon as Nowtify detects one of your streamers going live. Checked every few minutes, more often once someone's already live.",
+                "feat2.title": "Twitch team import",
+                "feat2.desc": "Add an entire Twitch team in one click, then filter your list by team whenever you want.",
+                "feat3.title": "Live history",
+                "feat3.desc": "A running log of the last detected lives, so you can see who went live and when, even after the fact.",
+                "feat4.title": "Compact grid mode",
+                "feat4.desc": "Switch to a dense 3-column grid to keep an eye on more streamers without scrolling.",
+                "feat5.title": "Import & export",
+                "feat5.desc": "Back up your full configuration as JSON (streamers, history, and settings) and restore it anytime, anywhere.",
+                "feat6.title": "Live thumbnail preview",
+                "feat6.desc": "Click a live streamer's card to see their current thumbnail, category, and viewer count without leaving the popup.",
+                "steps.eyebrow": "How it works",
+                "steps.title": "Three steps, then it runs itself",
+                "step1.title": "Connect Twitch",
+                "step1.desc": "Sign in with your Twitch account via Chrome's built-in OAuth flow. Your credentials never touch Nowtify's code.",
+                "step2.title": "Add your streamers",
+                "step2.desc": "Search and add streamers one by one, or import an entire Twitch team in a single click.",
+                "step3.title": "Get out of the way",
+                "step3.desc": "The service worker checks Twitch in the background every few minutes and notifies you as soon as it catches someone live.",
+                "privacy.eyebrow": "Privacy",
+                "privacy.title": "There's nowhere for your data to go.",
+                "privacy.desc": "Nowtify has no server. There's no account with Nowtify, no database, no analytics SDK, just your browser talking directly to Twitch's own API.",
+                "privacy.li1": "Your streamer list and history stay in your browser's local storage",
+                "privacy.li2": "Your Twitch token is only ever sent to api.twitch.tv / id.twitch.tv",
+                "privacy.li3": "No analytics, no telemetry, no third-party scripts",
+                "privacy.cta": "Read the full privacy policy",
+                "cta.title": "Ready to never miss a stream?",
+                "cta.desc": "Free, open source, and it stays that way.",
+                "cta.primary": "Get Nowtify",
+                "cta.secondary": "View source",
+                "footer.made": "Made by qyrn.",
+                "footer.privacy": "Privacy Policy"
+            },
+            fr: {
+                "doc.title": "Nowtify - Ne ratez plus jamais un live",
+                "doc.description": "Nowtify est une extension Chrome qui vous notifie quand vos streamers Twitch favoris passent en live. Pas de compte, pas de serveur, aucune donnée ne quitte votre appareil.",
+                "nav.features": "Fonctionnalités",
+                "nav.how": "Fonctionnement",
+                "hero.badge": "Manifest V3 · Aucun compte requis",
+                "hero.title": "Ne ratez plus jamais un live.",
+                "hero.subtitle": "Nowtify surveille vos streamers Twitch favoris en arrière-plan et envoie une notification native peu après le début d'un live. Pas de serveur, pas de pistage, rien ne quitte votre machine.",
+                "hero.cta_primary": "Télécharger Nowtify",
+                "hero.cta_secondary": "Voir comment ça marche",
+                "hero.trust1": "Stockage 100% local",
+                "hero.trust2": "Zéro analytique",
+                "hero.trust3": "Open source",
+                "features.eyebrow": "Fonctionnalités",
+                "features.title": "Tout ce que fait vraiment la popup",
+                "features.subtitle": "Pas de fonctionnalités gadget. Voici ce qui est réellement dans l'extension aujourd'hui.",
+                "feat1.title": "Notifications en arrière-plan",
+                "feat1.desc": "Une notification native s'affiche dès que Nowtify détecte qu'un de vos streamers est en direct. Vérifié toutes les quelques minutes, plus souvent une fois que quelqu'un est déjà en live.",
+                "feat2.title": "Import de teams Twitch",
+                "feat2.desc": "Ajoutez une team Twitch entière en un clic, puis filtrez votre liste par team quand vous le souhaitez.",
+                "feat3.title": "Historique des lives",
+                "feat3.desc": "Un journal des derniers lives détectés, pour voir qui est passé en direct et quand, même après coup.",
+                "feat4.title": "Mode grille compacte",
+                "feat4.desc": "Passez à une grille dense en 3 colonnes pour surveiller plus de streamers sans avoir à défiler.",
+                "feat5.title": "Import et export",
+                "feat5.desc": "Sauvegardez toute votre configuration en JSON (streamers, historique et paramètres) et restaurez-la n'importe quand, n'importe où.",
+                "feat6.title": "Aperçu du stream en direct",
+                "feat6.desc": "Cliquez sur la carte d'un streamer en live pour voir sa miniature, sa catégorie et son nombre de viewers sans quitter la popup.",
+                "steps.eyebrow": "Fonctionnement",
+                "steps.title": "Trois étapes, puis ça tourne tout seul",
+                "step1.title": "Connectez Twitch",
+                "step1.desc": "Connectez-vous avec votre compte Twitch via le flux OAuth natif de Chrome. Vos identifiants ne passent jamais par le code de Nowtify.",
+                "step2.title": "Ajoutez vos streamers",
+                "step2.desc": "Recherchez et ajoutez des streamers un par un, ou importez une team Twitch entière en un clic.",
+                "step3.title": "Laissez faire",
+                "step3.desc": "Le service worker vérifie Twitch en arrière-plan toutes les quelques minutes et vous notifie dès qu'il détecte quelqu'un en direct.",
+                "privacy.eyebrow": "Confidentialité",
+                "privacy.title": "Vos données ne vont nulle part.",
+                "privacy.desc": "Nowtify n'a pas de serveur. Pas de compte Nowtify, pas de base de données, pas de SDK analytique, juste votre navigateur qui parle directement à l'API de Twitch.",
+                "privacy.li1": "Votre liste de streamers et votre historique restent dans le stockage local de votre navigateur",
+                "privacy.li2": "Votre token Twitch n'est envoyé qu'à api.twitch.tv / id.twitch.tv",
+                "privacy.li3": "Aucune analyse, aucune télémétrie, aucun script tiers",
+                "privacy.cta": "Lire la politique de confidentialité complète",
+                "cta.title": "Prêt à ne plus rater un live ?",
+                "cta.desc": "Gratuit, open source, et ça le restera.",
+                "cta.primary": "Télécharger Nowtify",
+                "cta.secondary": "Voir le code source",
+                "footer.made": "Fait par qyrn.",
+                "footer.privacy": "Politique de confidentialité"
+            }
+        };
+
+        function detectLang() {
+            const langs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || "en"];
+            for (const l of langs) {
+                if (l.toLowerCase().startsWith("fr")) return "fr";
+            }
+            return "en";
+        }
+
+        const lang = detectLang();
+        const dict = translations[lang];
+
+        document.documentElement.lang = lang;
+        document.title = dict["doc.title"];
+        const metaDescription = document.querySelector('meta[name="description"]');
+        if (metaDescription) metaDescription.setAttribute("content", dict["doc.description"]);
+
+        document.querySelectorAll("[data-i18n]").forEach((el) => {
+            const key = el.getAttribute("data-i18n");
+            if (dict[key] !== undefined) el.textContent = dict[key];
+        });
+
         const observer = new IntersectionObserver((entries) => {
             entries.forEach((entry) => {
                 if (entry.isIntersecting) {
