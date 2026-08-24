@@ -191,6 +191,7 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: var(--text-dim);
+            white-space: nowrap;
         }
 
         .pill .dot {
@@ -479,6 +480,26 @@
 
         .mock-platform-icon svg { width: 11px; height: 11px; }
 
+        .mock-team {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+
+        .mock-team-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .mock-team-name {
+            font-size: 10px;
+            color: var(--text-faint);
+        }
+
         .mock-status {
             font-family: var(--mono);
             font-size: 10px;
@@ -598,23 +619,42 @@
         }
 
         .steps-grid {
+            position: relative;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
+            gap: 32px;
+        }
+
+        .steps-grid::before {
+            content: '';
+            position: absolute;
+            top: 21px;
+            left: calc(100% / 6);
+            right: calc(100% / 6);
+            height: 1px;
+            background: var(--border);
         }
 
         .step {
-            padding: 28px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
+            position: relative;
         }
 
         .step-number {
+            position: relative;
+            z-index: 1;
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg);
+            border: 1px solid var(--border-hover);
+            border-radius: 50%;
             font-family: var(--mono);
-            font-size: 0.78rem;
-            color: var(--text-faint);
-            margin-bottom: 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 18px;
         }
 
         .step h3 {
@@ -767,7 +807,8 @@
             .mock-shell { max-width: 440px; }
 
             .features-grid { grid-template-columns: repeat(2, 1fr); }
-            .steps-grid { grid-template-columns: 1fr; }
+            .steps-grid { grid-template-columns: 1fr; gap: 28px; }
+            .steps-grid::before { display: none; }
 
             .privacy-card {
                 grid-template-columns: 1fr;
@@ -853,12 +894,12 @@
                         </div>
 
                         <div class="mock-search">
-                            <div class="mock-search-input">Rechercher un streamer...</div>
-                            <div class="mock-add-btn">+ Ajouter</div>
+                            <div class="mock-search-input" data-i18n="mock.search">Search for a streamer...</div>
+                            <div class="mock-add-btn" data-i18n="mock.add">+ Add</div>
                         </div>
 
                         <div class="mock-filters">
-                            <div class="mock-chip active">Tous</div>
+                            <div class="mock-chip active" data-i18n="mock.all">All</div>
                             <div class="mock-team-filter">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"></path></svg>
@@ -867,35 +908,43 @@
 
                         <div class="mock-list">
                             <div class="mock-card live">
-                                <div class="mock-avatar">PA</div>
+                                <div class="mock-avatar" style="background: linear-gradient(135deg, #FCD34D, #F59E0B); color: #1A1305;">PA</div>
                                 <div class="mock-card-info">
                                     <div class="mock-card-name-row">
                                         <span class="mock-platform-icon">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2H3v16h5v4l4-4h5l4-4V2zm-10 9V7m5 4V7"></path></svg>
                                         </span>
                                         <span class="mock-card-name">pixel_ash</span>
+                                        <div class="mock-team">
+                                            <span class="mock-team-dot" style="background: #F59E0B;"></span>
+                                            <span class="mock-team-name">Solary</span>
+                                        </div>
                                     </div>
                                     <div class="mock-card-sub">Just Chatting</div>
                                 </div>
-                                <div class="mock-status live"><span class="mock-live-dot"></span>Live</div>
+                                <div class="mock-status live"><span class="mock-live-dot"></span><span data-i18n="mock.live">Live</span></div>
                             </div>
 
                             <div class="mock-card">
-                                <div class="mock-avatar">NC</div>
+                                <div class="mock-avatar" style="background: linear-gradient(135deg, #5EEAD4, #14B8A6); color: #052E2B;">NC</div>
                                 <div class="mock-card-info">
                                     <div class="mock-card-name-row">
                                         <span class="mock-platform-icon">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2H3v16h5v4l4-4h5l4-4V2zm-10 9V7m5 4V7"></path></svg>
                                         </span>
                                         <span class="mock-card-name">nova.codes</span>
+                                        <div class="mock-team">
+                                            <span class="mock-team-dot" style="background: #14B8A6;"></span>
+                                            <span class="mock-team-name">KOI</span>
+                                        </div>
                                     </div>
-                                    <div class="mock-card-sub">Vu il y a 2h</div>
+                                    <div class="mock-card-sub" data-i18n="mock.seen_ago">Seen 2h ago</div>
                                 </div>
-                                <div class="mock-status">Récent</div>
+                                <div class="mock-status" data-i18n="mock.recent">Recent</div>
                             </div>
 
                             <div class="mock-card offline">
-                                <div class="mock-avatar">RG</div>
+                                <div class="mock-avatar" style="background: linear-gradient(135deg, #FDA4AF, #FB7185); color: #3F0A10;">RG</div>
                                 <div class="mock-card-info">
                                     <div class="mock-card-name-row">
                                         <span class="mock-platform-icon">
@@ -903,7 +952,7 @@
                                         </span>
                                         <span class="mock-card-name">retrograde</span>
                                     </div>
-                                    <div class="mock-card-sub">Hors ligne</div>
+                                    <div class="mock-card-sub" data-i18n="mock.offline">Offline</div>
                                 </div>
                                 <div class="mock-status">--</div>
                             </div>
@@ -1063,6 +1112,13 @@
                 "hero.trust1": "100% local storage",
                 "hero.trust2": "Zero analytics",
                 "hero.trust3": "Open source",
+                "mock.search": "Search for a streamer...",
+                "mock.add": "+ Add",
+                "mock.all": "All",
+                "mock.live": "Live",
+                "mock.recent": "Recent",
+                "mock.seen_ago": "Seen 2h ago",
+                "mock.offline": "Offline",
                 "features.eyebrow": "Features",
                 "features.title": "Everything the popup actually does",
                 "features.subtitle": "No filler features. This is what ships in the extension today.",
@@ -1113,6 +1169,13 @@
                 "hero.trust1": "Stockage 100% local",
                 "hero.trust2": "Zéro analytique",
                 "hero.trust3": "Open source",
+                "mock.search": "Rechercher un streamer...",
+                "mock.add": "+ Ajouter",
+                "mock.all": "Tous",
+                "mock.live": "Live",
+                "mock.recent": "Récent",
+                "mock.seen_ago": "Vu il y a 2h",
+                "mock.offline": "Hors ligne",
                 "features.eyebrow": "Fonctionnalités",
                 "features.title": "Tout ce que fait vraiment la popup",
                 "features.subtitle": "Pas de fonctionnalités gadget. Voici ce qui est réellement dans l'extension aujourd'hui.",
