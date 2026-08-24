@@ -803,10 +803,6 @@ body {
   color: var(--text);
 }
 
-.grid-platform {
-  display: none;
-}
-
 .stream-preview {
   display: none;
   margin-top: 10px;
@@ -908,6 +904,8 @@ body {
 
 .streamers-list.compact .status-indicator {
   margin-left: 0;
+  align-self: center;
+  justify-content: center;
   font-size: 9.5px;
 }
 
@@ -956,19 +954,6 @@ body {
 
 .streamers-list.compact .preview-toggle {
   display: none;
-}
-
-.streamers-list.compact .grid-platform {
-  display: flex;
-  position: absolute;
-  bottom: 5px;
-  right: 5px;
-  color: var(--text-faint);
-}
-
-.streamers-list.compact .grid-platform svg {
-  width: 11px;
-  height: 11px;
 }
 
 .streamer-card.skeleton {
