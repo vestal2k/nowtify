@@ -405,12 +405,15 @@ function hasStreamerChanged(oldData, newData) {
 function updateStreamerCard(card, oldData, newData) {
   if (oldData.isLive !== newData.isLive) {
     if (newData.isLive) {
-      card.classList.add('going-live');
+      card.classList.add('going-live', 'live-pulse');
       setTimeout(() => {
         card.classList.remove('going-live');
         card.classList.add('live');
         card.classList.remove('ended');
       }, 50);
+      setTimeout(() => {
+        card.classList.remove('live-pulse');
+      }, 1000);
     } else {
       card.classList.add('going-offline');
       setTimeout(() => {

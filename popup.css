@@ -511,6 +511,16 @@ body {
   border-color: var(--accent);
 }
 
+.streamer-card.live-pulse {
+  animation: livePulseGlow 1s var(--ease);
+}
+
+@keyframes livePulseGlow {
+  0% { box-shadow: 0 0 0 0 rgba(252, 211, 77, 0.5); }
+  40% { box-shadow: 0 0 0 9px rgba(252, 211, 77, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(252, 211, 77, 0); }
+}
+
 .streamer-card.removing {
   opacity: 0;
   transform: translateX(16px);
