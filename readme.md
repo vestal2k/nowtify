@@ -31,15 +31,18 @@ No account, no backend, no analytics. Everything stays on your machine.
 
 ## Features
 
-- Desktop notification when a streamer goes live
+- Desktop notification the moment a streamer goes live
 - Toolbar badge showing how many streamers are currently live
 - Live, recently live, and offline streamers, all in one popup
 - Search with autocomplete to add streamers in a click
 - Import an entire Twitch team at once, then filter your list by team
+- Snooze notifications for a single streamer (1 hour, today, or until tomorrow)
+- Upcoming stream schedule for offline streamers, pulled from Twitch
 - Live thumbnail, category, and viewer count without leaving the popup
-- History of the streams you've caught
+- History and local stats: streams caught, top streamer, top game
 - Back up and restore your data as a single file
 - Compact grid view for a denser list
+- English and French, follows your browser's language automatically
 
 ## Installation
 
