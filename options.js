@@ -6,6 +6,7 @@ const twitchNotConnected = document.getElementById('twitchNotConnected');
 const twitchConnected = document.getElementById('twitchConnected');
 const twitchUserAvatar = document.getElementById('twitchUserAvatar');
 const twitchUsername = document.getElementById('twitchUsername');
+const statsGrid = document.getElementById('statsGrid');
 const historyList = document.getElementById('historyList');
 const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 const exportBtn = document.getElementById('exportBtn');
@@ -16,6 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadSettings();
   await loadTwitchAuthStatus();
   await loadTeamsManagement();
+  await loadStats();
   await loadHistory();
   setupEventListeners();
 });
@@ -124,6 +126,67 @@ async function saveSettings() {
   }
 }
 
+async function loadStats() {
+  try {
+    const history = await DB.getHistory(100);
+
+    if (history.length === 0) {
+      statsGrid.innerHTML = '<div class="empty-stats">Pas encore de données</div>';
+      return;
+    }
+
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const thisWeekCount = history.filter(item => item.timestamp >= weekAgo).length;
+
+    const streamerCounts = {};
+    const gameCounts = {};
+
+    history.forEach(item => {
+      streamerCounts[item.name] = (streamerCounts[item.name] || 0) + 1;
+      if (item.game) {
+        gameCounts[item.game] = (gameCounts[item.game] || 0) + 1;
+      }
+    });
+
+    const topStreamer = Object.entries(streamerCounts).sort((a, b) => b[1] - a[1])[0];
+    const topGame = Object.entries(gameCounts).sort((a, b) => b[1] - a[1])[0];
+
+    const cards = [
+      {
+        label: 'Streams captés',
+        value: history.length.toString(),
+        sub: history.length >= 100 ? '100 derniers conservés' : null
+      },
+      {
+        label: 'Cette semaine',
+        value: thisWeekCount.toString(),
+        sub: null
+      },
+      {
+        label: 'Streamer le plus suivi',
+        value: topStreamer ? topStreamer[0] : '—',
+        sub: topStreamer ? `${topStreamer[1]} live${topStreamer[1] > 1 ? 's' : ''}` : null
+      },
+      {
+        label: 'Jeu le plus vu',
+        value: topGame ? topGame[0] : '—',
+        sub: topGame ? `${topGame[1]} fois` : null
+      }
+    ];
+
+    statsGrid.innerHTML = cards.map(card => `
+      <div class="stat-card">
+        <div class="stat-value" title="${escapeHtml(card.value)}">${escapeHtml(card.value)}</div>
+        <div class="stat-label">${escapeHtml(card.label)}</div>
+        ${card.sub ? `<div class="stat-sub">${escapeHtml(card.sub)}</div>` : ''}
+      </div>
+    `).join('');
+
+  } catch (error) {
+    statsGrid.innerHTML = '<div class="empty-stats">Erreur lors du chargement des statistiques</div>';
+  }
+}
+
 async function loadHistory() {
   try {
     const history = await DB.getHistory(50);
@@ -202,6 +265,7 @@ async function clearHistory() {
   try {
     await DB.clearHistory();
     await loadHistory();
+    await loadStats();
   } catch (error) {
     UI.toast('Erreur lors de l\'effacement de l\'historique', 'error');
   }
@@ -348,6 +412,7 @@ function capitalizeTeamName(teamName) {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'historyUpdated') {
     loadHistory();
+    loadStats();
   }
 });
 
