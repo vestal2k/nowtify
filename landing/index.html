@@ -1241,7 +1241,7 @@
                 "doc.title": "Nowtify - Ne ratez plus jamais un live",
                 "doc.description": "Nowtify est une extension Chrome qui vous notifie quand vos streamers Twitch favoris passent en live. Pas de compte, pas de serveur, aucune donnée ne quitte votre appareil.",
                 "nav.features": "Fonctionnalités",
-                "nav.how": "Fonctionnement",
+                "nav.how": "Étapes",
                 "hero.badge": "Manifest V3 · Aucun compte requis",
                 "hero.title": "Ne ratez plus jamais un live.",
                 "hero.subtitle": "Nowtify surveille vos streamers Twitch favoris en arrière-plan et envoie une notification native peu après le début d'un live. Pas de serveur, pas de pistage, rien ne quitte votre machine.",
@@ -1304,11 +1304,8 @@
         };
 
         function detectLang() {
-            const langs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || "en"];
-            for (const l of langs) {
-                if (l.toLowerCase().startsWith("fr")) return "fr";
-            }
-            return "en";
+            const primary = (navigator.languages && navigator.languages.length ? navigator.languages[0] : navigator.language) || "en";
+            return primary.toLowerCase().startsWith("fr") ? "fr" : "en";
         }
 
         const lang = detectLang();
