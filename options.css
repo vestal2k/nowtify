@@ -665,7 +665,7 @@ body {
   flex-wrap: wrap;
 }
 
-.about-links span {
+.about-links .link-sep {
   color: var(--text-faint);
 }
 
