@@ -488,8 +488,9 @@ body {
   transition: padding-right 0.15s var(--ease);
 }
 
-.streamer-card:hover .card-main-row {
-  padding-right: 28px;
+.streamer-card:hover .card-main-row,
+.streamer-card.snoozed .card-main-row {
+  padding-right: 54px;
 }
 
 .streamer-card:hover {
@@ -712,6 +713,71 @@ body {
   height: 12px;
 }
 
+.snooze-btn {
+  position: absolute;
+  top: 8px;
+  right: 34px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-faint);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s var(--ease), color 0.15s var(--ease), border-color 0.15s var(--ease), background 0.15s var(--ease);
+}
+
+.streamer-card:hover .snooze-btn,
+.snooze-btn.active {
+  opacity: 1;
+}
+
+.snooze-btn:hover {
+  color: var(--text);
+  border-color: var(--border-hover);
+}
+
+.snooze-btn.active {
+  color: var(--accent);
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+}
+
+.snooze-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.snooze-menu {
+  position: absolute;
+  top: 34px;
+  right: 8px;
+  min-width: 168px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  z-index: 50;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+.snooze-menu-item {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: color 0.12s var(--ease), background 0.12s var(--ease);
+}
+
+.snooze-menu-item:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
 .grid-platform {
   display: none;
 }
@@ -834,6 +900,23 @@ body {
 .streamers-list.compact .delete-btn svg {
   width: 10px;
   height: 10px;
+}
+
+.streamers-list.compact .snooze-btn {
+  top: 4px;
+  right: 24px;
+  width: 18px;
+  height: 18px;
+}
+
+.streamers-list.compact .snooze-btn svg {
+  width: 10px;
+  height: 10px;
+}
+
+.streamers-list.compact .snooze-menu {
+  top: 26px;
+  right: 4px;
 }
 
 .streamers-list.compact .stream-preview {

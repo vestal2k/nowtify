@@ -220,6 +220,15 @@ async function deleteStreamerFromDB(id) {
   await chrome.storage.local.remove([`avatar_${id}`, `thumbnail_${id}`]);
 }
 
+async function setStreamerSnooze(id, until) {
+  const streamers = await getStreamersFromDB();
+  const streamer = streamers.find(s => s.id === id);
+  if (!streamer) return;
+  streamer.snoozedUntil = until;
+  await putStreamersToDB([streamer]);
+  streamersCache[id] = streamer;
+}
+
 async function deleteTeamFromDB(teamName) {
   const db = await openDB();
   await new Promise((resolve, reject) => {
@@ -520,6 +529,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
+  if (request.action === 'setSnooze') {
+    setStreamerSnooze(request.id, request.until)
+      .then(() => sendResponse({ success: true }))
+      .catch(() => sendResponse({ success: false }));
+    return true;
+  }
+
   if (request.action === 'addTwitchTeam') {
     addTwitchTeam(request.teamName).then(result => {
       sendResponse(result);
@@ -713,11 +729,16 @@ async function checkAllStreamers() {
           }
         }
 
+        if (updated.snoozedUntil && updated.snoozedUntil <= Date.now()) {
+          updated.snoozedUntil = null;
+        }
+        const isSnoozed = !!(updated.snoozedUntil && updated.snoozedUntil > Date.now());
+
         const wasLiveBefore = streamer.isLive === true;
         const isLiveNow = data.isLive === true;
         const recentlyNotified = await wasRecentlyNotified(streamer.id);
 
-        if (isLiveNow && !wasLiveBefore && !recentlyNotified && settings.notifications !== false) {
+        if (isLiveNow && !wasLiveBefore && !recentlyNotified && !isSnoozed && settings.notifications !== false) {
           await sendNotification(updated);
           await setStreamerNotified(streamer.id);
         }

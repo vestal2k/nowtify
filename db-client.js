@@ -41,6 +41,10 @@ globalThis.DB = {
     await this._send({ action: 'deleteTeam', teamName });
   },
 
+  async setSnooze(id, until) {
+    await this._send({ action: 'setSnooze', id, until });
+  },
+
   async getHistory(limit = 50) {
     const response = await this._send({ action: 'getHistory', limit });
     return response?.history || [];

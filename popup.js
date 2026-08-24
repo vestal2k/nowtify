@@ -30,6 +30,7 @@ const ICON_SPINNER = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none
 const ICON_GAME = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13h4m-2-2v4m3 1h.01M17 16h.01M2 12V7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-5z"/></svg>';
 const ICON_VIEWERS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
 const ICON_CHEVRON = '<svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+const ICON_BELL_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><line x1="2" y1="2" x2="22" y2="22"/></svg>';
 
 function setAddBtnLoading() {
   addBtn.disabled = true;
@@ -213,6 +214,12 @@ function setupEventListeners() {
       groupFilterWrapper.classList.remove('open');
     }
   });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.snooze-btn') && !e.target.closest('.snooze-menu')) {
+      closeSnoozeMenus();
+    }
+  });
 }
 
 function createAutocompleteList() {
@@ -389,7 +396,8 @@ function hasStreamerChanged(oldData, newData) {
          oldData.avatar !== newData.avatar ||
          oldData.team !== newData.team ||
          oldData.thumbnail !== newData.thumbnail ||
-         oldData.game !== newData.game;
+         oldData.game !== newData.game ||
+         oldData.snoozedUntil !== newData.snoozedUntil;
 }
 
 function updateStreamerCard(card, oldData, newData) {
@@ -416,6 +424,10 @@ function updateStreamerCard(card, oldData, newData) {
     card.classList.add('ended');
   } else if (!newData.wasLiveRecently && card.classList.contains('ended')) {
     card.classList.remove('ended');
+  }
+
+  if (oldData.snoozedUntil !== newData.snoozedUntil) {
+    updateSnoozeButton(card, newData.snoozedUntil);
   }
 
   const statusIndicator = card.querySelector('.status-indicator');
@@ -803,7 +815,8 @@ function hideAutocomplete() {
 function createStreamerCard(streamer) {
   const card = document.createElement('div');
   const isRecent = streamer.wasLiveRecently && !streamer.isLive;
-  card.className = `streamer-card ${streamer.isLive ? 'live' : ''} ${isRecent ? 'ended' : ''}`;
+  const isSnoozedNow = streamer.snoozedUntil && streamer.snoozedUntil > Date.now();
+  card.className = `streamer-card ${streamer.isLive ? 'live' : ''} ${isRecent ? 'ended' : ''} ${isSnoozedNow ? 'snoozed' : ''}`;
   card.dataset.streamerId = streamer.id;
   card.style.opacity = '0';
   card.style.transform = 'translateX(-20px)';
@@ -868,6 +881,11 @@ function createStreamerCard(streamer) {
     </svg>
   `;
 
+  const snoozeBtn = document.createElement('button');
+  snoozeBtn.className = `snooze-btn${isSnoozedNow ? ' active' : ''}`;
+  snoozeBtn.title = isSnoozedNow ? 'Notifications en pause' : 'Mettre les notifications en pause';
+  snoozeBtn.innerHTML = ICON_BELL_OFF;
+
   const gridPlatform = document.createElement('span');
   gridPlatform.className = `grid-platform platform-${streamer.platform}`;
   gridPlatform.innerHTML = platformIcon;
@@ -878,6 +896,7 @@ function createStreamerCard(streamer) {
   mainRow.appendChild(infoDiv);
 
   card.appendChild(mainRow);
+  card.appendChild(snoozeBtn);
   card.appendChild(deleteBtn);
   card.appendChild(gridPlatform);
 
@@ -899,7 +918,7 @@ function createStreamerCard(streamer) {
   }, 400);
 
   card.addEventListener('click', (e) => {
-    if (e.target.closest('.delete-btn')) return;
+    if (e.target.closest('.delete-btn') || e.target.closest('.snooze-btn') || e.target.closest('.snooze-menu')) return;
 
     if (e.target.closest('.preview-toggle')) {
       e.stopPropagation();
@@ -910,6 +929,15 @@ function createStreamerCard(streamer) {
     if (!e.target.closest('.stream-preview')) {
       openStream(streamer);
     }
+  });
+
+  snoozeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (card.querySelector('.snooze-menu')) {
+      closeSnoozeMenus();
+      return;
+    }
+    openSnoozeMenu(card, streamer);
   });
 
   deleteBtn.addEventListener('click', async (e) => {
@@ -934,6 +962,69 @@ function createStreamerCard(streamer) {
   });
 
   return card;
+}
+
+function closeSnoozeMenus() {
+  document.querySelectorAll('.snooze-menu').forEach(menu => menu.remove());
+}
+
+function getTomorrowMorning() {
+  const date = new Date();
+  date.setDate(date.getDate() + 1);
+  date.setHours(9, 0, 0, 0);
+  return date.getTime();
+}
+
+function openSnoozeMenu(card, streamer) {
+  closeSnoozeMenus();
+
+  const isSnoozed = streamer.snoozedUntil && streamer.snoozedUntil > Date.now();
+
+  const menu = document.createElement('div');
+  menu.className = 'snooze-menu';
+
+  menu.innerHTML = isSnoozed
+    ? '<div class="snooze-menu-item" data-action="cancel">Annuler la pause</div>'
+    : `
+      <div class="snooze-menu-item" data-action="1h">Pause 1 heure</div>
+      <div class="snooze-menu-item" data-action="tomorrow">Pause jusqu'à demain</div>
+    `;
+
+  menu.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const action = e.target.dataset.action;
+    if (!action) return;
+
+    let until = null;
+    if (action === '1h') until = Date.now() + 60 * 60 * 1000;
+    else if (action === 'tomorrow') until = getTomorrowMorning();
+
+    closeSnoozeMenus();
+    await applySnooze(streamer, until, card);
+  });
+
+  card.appendChild(menu);
+}
+
+async function applySnooze(streamer, until, card) {
+  await DB.setSnooze(streamer.id, until);
+  streamer.snoozedUntil = until;
+
+  const cached = currentStreamersMap.get(streamer.id);
+  if (cached) cached.snoozedUntil = until;
+
+  updateSnoozeButton(card, until);
+  UI.toast(until ? 'Notifications en pause pour ce streamer' : 'Notifications réactivées', 'success');
+}
+
+function updateSnoozeButton(card, until) {
+  const btn = card.querySelector('.snooze-btn');
+  if (!btn) return;
+
+  const isSnoozed = until && until > Date.now();
+  btn.classList.toggle('active', isSnoozed);
+  btn.title = isSnoozed ? 'Notifications en pause' : 'Mettre les notifications en pause';
+  card.classList.toggle('snoozed', isSnoozed);
 }
 
 function capitalizeTeamName(teamName) {
