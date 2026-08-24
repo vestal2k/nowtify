@@ -877,6 +877,7 @@ body {
   align-items: center;
   text-align: center;
   gap: 6px;
+  padding-right: 0;
 }
 
 .streamers-list.compact .streamer-avatar {
@@ -929,20 +930,24 @@ body {
 }
 
 .streamers-list.compact .snooze-btn {
-  top: 4px;
-  right: 24px;
-  width: 18px;
-  height: 18px;
+  top: auto;
+  bottom: 5px;
+  left: 5px;
+  right: auto;
+  width: 16px;
+  height: 16px;
 }
 
 .streamers-list.compact .snooze-btn svg {
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
 }
 
 .streamers-list.compact .snooze-menu {
-  top: 26px;
-  right: 4px;
+  top: auto;
+  bottom: 24px;
+  left: 0;
+  right: auto;
 }
 
 .streamers-list.compact .stream-preview {
