@@ -31,6 +31,7 @@ const ICON_GAME = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const ICON_VIEWERS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
 const ICON_CHEVRON = '<svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
 const ICON_BELL_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><line x1="2" y1="2" x2="22" y2="22"/></svg>';
+const ICON_CALENDAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
 
 function setAddBtnLoading() {
   addBtn.disabled = true;
@@ -397,7 +398,8 @@ function hasStreamerChanged(oldData, newData) {
          oldData.team !== newData.team ||
          oldData.thumbnail !== newData.thumbnail ||
          oldData.game !== newData.game ||
-         oldData.snoozedUntil !== newData.snoozedUntil;
+         oldData.snoozedUntil !== newData.snoozedUntil ||
+         oldData.nextStreamAt !== newData.nextStreamAt;
 }
 
 function updateStreamerCard(card, oldData, newData) {
@@ -428,6 +430,25 @@ function updateStreamerCard(card, oldData, newData) {
 
   if (oldData.snoozedUntil !== newData.snoozedUntil) {
     updateSnoozeButton(card, newData.snoozedUntil);
+  }
+
+  if (oldData.nextStreamAt !== newData.nextStreamAt) {
+    const existingSchedule = card.querySelector('.schedule-info');
+    const scheduleText = getScheduleText(newData);
+
+    if (scheduleText) {
+      const html = `${ICON_CALENDAR}<span>Prochain stream ${scheduleText}</span>`;
+      if (existingSchedule) {
+        existingSchedule.innerHTML = html;
+      } else {
+        const scheduleDiv = document.createElement('div');
+        scheduleDiv.className = 'schedule-info';
+        scheduleDiv.innerHTML = html;
+        card.querySelector('.streamer-info').appendChild(scheduleDiv);
+      }
+    } else if (existingSchedule) {
+      existingSchedule.remove();
+    }
   }
 
   const statusIndicator = card.querySelector('.status-indicator');
@@ -869,7 +890,12 @@ function createStreamerCard(streamer) {
 
   secondaryLineHTML += '</div>';
 
-  infoDiv.innerHTML = mainLineHTML + secondaryLineHTML;
+  const scheduleText = getScheduleText(streamer);
+  const scheduleLineHTML = scheduleText
+    ? `<div class="schedule-info">${ICON_CALENDAR}<span>Prochain stream ${scheduleText}</span></div>`
+    : '';
+
+  infoDiv.innerHTML = mainLineHTML + secondaryLineHTML + scheduleLineHTML;
 
   const deleteBtn = document.createElement('button');
   deleteBtn.className = 'delete-btn';
@@ -1080,6 +1106,29 @@ function formatTimeSince(timestamp) {
   if (months < 12) return `${months}mois`;
   const years = Math.floor(days / 365);
   return `${years}an${years > 1 ? 's' : ''}`;
+}
+
+function formatTimeUntil(timestamp) {
+  const diff = timestamp - Date.now();
+  if (diff <= 0) return null;
+
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 60) return `dans ${minutes}min`;
+
+  const hours = Math.floor(diff / 3600000);
+  if (hours < 24) return `dans ${hours}h`;
+
+  const days = Math.floor(diff / 86400000);
+  if (days === 1) return 'demain';
+  if (days < 7) return `dans ${days}j`;
+
+  const date = new Date(timestamp);
+  return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+}
+
+function getScheduleText(streamer) {
+  if (streamer.isLive || !streamer.nextStreamAt) return null;
+  return formatTimeUntil(streamer.nextStreamAt);
 }
 
 function formatViewers(count) {

@@ -658,6 +658,21 @@ body {
   max-width: 40%;
 }
 
+.schedule-info {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.schedule-info svg {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+}
+
 .team-logo {
   width: 14px;
   height: 14px;
@@ -885,7 +900,8 @@ body {
   font-size: 9.5px;
 }
 
-.streamers-list.compact .streamer-secondary-line {
+.streamers-list.compact .streamer-secondary-line,
+.streamers-list.compact .schedule-info {
   display: none;
 }
 

@@ -5,6 +5,7 @@ const CONFIG = {
   NOTIFICATION_COOLDOWN: 30 * 60 * 1000,
   TEAM_RECHECK_INTERVAL: 24 * 60 * 60 * 1000,
   VOD_RECHECK_INTERVAL: 60 * 60 * 1000,
+  SCHEDULE_RECHECK_INTERVAL: 60 * 60 * 1000,
   REFRESH_INTERVAL_MINUTES: 5,
   REFRESH_INTERVAL_MINUTES_LIVE: 1
 };
@@ -729,6 +730,16 @@ async function checkAllStreamers() {
           }
         }
 
+        if (!data.isLive && streamer.platform === 'twitch' &&
+            (!updated.scheduleCheckedAt || Date.now() - updated.scheduleCheckedAt > CONFIG.SCHEDULE_RECHECK_INTERVAL)) {
+          const schedule = await getUpcomingSchedule(streamer.username, updated.twitchId);
+          updated.scheduleCheckedAt = Date.now();
+          if (schedule) {
+            updated.twitchId = schedule.userId;
+            updated.nextStreamAt = schedule.nextSegment ? schedule.nextSegment.startTime : null;
+          }
+        }
+
         if (updated.snoozedUntil && updated.snoozedUntil <= Date.now()) {
           updated.snoozedUntil = null;
         }
@@ -1166,6 +1177,38 @@ async function getLatestVodInfo(username, twitchId) {
     if (!latest) return { userId, date: null };
 
     return { userId, date: new Date(latest.created_at).getTime() };
+  } catch (error) {
+    return null;
+  }
+}
+
+async function getUpcomingSchedule(username, twitchId) {
+  try {
+    const token = await getTwitchToken();
+    if (!token) return null;
+
+    let userId = twitchId;
+    if (!userId) {
+      const userResponse = await twitchFetch(`https://api.twitch.tv/helix/users?login=${encodeURIComponent(username)}`, token);
+      if (!userResponse.ok) return null;
+      const userData = await userResponse.json();
+      userId = userData.data && userData.data[0] && userData.data[0].id;
+      if (!userId) return null;
+    }
+
+    const response = await twitchFetch(`https://api.twitch.tv/helix/schedule?broadcaster_id=${userId}&first=3`, token);
+    if (!response.ok) {
+      return { userId, nextSegment: null };
+    }
+
+    const data = await response.json();
+    const segments = (data.data && data.data.segments) || [];
+    const next = segments.find(s => !s.canceled_until);
+
+    return {
+      userId,
+      nextSegment: next ? { startTime: new Date(next.start_time).getTime(), title: next.title } : null
+    };
   } catch (error) {
     return null;
   }
