@@ -26,7 +26,8 @@ export default [
     languageOptions: {
       globals: {
         DB: 'readonly',
-        UI: 'readonly'
+        UI: 'readonly',
+        I18N: 'readonly'
       }
     }
   }

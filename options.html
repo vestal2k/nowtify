@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nowtify - Paramètres</title>
+  <title data-i18n="optionsTitle">Nowtify - Paramètres</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -29,12 +29,12 @@
             Notifications
           </h2>
         </div>
-        
+
         <div class="settings-group">
           <div class="setting-item">
             <div class="setting-info">
-              <h3>Activer les notifications</h3>
-              <p>Recevoir une notification lorsqu'un streamer passe en live</p>
+              <h3 data-i18n="notificationsToggleTitle">Activer les notifications</h3>
+              <p data-i18n="notificationsToggleDesc">Recevoir une notification lorsqu'un streamer passe en live</p>
             </div>
             <label class="toggle">
               <input type="checkbox" id="notificationsEnabled" checked>
@@ -59,8 +59,8 @@
         <div class="settings-group">
           <div class="setting-item">
             <div class="setting-info">
-              <h3>Confirmer la suppression</h3>
-              <p>Demander confirmation avant de supprimer un streamer</p>
+              <h3 data-i18n="confirmDeleteToggleTitle">Confirmer la suppression</h3>
+              <p data-i18n="confirmDeleteToggleDesc">Demander confirmation avant de supprimer un streamer</p>
             </div>
             <label class="toggle">
               <input type="checkbox" id="confirmDelete" checked>
@@ -76,19 +76,19 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
               <path d="M21 2H3v16h5v4l4-4h5l4-4V2zm-10 9V7m5 4V7"></path>
             </svg>
-            Connexion Twitch
+            <span data-i18n="twitchConnectionHeader">Connexion Twitch</span>
           </h2>
         </div>
 
         <div class="settings-group">
           <div class="twitch-auth-container" id="twitchAuthContainer">
             <div class="twitch-not-connected" id="twitchNotConnected">
-              <p class="twitch-info-text">Connectez-vous pour activer le suivi de vos streamers favoris.</p>
+              <p class="twitch-info-text" data-i18n="twitchNotConnectedText">Connectez-vous pour activer le suivi de vos streamers favoris.</p>
               <button type="button" class="btn-twitch" id="twitchLoginBtn">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
                 </svg>
-                Se connecter avec Twitch
+                <span data-i18n="connectWithTwitch">Se connecter avec Twitch</span>
               </button>
             </div>
             <div class="twitch-connected" id="twitchConnected" style="display: none;">
@@ -96,10 +96,10 @@
                 <img id="twitchUserAvatar" src="" alt="Avatar" class="twitch-avatar">
                 <div class="twitch-user-details">
                   <span class="twitch-username" id="twitchUsername"></span>
-                  <span class="twitch-status">Connecté</span>
+                  <span class="twitch-status" data-i18n="connectedStatus">Connecté</span>
                 </div>
               </div>
-              <button type="button" class="btn-disconnect" id="twitchLogoutBtn">
+              <button type="button" class="btn-disconnect" id="twitchLogoutBtn" data-i18n="disconnectButton">
                 Déconnecter
               </button>
             </div>
@@ -116,7 +116,7 @@
               <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
               <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
             </svg>
-            Gestion des Teams
+            <span data-i18n="teamsManagementHeader">Gestion des Teams</span>
           </h2>
         </div>
 
@@ -132,7 +132,7 @@
               <line x1="12" y1="20" x2="12" y2="4"></line>
               <line x1="6" y1="20" x2="6" y2="14"></line>
             </svg>
-            Statistiques
+            <span data-i18n="statisticsHeader">Statistiques</span>
           </h2>
         </div>
 
@@ -147,10 +147,10 @@
               <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"></path>
               <path d="M12 7v5l4 2"></path>
             </svg>
-            Historique
+            <span data-i18n="historyHeader">Historique</span>
           </h2>
         </div>
-        
+
         <div class="history-list" id="historyList"></div>
 
         <button class="btn-secondary" id="clearHistoryBtn">
@@ -160,7 +160,7 @@
             <line x1="10" y1="11" x2="10" y2="17"></line>
             <line x1="14" y1="11" x2="14" y2="17"></line>
           </svg>
-          Effacer l'historique
+          <span data-i18n="clearHistoryButton">Effacer l'historique</span>
         </button>
       </section>
 
@@ -183,7 +183,7 @@
               <path d="M12 16v-4"></path>
               <path d="M12 8h.01"></path>
             </svg>
-            <p>Exportez vos données pour les sauvegarder ou les transférer vers un autre navigateur. L'import fusionnera les données avec votre liste actuelle.</p>
+            <p data-i18n="exportImportDesc">Exportez vos données pour les sauvegarder ou les transférer vers un autre navigateur. L'import fusionnera les données avec votre liste actuelle.</p>
           </div>
           <div class="export-import-buttons">
             <button type="button" class="btn-export" id="exportBtn">
@@ -192,7 +192,7 @@
                 <polyline points="17 8 12 3 7 8"/>
                 <line x1="12" y1="3" x2="12" y2="15"/>
               </svg>
-              Exporter
+              <span data-i18n="exportButton">Exporter</span>
             </button>
             <button type="button" class="btn-import" id="importBtn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -200,7 +200,7 @@
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
-              Importer
+              <span data-i18n="importButton">Importer</span>
             </button>
             <input type="file" id="importFile" accept=".json" style="display: none;">
           </div>
@@ -215,13 +215,13 @@
               <path d="M12 16v-4"></path>
               <path d="M12 8h.01"></path>
             </svg>
-            À propos
+            <span data-i18n="aboutHeader">À propos</span>
           </h2>
         </div>
 
         <div class="about-content">
           <p><strong>Nowtify</strong> v3.2.0</p>
-          <p>Extension Chrome pour suivre vos streamers Twitch favoris.</p>
+          <p data-i18n="aboutTagline">Extension Chrome pour suivre vos streamers Twitch favoris.</p>
           <div class="about-links">
             <a href="https://github.com/qyrn/nowtify" class="link">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
@@ -245,14 +245,14 @@
                 <path d="M22 13h-4"></path>
                 <path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"></path>
               </svg>
-              Signaler un bug
+              <span data-i18n="reportBugLink">Signaler un bug</span>
             </a>
             <span>•</span>
             <a href="https://ko-fi.com/qyrnsec" class="link">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
                 <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
               </svg>
-              Nous soutenir
+              <span data-i18n="supportLink">Nous soutenir</span>
             </a>
             <span>•</span>
             <a href="https://nowtify.qyrn.dev" target="_blank" class="link">
@@ -261,14 +261,14 @@
                 <line x1="2" y1="12" x2="22" y2="12"></line>
                 <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
               </svg>
-              Site web
+              <span data-i18n="websiteLink">Site web</span>
             </a>
             <span>•</span>
             <a href="https://nowtify.qyrn.dev/privacy.html" target="_blank" class="link">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"></path>
               </svg>
-              Confidentialité
+              <span data-i18n="privacyLink">Confidentialité</span>
             </a>
           </div>
         </div>
@@ -276,6 +276,7 @@
     </main>
   </div>
 
+  <script src="i18n.js"></script>
   <script src="ui.js"></script>
   <script src="db-client.js"></script>
   <script src="options.js"></script>

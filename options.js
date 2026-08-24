@@ -14,6 +14,8 @@ const importBtn = document.getElementById('importBtn');
 const importFile = document.getElementById('importFile');
 
 document.addEventListener('DOMContentLoaded', async () => {
+  document.documentElement.lang = I18N.locale();
+  I18N.apply();
   await loadSettings();
   await loadTwitchAuthStatus();
   await loadTeamsManagement();
@@ -76,27 +78,27 @@ function showTwitchDisconnected() {
 
 async function handleTwitchLogin() {
   twitchLoginBtn.disabled = true;
-  twitchLoginBtn.textContent = 'Connexion...';
+  twitchLoginBtn.textContent = I18N.t('connectingButton');
 
   try {
     const response = await chrome.runtime.sendMessage({ action: 'twitchLogin' });
 
     if (response && response.success) {
       showTwitchConnected(response.user);
-      UI.toast('Connecté à Twitch !', 'success');
+      UI.toast(I18N.t('twitchConnectedToast'), 'success');
       chrome.runtime.sendMessage({ action: 'checkNow' });
     } else {
-      UI.toast('Erreur de connexion : ' + (response?.error || 'Inconnue'), 'error');
+      UI.toast(I18N.t('connectionErrorPrefix') + (response?.error || I18N.t('unknownError')), 'error');
     }
   } catch (error) {
-    UI.toast('Erreur de connexion : ' + error.message, 'error');
+    UI.toast(I18N.t('connectionErrorPrefix') + error.message, 'error');
   } finally {
     twitchLoginBtn.disabled = false;
     twitchLoginBtn.innerHTML = `
       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
         <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
       </svg>
-      Se connecter avec Twitch
+      ${I18N.t('connectWithTwitch')}
     `;
   }
 }
@@ -105,9 +107,9 @@ async function handleTwitchLogout() {
   try {
     await chrome.runtime.sendMessage({ action: 'twitchLogout' });
     showTwitchDisconnected();
-    UI.toast('Déconnecté de Twitch', 'success');
+    UI.toast(I18N.t('twitchDisconnectedToast'), 'success');
   } catch (error) {
-    UI.toast('Erreur lors de la déconnexion', 'error');
+    UI.toast(I18N.t('disconnectError'), 'error');
   }
 }
 
@@ -122,7 +124,7 @@ async function saveSettings() {
 
     chrome.runtime.sendMessage({ action: 'settingsUpdated', settings });
   } catch (error) {
-    UI.toast('Erreur lors de la sauvegarde des paramètres', 'error');
+    UI.toast(I18N.t('settingsSaveError'), 'error');
   }
 }
 
@@ -131,7 +133,7 @@ async function loadStats() {
     const history = await DB.getHistory(100);
 
     if (history.length === 0) {
-      statsGrid.innerHTML = '<div class="empty-stats">Pas encore de données</div>';
+      statsGrid.innerHTML = `<div class="empty-stats">${I18N.t('statsNoData')}</div>`;
       return;
     }
 
@@ -153,24 +155,24 @@ async function loadStats() {
 
     const cards = [
       {
-        label: 'Streams captés',
+        label: I18N.t('statStreamsCaught'),
         value: history.length.toString(),
-        sub: history.length >= 100 ? '100 derniers conservés' : null
+        sub: history.length >= 100 ? I18N.t('statStreamsCaughtSub') : null
       },
       {
-        label: 'Cette semaine',
+        label: I18N.t('statThisWeek'),
         value: thisWeekCount.toString(),
         sub: null
       },
       {
-        label: 'Streamer le plus suivi',
+        label: I18N.t('statTopStreamer'),
         value: topStreamer ? topStreamer[0] : '—',
-        sub: topStreamer ? `${topStreamer[1]} live${topStreamer[1] > 1 ? 's' : ''}` : null
+        sub: topStreamer ? I18N.t(topStreamer[1] > 1 ? 'statLiveCountPlural' : 'statLiveCount', [String(topStreamer[1])]) : null
       },
       {
-        label: 'Jeu le plus vu',
+        label: I18N.t('statTopGame'),
         value: topGame ? topGame[0] : '—',
-        sub: topGame ? `${topGame[1]} fois` : null
+        sub: topGame ? I18N.t(topGame[1] > 1 ? 'statTimesCount' : 'statTimesCountSingular', [String(topGame[1])]) : null
       }
     ];
 
@@ -183,7 +185,7 @@ async function loadStats() {
     `).join('');
 
   } catch (error) {
-    statsGrid.innerHTML = '<div class="empty-stats">Erreur lors du chargement des statistiques</div>';
+    statsGrid.innerHTML = `<div class="empty-stats">${I18N.t('statsLoadError')}</div>`;
   }
 }
 
@@ -194,7 +196,7 @@ async function loadHistory() {
     if (history.length === 0) {
       historyList.innerHTML = `
         <div class="empty-history">
-          <p>Aucun historique pour le moment</p>
+          <p>${I18N.t('emptyHistory')}</p>
         </div>
       `;
       return;
@@ -246,16 +248,16 @@ async function loadHistory() {
   } catch (error) {
     historyList.innerHTML = `
       <div class="empty-history">
-        <p>Erreur lors du chargement de l'historique</p>
+        <p>${I18N.t('historyLoadError')}</p>
       </div>
     `;
   }
 }
 
 async function clearHistory() {
-  const confirmed = await UI.confirm('Tout l\'historique des lives détectés sera effacé.', {
-    title: 'Effacer l\'historique',
-    confirmLabel: 'Effacer',
+  const confirmed = await UI.confirm(I18N.t('clearHistoryConfirmText'), {
+    title: I18N.t('clearHistoryModalTitle'),
+    confirmLabel: I18N.t('clearLabel'),
     danger: true
   });
   if (!confirmed) {
@@ -267,7 +269,7 @@ async function clearHistory() {
     await loadHistory();
     await loadStats();
   } catch (error) {
-    UI.toast('Erreur lors de l\'effacement de l\'historique', 'error');
+    UI.toast(I18N.t('historyClearError'), 'error');
   }
 }
 
@@ -279,13 +281,13 @@ function getTimeAgo(timestamp) {
   const hours = Math.floor(diff / (1000 * 60 * 60));
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-  if (minutes < 1) return 'À l\'instant';
-  if (minutes < 60) return `Il y a ${minutes} min`;
-  if (hours < 24) return `Il y a ${hours}h`;
-  if (days < 7) return `Il y a ${days}j`;
+  if (minutes < 1) return I18N.t('agoJustNow');
+  if (minutes < 60) return I18N.t('agoMinutes', [String(minutes)]);
+  if (hours < 24) return I18N.t('agoHours', [String(hours)]);
+  if (days < 7) return I18N.t('agoDays', [String(days)]);
 
   const date = new Date(timestamp);
-  return date.toLocaleDateString('fr-FR', {
+  return date.toLocaleDateString(I18N.locale(), {
     day: 'numeric',
     month: 'short'
   });
@@ -314,7 +316,7 @@ async function loadTeamsManagement() {
     const teamsManagement = document.getElementById('teamsManagement');
 
     if (Object.keys(teamsMap).length === 0) {
-      teamsManagement.innerHTML = '<p class="empty-teams">Aucune team ajoutée</p>';
+      teamsManagement.innerHTML = `<p class="empty-teams">${I18N.t('noTeamsAdded')}</p>`;
       return;
     }
 
@@ -336,7 +338,7 @@ async function loadTeamsManagement() {
       const teamDeleteBtn = document.createElement('button');
       teamDeleteBtn.className = 'btn-danger-small';
       teamDeleteBtn.dataset.team = teamName;
-      teamDeleteBtn.textContent = 'Supprimer la team';
+      teamDeleteBtn.textContent = I18N.t('deleteTeamButton');
 
       teamHeader.appendChild(teamTitle);
       teamHeader.appendChild(teamDeleteBtn);
@@ -370,9 +372,9 @@ async function loadTeamsManagement() {
     document.querySelectorAll('.btn-danger-small').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const teamName = e.target.dataset.team;
-        const confirmed = await UI.confirm(`Tous les membres de la team ${teamName} seront retirés de votre liste.`, {
-          title: 'Supprimer la team',
-          confirmLabel: 'Supprimer',
+        const confirmed = await UI.confirm(I18N.t('confirmDeleteTeamText', [teamName]), {
+          title: I18N.t('deleteTeamButton'),
+          confirmLabel: I18N.t('deleteTitle'),
           danger: true
         });
         if (confirmed) {
@@ -443,10 +445,10 @@ async function exportData() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    UI.toast('Export réussi !', 'success');
+    UI.toast(I18N.t('exportSuccessToast'), 'success');
 
   } catch (error) {
-    UI.toast('Erreur lors de l\'export', 'error');
+    UI.toast(I18N.t('exportError'), 'error');
   }
 }
 
@@ -459,7 +461,7 @@ async function importData(event) {
     const importObj = JSON.parse(text);
 
     if (!importObj.data) {
-      UI.toast('Format de fichier invalide', 'error');
+      UI.toast(I18N.t('invalidFileFormat'), 'error');
       return;
     }
 
@@ -483,14 +485,14 @@ async function importData(event) {
     await loadHistory();
     await loadTeamsManagement();
 
-    UI.toast(`Import réussi ! ${importedStreamers.length} streamer(s) traités.`, 'success');
+    UI.toast(I18N.t('importSuccessToast', [String(importedStreamers.length)]), 'success');
 
     importFile.value = '';
 
     chrome.runtime.sendMessage({ action: 'checkNow' });
 
   } catch (error) {
-    UI.toast('Erreur lors de l\'import : ' + error.message, 'error');
+    UI.toast(I18N.t('importErrorPrefix') + error.message, 'error');
     importFile.value = '';
   }
 }

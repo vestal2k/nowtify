@@ -1,0 +1,213 @@
+{
+  "extName": { "message": "Nowtify" },
+  "extDescription": { "message": "Soyez notifié instantanément quand vos streamers Twitch favoris passent en live" },
+
+  "searchPlaceholder": { "message": "Rechercher un streamer..." },
+  "addButton": { "message": "Ajouter" },
+  "addingButton": { "message": "Ajout..." },
+  "refreshTitle": { "message": "Actualiser" },
+  "compactModeTitle": { "message": "Mode compact" },
+  "settingsTitle": { "message": "Paramètres" },
+  "authErrorText": { "message": "Token Twitch expiré" },
+  "reconnectButton": { "message": "Reconnexion" },
+  "twitchConnectRequiredText": { "message": "Connexion Twitch requise" },
+  "connectButton": { "message": "Se connecter" },
+  "connectingButton": { "message": "Connexion..." },
+  "filterAll": { "message": "Tous" },
+  "filterByTeamTitle": { "message": "Filtrer par team" },
+  "allTeams": { "message": "Toutes les teams" },
+  "emptyStateTitle": { "message": "Aucun streamer ajouté" },
+  "emptyStateText": { "message": "Ajoutez vos streamers favoris pour être notifié de leurs lives !" },
+  "loadingText": { "message": "Chargement..." },
+  "noFilterResults": { "message": "Aucun streamer ne correspond à ce filtre" },
+
+  "twitchConnectedToast": { "message": "Connecté à Twitch !" },
+  "connectionErrorPrefix": { "message": "Erreur de connexion : " },
+  "unknownError": { "message": "Inconnue" },
+  "loadErrorText": { "message": "Erreur lors du chargement" },
+  "teamAddError": { "message": "Erreur lors de l'ajout de la team" },
+  "teamAddedToast": {
+    "message": "Team $TEAM$ ajoutée : $COUNT$ membres",
+    "placeholders": { "team": { "content": "$1" }, "count": { "content": "$2" } }
+  },
+  "streamerAlreadyInList": { "message": "Ce streamer est déjà dans votre liste" },
+  "streamerAddErrorGeneric": { "message": "Erreur lors de l'ajout du streamer" },
+  "enterUrlOrName": { "message": "Veuillez entrer une URL ou un nom" },
+  "unrecognizedFormat": { "message": "URL ou format non reconnu" },
+  "streamerNotFound": { "message": "Streamer introuvable sur Twitch, vérifie le pseudo ou le lien" },
+  "addErrorGeneric": { "message": "Erreur lors de l'ajout" },
+  "deleteErrorGeneric": { "message": "Erreur lors de la suppression" },
+  "teamDeleteError": { "message": "Erreur lors de la suppression de la team" },
+
+  "deleteTitle": { "message": "Supprimer" },
+  "previewTitle": { "message": "Aperçu du stream" },
+  "teamTwitchBadge": { "message": "Team Twitch" },
+  "liveBadge": { "message": "Live" },
+  "partnerBadge": { "message": "Partner" },
+  "statusOffline": { "message": "Hors ligne" },
+  "streamInProgress": { "message": "Stream en cours" },
+  "viewersCount": {
+    "message": "$COUNT$ spectateurs",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "confirmRemoveStreamerText": {
+    "message": "$NAME$ sera retiré de votre liste.",
+    "placeholders": { "name": { "content": "$1" } }
+  },
+  "confirmTitle": { "message": "Confirmation" },
+  "confirmLabel": { "message": "Confirmer" },
+  "cancelLabel": { "message": "Annuler" },
+  "deleteStreamerModalTitle": { "message": "Supprimer le streamer" },
+  "nextStreamLabel": { "message": "Prochain stream" },
+  "notifPaused": { "message": "Notifications en pause" },
+  "notifPauseAction": { "message": "Mettre les notifications en pause" },
+  "snoozeCancel": { "message": "Annuler la pause" },
+  "snooze1h": { "message": "Pause 1 heure" },
+  "snoozeTomorrow": { "message": "Pause jusqu'à demain" },
+  "snoozeToastPaused": { "message": "Notifications en pause pour ce streamer" },
+  "snoozeToastResumed": { "message": "Notifications réactivées" },
+
+  "deleteModalTeamText": {
+    "message": "$NAME$ fait partie de la team $TEAM$",
+    "placeholders": { "name": { "content": "$1" }, "team": { "content": "$2" } }
+  },
+  "deleteThisStreamer": { "message": "Ce streamer" },
+  "deleteWholeTeam": { "message": "Toute la team" },
+
+  "timeLessThanHour": { "message": "< 1h" },
+  "timeHours": {
+    "message": "$COUNT$h",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "timeDays": {
+    "message": "$COUNT$j",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "timeWeeks": {
+    "message": "$COUNT$sem",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "timeMonths": {
+    "message": "$COUNT$mois",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "timeYear": {
+    "message": "$COUNT$an",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "timeYears": {
+    "message": "$COUNT$ans",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "scheduleInMinutes": {
+    "message": "dans $COUNT$min",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "scheduleInHours": {
+    "message": "dans $COUNT$h",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "scheduleTomorrow": { "message": "demain" },
+  "scheduleInDays": {
+    "message": "dans $COUNT$j",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+
+  "optionsTitle": { "message": "Nowtify - Paramètres" },
+  "notificationsToggleTitle": { "message": "Activer les notifications" },
+  "notificationsToggleDesc": { "message": "Recevoir une notification lorsqu'un streamer passe en live" },
+  "confirmDeleteToggleTitle": { "message": "Confirmer la suppression" },
+  "confirmDeleteToggleDesc": { "message": "Demander confirmation avant de supprimer un streamer" },
+  "twitchConnectionHeader": { "message": "Connexion Twitch" },
+  "twitchNotConnectedText": { "message": "Connectez-vous pour activer le suivi de vos streamers favoris." },
+  "connectWithTwitch": { "message": "Se connecter avec Twitch" },
+  "connectedStatus": { "message": "Connecté" },
+  "disconnectButton": { "message": "Déconnecter" },
+  "teamsManagementHeader": { "message": "Gestion des Teams" },
+  "statisticsHeader": { "message": "Statistiques" },
+  "historyHeader": { "message": "Historique" },
+  "clearHistoryButton": { "message": "Effacer l'historique" },
+  "exportImportDesc": { "message": "Exportez vos données pour les sauvegarder ou les transférer vers un autre navigateur. L'import fusionnera les données avec votre liste actuelle." },
+  "exportButton": { "message": "Exporter" },
+  "importButton": { "message": "Importer" },
+  "aboutHeader": { "message": "À propos" },
+  "aboutTagline": { "message": "Extension Chrome pour suivre vos streamers Twitch favoris." },
+  "reportBugLink": { "message": "Signaler un bug" },
+  "supportLink": { "message": "Nous soutenir" },
+  "websiteLink": { "message": "Site web" },
+  "privacyLink": { "message": "Confidentialité" },
+
+  "twitchDisconnectedToast": { "message": "Déconnecté de Twitch" },
+  "disconnectError": { "message": "Erreur lors de la déconnexion" },
+  "settingsSaveError": { "message": "Erreur lors de la sauvegarde des paramètres" },
+  "statsNoData": { "message": "Pas encore de données" },
+  "statsLoadError": { "message": "Erreur lors du chargement des statistiques" },
+  "statStreamsCaught": { "message": "Streams captés" },
+  "statStreamsCaughtSub": { "message": "100 derniers conservés" },
+  "statThisWeek": { "message": "Cette semaine" },
+  "statTopStreamer": { "message": "Streamer le plus suivi" },
+  "statTopGame": { "message": "Jeu le plus vu" },
+  "statLiveCount": {
+    "message": "$COUNT$ live",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "statLiveCountPlural": {
+    "message": "$COUNT$ lives",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "statTimesCount": {
+    "message": "$COUNT$ fois",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "statTimesCountSingular": {
+    "message": "$COUNT$ fois",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "emptyHistory": { "message": "Aucun historique pour le moment" },
+  "historyLoadError": { "message": "Erreur lors du chargement de l'historique" },
+  "clearHistoryConfirmText": { "message": "Tout l'historique des lives détectés sera effacé." },
+  "clearHistoryModalTitle": { "message": "Effacer l'historique" },
+  "clearLabel": { "message": "Effacer" },
+  "historyClearError": { "message": "Erreur lors de l'effacement de l'historique" },
+  "noTeamsAdded": { "message": "Aucune team ajoutée" },
+  "deleteTeamButton": { "message": "Supprimer la team" },
+  "confirmDeleteTeamText": {
+    "message": "Tous les membres de la team $TEAM$ seront retirés de votre liste.",
+    "placeholders": { "team": { "content": "$1" } }
+  },
+  "exportSuccessToast": { "message": "Export réussi !" },
+  "exportError": { "message": "Erreur lors de l'export" },
+  "invalidFileFormat": { "message": "Format de fichier invalide" },
+  "importSuccessToast": {
+    "message": "Import réussi ! $COUNT$ streamer(s) traités.",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "importErrorPrefix": { "message": "Erreur lors de l'import : " },
+
+  "agoJustNow": { "message": "À l'instant" },
+  "agoMinutes": {
+    "message": "Il y a $COUNT$ min",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "agoHours": {
+    "message": "Il y a $COUNT$h",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "agoDays": {
+    "message": "Il y a $COUNT$j",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+
+  "notificationTitle": {
+    "message": "$NAME$ est en live !",
+    "placeholders": { "name": { "content": "$1" } }
+  },
+  "notificationBodyFallback": {
+    "message": "$NAME$ vient de commencer un stream sur $PLATFORM$",
+    "placeholders": { "name": { "content": "$1" }, "platform": { "content": "$2" } }
+  },
+  "teamNotFoundError": { "message": "Team introuvable" },
+  "noMembersInTeamError": { "message": "Aucun membre dans cette team" },
+  "missingTwitchTokenError": { "message": "Token Twitch manquant" },
+  "tokenNotReceivedError": { "message": "Token non reçu" }
+}

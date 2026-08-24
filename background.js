@@ -569,26 +569,26 @@ async function addTwitchTeam(teamName) {
   try {
     const token = await getTwitchToken();
     if (!token) {
-      return { success: false, error: 'Token Twitch manquant' };
+      return { success: false, error: chrome.i18n.getMessage('missingTwitchTokenError') };
     }
 
     const response = await twitchFetch(`https://api.twitch.tv/helix/teams?name=${teamName}`, token);
 
     if (!response.ok) {
-      return { success: false, error: 'Team introuvable' };
+      return { success: false, error: chrome.i18n.getMessage('teamNotFoundError') };
     }
 
     const data = await response.json();
 
     if (!data.data || data.data.length === 0) {
-      return { success: false, error: 'Team introuvable' };
+      return { success: false, error: chrome.i18n.getMessage('teamNotFoundError') };
     }
 
     const team = data.data[0];
     const teamUsers = team.users || [];
 
     if (teamUsers.length === 0) {
-      return { success: false, error: 'Aucun membre dans cette team' };
+      return { success: false, error: chrome.i18n.getMessage('noMembersInTeamError') };
     }
 
     const teamLogoUrl = team.thumbnail_url || team.background_image_url || null;
@@ -991,7 +991,7 @@ async function loginWithTwitch() {
       return { success: true, user: userInfo };
     }
 
-    return { success: false, error: 'Token non reçu' };
+    return { success: false, error: chrome.i18n.getMessage('tokenNotReceivedError') };
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -1410,8 +1410,8 @@ async function sendNotification(streamer) {
       chrome.notifications.create(notificationId, {
         type: 'basic',
         iconUrl: iconUrl,
-        title: `${streamer.name} est en live !`,
-        message: streamer.title || `${streamer.name} vient de commencer un stream sur ${streamer.platform}`,
+        title: chrome.i18n.getMessage('notificationTitle', [streamer.name]),
+        message: streamer.title || chrome.i18n.getMessage('notificationBodyFallback', [streamer.name, streamer.platform]),
         priority: 2,
         requireInteraction: settings.persistentNotifications === true,
         silent: false

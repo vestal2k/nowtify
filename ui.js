@@ -35,9 +35,9 @@ globalThis.UI = {
   confirm(message, options = {}) {
     this._injectStyles();
 
-    const title = options.title || 'Confirmation';
-    const confirmLabel = options.confirmLabel || 'Confirmer';
-    const cancelLabel = options.cancelLabel || 'Annuler';
+    const title = options.title || chrome.i18n.getMessage('confirmTitle');
+    const confirmLabel = options.confirmLabel || chrome.i18n.getMessage('confirmLabel');
+    const cancelLabel = options.cancelLabel || chrome.i18n.getMessage('cancelLabel');
     const danger = options.danger === true;
 
     return new Promise((resolve) => {

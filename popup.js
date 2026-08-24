@@ -35,15 +35,18 @@ const ICON_CALENDAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor
 
 function setAddBtnLoading() {
   addBtn.disabled = true;
-  addBtn.innerHTML = `${ICON_SPINNER} Ajout...`;
+  addBtn.innerHTML = `${ICON_SPINNER} ${I18N.t('addingButton')}`;
 }
 
 function setAddBtnDefault() {
   addBtn.disabled = false;
-  addBtn.innerHTML = `${ICON_ADD} Ajouter`;
+  addBtn.innerHTML = `${ICON_ADD} ${I18N.t('addButton')}`;
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  document.documentElement.lang = I18N.locale();
+  I18N.apply();
+  setAddBtnDefault();
   await checkAuthError();
   await checkTwitchConnection();
   await loadGroups();
@@ -73,24 +76,24 @@ async function checkTwitchConnection() {
 
 async function handleTwitchConnect() {
   twitchConnectBtn.disabled = true;
-  twitchConnectBtn.textContent = 'Connexion...';
+  twitchConnectBtn.textContent = I18N.t('connectingButton');
 
   try {
     const response = await chrome.runtime.sendMessage({ action: 'twitchLogin' });
 
     if (response && response.success) {
       twitchConnectBanner.classList.add('hidden');
-      UI.toast('Connecté à Twitch !', 'success');
+      UI.toast(I18N.t('twitchConnectedToast'), 'success');
       await loadGroups();
       refreshStreamers();
     } else {
-      UI.toast('Erreur de connexion : ' + (response?.error || 'Inconnue'), 'error');
+      UI.toast(I18N.t('connectionErrorPrefix') + (response?.error || I18N.t('unknownError')), 'error');
     }
   } catch (error) {
-    UI.toast('Erreur de connexion : ' + error.message, 'error');
+    UI.toast(I18N.t('connectionErrorPrefix') + error.message, 'error');
   } finally {
     twitchConnectBtn.disabled = false;
-    twitchConnectBtn.textContent = 'Se connecter';
+    twitchConnectBtn.textContent = I18N.t('connectButton');
   }
 }
 
@@ -104,7 +107,7 @@ async function loadGroups() {
   const teams = Array.from(teamsSet).sort();
 
   let dropdownHTML = '';
-  dropdownHTML += '<div class="filter-group-dropdown-item clear-filter" data-value="">Toutes les teams</div>';
+  dropdownHTML += `<div class="filter-group-dropdown-item clear-filter" data-value="">${I18N.t('allTeams')}</div>`;
 
   teams.forEach(teamName => {
     dropdownHTML += `<div class="filter-group-dropdown-item" data-value="team:${teamName}">${escapeHtml(capitalizeTeamName(teamName))}</div>`;
@@ -235,7 +238,7 @@ function applyFilter() {
 
   if (filteredStreamers.length === 0 && allStreamersData.length > 0) {
     showEmptyState(false);
-    streamersList.innerHTML = '<div class="no-filter-results">Aucun streamer ne correspond à ce filtre</div>';
+    streamersList.innerHTML = `<div class="no-filter-results">${I18N.t('noFilterResults')}</div>`;
     return;
   }
 
@@ -297,7 +300,7 @@ async function loadStreamers() {
     const filteredStreamers = filterStreamers(sortedStreamers, currentFilter);
 
     if (filteredStreamers.length === 0 && sortedStreamers.length > 0) {
-      streamersList.innerHTML = '<div class="no-filter-results">Aucun streamer ne correspond à ce filtre</div>';
+      streamersList.innerHTML = `<div class="no-filter-results">${I18N.t('noFilterResults')}</div>`;
     } else {
       updateStreamersWithDiff(filteredStreamers);
     }
@@ -310,7 +313,7 @@ async function loadStreamers() {
       document.documentElement.scrollTop = scrollTop;
     });
   } catch (error) {
-    showError('Erreur lors du chargement');
+    showError(I18N.t('loadErrorText'));
     showLoading(false);
   }
 }
@@ -440,7 +443,7 @@ function updateStreamerCard(card, oldData, newData) {
     const scheduleText = getScheduleText(newData);
 
     if (scheduleText) {
-      const html = `${ICON_CALENDAR}<span>Prochain stream ${scheduleText}</span>`;
+      const html = `${ICON_CALENDAR}<span>${I18N.t('nextStreamLabel')} ${scheduleText}</span>`;
       if (existingSchedule) {
         existingSchedule.innerHTML = html;
       } else {
@@ -486,19 +489,19 @@ function updateStreamerCard(card, oldData, newData) {
 
       const gameEl = existingPreview.querySelector('.stream-preview-game');
       if (gameEl) {
-        gameEl.innerHTML = `${ICON_GAME} ${escapeHtml(newData.game || 'Stream en cours')}`;
+        gameEl.innerHTML = `${ICON_GAME} ${escapeHtml(newData.game || I18N.t('streamInProgress'))}`;
       }
 
       const viewersEl = existingPreview.querySelector('.stream-preview-viewers');
       if (newData.viewerCount) {
         if (viewersEl) {
-          viewersEl.innerHTML = `${ICON_VIEWERS} ${formatViewers(newData.viewerCount)} spectateurs`;
+          viewersEl.innerHTML = `${ICON_VIEWERS} ${I18N.t('viewersCount', [formatViewers(newData.viewerCount)])}`;
         } else {
           const infoEl = existingPreview.querySelector('.stream-preview-info');
           if (infoEl) {
             const viewersDiv = document.createElement('div');
             viewersDiv.className = 'stream-preview-viewers';
-            viewersDiv.innerHTML = `${ICON_VIEWERS} ${formatViewers(newData.viewerCount)} spectateurs`;
+            viewersDiv.innerHTML = `${ICON_VIEWERS} ${I18N.t('viewersCount', [formatViewers(newData.viewerCount)])}`;
             infoEl.appendChild(viewersDiv);
           }
         }
@@ -512,7 +515,7 @@ function updateStreamerCard(card, oldData, newData) {
         const toggleBtn = document.createElement('button');
         toggleBtn.type = 'button';
         toggleBtn.className = 'preview-toggle';
-        toggleBtn.title = 'Aperçu du stream';
+        toggleBtn.title = I18N.t('previewTitle');
         toggleBtn.innerHTML = ICON_CHEVRON;
         mainLine.appendChild(toggleBtn);
       }
@@ -594,7 +597,7 @@ function showTeamAutocomplete(teams) {
       <div class="autocomplete-info">
         <div class="autocomplete-name">${escapeHtml(team.display_name)}</div>
         <div class="autocomplete-meta">
-          <span class="team-badge-small">Team Twitch</span>
+          <span class="team-badge-small">${I18N.t('teamTwitchBadge')}</span>
         </div>
       </div>
     `;
@@ -628,10 +631,10 @@ function showAutocomplete(results) {
 
     let badges = '';
     if (result.isLive) {
-      badges += '<span class="live-badge"><svg width="8" height="8" viewBox="0 0 24 24" fill="#ef4444" stroke="none"><circle cx="12" cy="12" r="10"/></svg> Live</span>';
+      badges += `<span class="live-badge"><svg width="8" height="8" viewBox="0 0 24 24" fill="#ef4444" stroke="none"><circle cx="12" cy="12" r="10"/></svg> ${I18N.t('liveBadge')}</span>`;
     }
     if (result.isPartner) {
-      badges += '<span class="partner-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Partner</span>';
+      badges += `<span class="partner-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ${I18N.t('partnerBadge')}</span>`;
     }
 
     infoDiv.innerHTML = `
@@ -662,7 +665,7 @@ async function addTwitchTeamFromAutocomplete(teamName) {
     { action: 'addTwitchTeam', teamName: teamName },
     async (response) => {
       if (chrome.runtime.lastError) {
-        showError('Erreur lors de l\'ajout de la team');
+        showError(I18N.t('teamAddError'));
         setAddBtnDefault();
         return;
       }
@@ -670,9 +673,9 @@ async function addTwitchTeamFromAutocomplete(teamName) {
       if (response && response.success) {
         hideError();
         await loadStreamers();
-        showError(`Team ${teamName} ajoutée : ${response.count} membres`, false);
+        showError(I18N.t('teamAddedToast', [teamName, String(response.count)]), false);
       } else {
-        showError(response?.error || 'Erreur lors de l\'ajout de la team');
+        showError(response?.error || I18N.t('teamAddError'));
       }
 
       setAddBtnDefault();
@@ -694,7 +697,7 @@ async function addStreamerFromAutocomplete(result) {
     );
 
     if (exists) {
-      showError('Ce streamer est déjà dans votre liste');
+      showError(I18N.t('streamerAlreadyInList'));
       return;
     }
 
@@ -719,7 +722,7 @@ async function addStreamerFromAutocomplete(result) {
     chrome.runtime.sendMessage({ action: 'checkNow' });
 
   } catch (error) {
-    showError('Erreur lors de l\'ajout du streamer');
+    showError(I18N.t('streamerAddErrorGeneric'));
   } finally {
     setAddBtnDefault();
   }
@@ -729,7 +732,7 @@ async function handleAddStreamer() {
   const input = streamerInput.value.trim();
 
   if (!input) {
-    showError('Veuillez entrer une URL ou un nom');
+    showError(I18N.t('enterUrlOrName'));
     return;
   }
 
@@ -747,7 +750,7 @@ async function handleAddStreamer() {
     const streamerData = parseStreamerInput(input);
 
     if (!streamerData) {
-      showError('URL ou format non reconnu');
+      showError(I18N.t('unrecognizedFormat'));
       return;
     }
 
@@ -758,7 +761,7 @@ async function handleAddStreamer() {
     );
 
     if (exists) {
-      showError('Ce streamer est déjà dans votre liste');
+      showError(I18N.t('streamerAlreadyInList'));
       return;
     }
 
@@ -774,7 +777,7 @@ async function handleAddStreamer() {
     }
 
     if (!streamerInfo) {
-      showError('Streamer introuvable sur Twitch, vérifie le pseudo ou le lien');
+      showError(I18N.t('streamerNotFound'));
       return;
     }
 
@@ -800,7 +803,7 @@ async function handleAddStreamer() {
     chrome.runtime.sendMessage({ action: 'checkNow' });
 
   } catch (error) {
-    showError('Erreur lors de l\'ajout');
+    showError(I18N.t('addErrorGeneric'));
   } finally {
     setAddBtnDefault();
   }
@@ -863,7 +866,7 @@ function createStreamerCard(streamer) {
         <span class="status-dot ${statusClass}"></span>
         ${statusText}
       </span>
-      ${isToggleable ? `<button type="button" class="preview-toggle" title="Aperçu du stream">${ICON_CHEVRON}</button>` : ''}
+      ${isToggleable ? `<button type="button" class="preview-toggle" title="${I18N.t('previewTitle')}">${ICON_CHEVRON}</button>` : ''}
     </div>
   `;
 
@@ -885,14 +888,14 @@ function createStreamerCard(streamer) {
 
   const scheduleText = getScheduleText(streamer);
   const scheduleLineHTML = scheduleText
-    ? `<div class="schedule-info">${ICON_CALENDAR}<span>Prochain stream ${scheduleText}</span></div>`
+    ? `<div class="schedule-info">${ICON_CALENDAR}<span>${I18N.t('nextStreamLabel')} ${scheduleText}</span></div>`
     : '';
 
   infoDiv.innerHTML = mainLineHTML + secondaryLineHTML + scheduleLineHTML;
 
   const deleteBtn = document.createElement('button');
   deleteBtn.className = 'delete-btn';
-  deleteBtn.title = 'Supprimer';
+  deleteBtn.title = I18N.t('deleteTitle');
   deleteBtn.innerHTML = `
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -902,7 +905,7 @@ function createStreamerCard(streamer) {
 
   const snoozeBtn = document.createElement('button');
   snoozeBtn.className = `snooze-btn${isSnoozedNow ? ' active' : ''}`;
-  snoozeBtn.title = isSnoozedNow ? 'Notifications en pause' : 'Mettre les notifications en pause';
+  snoozeBtn.title = isSnoozedNow ? I18N.t('notifPaused') : I18N.t('notifPauseAction');
   snoozeBtn.innerHTML = ICON_BELL_OFF;
 
   const mainRow = document.createElement('div');
@@ -966,9 +969,9 @@ function createStreamerCard(streamer) {
       } else {
         showDeleteTeamModal(streamer, card);
       }
-    } else if (!shouldConfirm || await UI.confirm(`${streamer.name} sera retiré de votre liste.`, {
-      title: 'Supprimer le streamer',
-      confirmLabel: 'Supprimer',
+    } else if (!shouldConfirm || await UI.confirm(I18N.t('confirmRemoveStreamerText', [streamer.name]), {
+      title: I18N.t('deleteStreamerModalTitle'),
+      confirmLabel: I18N.t('deleteTitle'),
       danger: true
     })) {
       await deleteStreamer(streamer.id, card);
@@ -998,10 +1001,10 @@ function openSnoozeMenu(card, streamer) {
   menu.className = 'snooze-menu';
 
   menu.innerHTML = isSnoozed
-    ? '<div class="snooze-menu-item" data-action="cancel">Annuler la pause</div>'
+    ? `<div class="snooze-menu-item" data-action="cancel">${I18N.t('snoozeCancel')}</div>`
     : `
-      <div class="snooze-menu-item" data-action="1h">Pause 1 heure</div>
-      <div class="snooze-menu-item" data-action="tomorrow">Pause jusqu'à demain</div>
+      <div class="snooze-menu-item" data-action="1h">${I18N.t('snooze1h')}</div>
+      <div class="snooze-menu-item" data-action="tomorrow">${I18N.t('snoozeTomorrow')}</div>
     `;
 
   menu.addEventListener('click', async (e) => {
@@ -1028,7 +1031,7 @@ async function applySnooze(streamer, until, card) {
   if (cached) cached.snoozedUntil = until;
 
   updateSnoozeButton(card, until);
-  UI.toast(until ? 'Notifications en pause pour ce streamer' : 'Notifications réactivées', 'success');
+  UI.toast(until ? I18N.t('snoozeToastPaused') : I18N.t('snoozeToastResumed'), 'success');
 }
 
 function updateSnoozeButton(card, until) {
@@ -1037,7 +1040,7 @@ function updateSnoozeButton(card, until) {
 
   const isSnoozed = until && until > Date.now();
   btn.classList.toggle('active', isSnoozed);
-  btn.title = isSnoozed ? 'Notifications en pause' : 'Mettre les notifications en pause';
+  btn.title = isSnoozed ? I18N.t('notifPaused') : I18N.t('notifPauseAction');
   card.classList.toggle('snoozed', isSnoozed);
 }
 
@@ -1057,8 +1060,8 @@ function createStreamPreview(streamer) {
   const preview = document.createElement('div');
   preview.className = 'stream-preview';
 
-  const gameText = streamer.game ? escapeHtml(streamer.game) : 'Stream en cours';
-  const viewersText = streamer.viewerCount ? formatViewers(streamer.viewerCount) + ' spectateurs' : '';
+  const gameText = streamer.game ? escapeHtml(streamer.game) : I18N.t('streamInProgress');
+  const viewersText = streamer.viewerCount ? I18N.t('viewersCount', [formatViewers(streamer.viewerCount)]) : '';
 
   preview.innerHTML = `
     <img src="${streamer.thumbnail}" alt="Stream preview" class="stream-preview-thumbnail" onerror="this.style.display='none'">
@@ -1073,27 +1076,27 @@ function createStreamPreview(streamer) {
 
 function getStatusText(streamer) {
   if (streamer.isLive) {
-    return streamer.viewerCount ? formatViewers(streamer.viewerCount) : 'Live';
+    return streamer.viewerCount ? formatViewers(streamer.viewerCount) : I18N.t('liveBadge');
   }
   if (streamer.lastLiveDate) {
     return formatTimeSince(streamer.lastLiveDate);
   }
-  return 'Hors ligne';
+  return I18N.t('statusOffline');
 }
 
 function formatTimeSince(timestamp) {
   const diff = Date.now() - timestamp;
   const hours = Math.floor(diff / 3600000);
-  if (hours < 1) return '< 1h';
-  if (hours < 24) return `${hours}h`;
+  if (hours < 1) return I18N.t('timeLessThanHour');
+  if (hours < 24) return I18N.t('timeHours', [String(hours)]);
   const days = Math.floor(diff / 86400000);
-  if (days < 7) return `${days}j`;
+  if (days < 7) return I18N.t('timeDays', [String(days)]);
   const weeks = Math.floor(days / 7);
-  if (weeks < 5) return `${weeks}sem`;
+  if (weeks < 5) return I18N.t('timeWeeks', [String(weeks)]);
   const months = Math.floor(days / 30);
-  if (months < 12) return `${months}mois`;
+  if (months < 12) return I18N.t('timeMonths', [String(months)]);
   const years = Math.floor(days / 365);
-  return `${years}an${years > 1 ? 's' : ''}`;
+  return I18N.t(years > 1 ? 'timeYears' : 'timeYear', [String(years)]);
 }
 
 function formatTimeUntil(timestamp) {
@@ -1101,17 +1104,17 @@ function formatTimeUntil(timestamp) {
   if (diff <= 0) return null;
 
   const minutes = Math.floor(diff / 60000);
-  if (minutes < 60) return `dans ${minutes}min`;
+  if (minutes < 60) return I18N.t('scheduleInMinutes', [String(minutes)]);
 
   const hours = Math.floor(diff / 3600000);
-  if (hours < 24) return `dans ${hours}h`;
+  if (hours < 24) return I18N.t('scheduleInHours', [String(hours)]);
 
   const days = Math.floor(diff / 86400000);
-  if (days === 1) return 'demain';
-  if (days < 7) return `dans ${days}j`;
+  if (days === 1) return I18N.t('scheduleTomorrow');
+  if (days < 7) return I18N.t('scheduleInDays', [String(days)]);
 
   const date = new Date(timestamp);
-  return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  return date.toLocaleDateString(I18N.locale(), { day: 'numeric', month: 'short' });
 }
 
 function getScheduleText(streamer) {
@@ -1145,7 +1148,7 @@ async function deleteStreamer(id, cardElement) {
       }
     }, 300);
   } catch (error) {
-    showError('Erreur lors de la suppression');
+    showError(I18N.t('deleteErrorGeneric'));
   }
 }
 
@@ -1154,7 +1157,7 @@ async function deleteTeam(teamName) {
     await DB.deleteTeam(teamName);
     await loadStreamers();
   } catch (error) {
-    showError('Erreur lors de la suppression de la team');
+    showError(I18N.t('teamDeleteError'));
   }
 }
 
@@ -1167,13 +1170,13 @@ function showDeleteTeamModal(streamer, cardElement) {
   modal.innerHTML = `
     <div class="delete-modal-content">
       <div class="delete-modal-header">
-        <span class="delete-modal-title">Supprimer</span>
+        <span class="delete-modal-title">${I18N.t('deleteTitle')}</span>
         <button class="delete-modal-close">&times;</button>
       </div>
-      <p class="delete-modal-text">${escapeHtml(streamer.name)} fait partie de la team <strong>${escapeHtml(capitalizeTeamName(streamer.team))}</strong></p>
+      <p class="delete-modal-text">${I18N.t('deleteModalTeamText', [escapeHtml(streamer.name), `<strong>${escapeHtml(capitalizeTeamName(streamer.team))}</strong>`])}</p>
       <div class="delete-modal-buttons">
-        <button class="delete-btn-streamer">Ce streamer</button>
-        <button class="delete-btn-team">Toute la team</button>
+        <button class="delete-btn-streamer">${I18N.t('deleteThisStreamer')}</button>
+        <button class="delete-btn-team">${I18N.t('deleteWholeTeam')}</button>
       </div>
     </div>
   `;
