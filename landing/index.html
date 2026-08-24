@@ -227,6 +227,7 @@
             letter-spacing: -0.035em;
             line-height: 1.08;
             margin-bottom: 20px;
+            text-wrap: balance;
         }
 
         .hero-subtitle {
@@ -463,13 +464,42 @@
         .mock-card-name {
             font-weight: 600;
             font-size: 12.5px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .mock-card.offline .mock-card-name { color: var(--text-dim); }
 
+        .mock-card-secondary {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         .mock-card-sub {
+            flex: 1;
+            min-width: 0;
             font-size: 11px;
             color: var(--text-faint);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .mock-schedule {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 3px;
+            font-size: 10.5px;
+            color: var(--text-faint);
+        }
+
+        .mock-schedule svg {
+            width: 11px;
+            height: 11px;
+            flex-shrink: 0;
         }
 
         .mock-platform-icon {
@@ -484,7 +514,6 @@
             display: flex;
             align-items: center;
             gap: 4px;
-            margin-left: auto;
             flex-shrink: 0;
         }
 
@@ -559,6 +588,7 @@
             font-weight: 700;
             letter-spacing: -0.025em;
             margin-bottom: 12px;
+            text-wrap: balance;
         }
 
         .section-header p {
@@ -688,6 +718,7 @@
             font-weight: 700;
             letter-spacing: -0.02em;
             margin-bottom: 14px;
+            text-wrap: balance;
         }
 
         .privacy-card p {
@@ -742,6 +773,7 @@
             font-weight: 700;
             letter-spacing: -0.025em;
             margin-bottom: 14px;
+            text-wrap: balance;
         }
 
         .cta p {
@@ -787,6 +819,14 @@
         }
 
         .footer-links a:hover { color: var(--text); }
+
+        .footer-author-link {
+            color: var(--text-dim);
+            text-decoration: none;
+            transition: color 0.2s var(--ease);
+        }
+
+        .footer-author-link:hover { color: var(--text); }
 
         .fade-in {
             opacity: 0;
@@ -888,6 +928,9 @@
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M3 21v-5h5"></path></svg>
                                 </div>
                                 <div class="mock-icon-btn">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect></svg>
+                                </div>
+                                <div class="mock-icon-btn">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path></svg>
                                 </div>
                             </div>
@@ -915,12 +958,14 @@
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2H3v16h5v4l4-4h5l4-4V2zm-10 9V7m5 4V7"></path></svg>
                                         </span>
                                         <span class="mock-card-name">pixel_ash</span>
+                                    </div>
+                                    <div class="mock-card-secondary">
+                                        <div class="mock-card-sub" data-i18n="mock.title_live">Ranked grind, chill vibes</div>
                                         <div class="mock-team">
                                             <span class="mock-team-dot" style="background: #F59E0B;"></span>
                                             <span class="mock-team-name">Solary</span>
                                         </div>
                                     </div>
-                                    <div class="mock-card-sub">Just Chatting</div>
                                 </div>
                                 <div class="mock-status live"><span class="mock-live-dot"></span><span data-i18n="mock.live">Live</span></div>
                             </div>
@@ -933,14 +978,16 @@
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2H3v16h5v4l4-4h5l4-4V2zm-10 9V7m5 4V7"></path></svg>
                                         </span>
                                         <span class="mock-card-name">nova.codes</span>
+                                    </div>
+                                    <div class="mock-card-secondary">
+                                        <div class="mock-card-sub" data-i18n="mock.title_recent">Code review, chill stream</div>
                                         <div class="mock-team">
                                             <span class="mock-team-dot" style="background: #14B8A6;"></span>
                                             <span class="mock-team-name">KOI</span>
                                         </div>
                                     </div>
-                                    <div class="mock-card-sub" data-i18n="mock.seen_ago">Seen 2h ago</div>
                                 </div>
-                                <div class="mock-status" data-i18n="mock.recent">Recent</div>
+                                <div class="mock-status" data-i18n="mock.ago">2h ago</div>
                             </div>
 
                             <div class="mock-card offline">
@@ -952,9 +999,12 @@
                                         </span>
                                         <span class="mock-card-name">retrograde</span>
                                     </div>
-                                    <div class="mock-card-sub" data-i18n="mock.offline">Offline</div>
+                                    <div class="mock-schedule">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                        <span data-i18n="mock.schedule">Next: tomorrow, 8 PM</span>
+                                    </div>
                                 </div>
-                                <div class="mock-status">--</div>
+                                <div class="mock-status">&mdash;</div>
                             </div>
                         </div>
                     </div>
@@ -1016,6 +1066,30 @@
                     </div>
                     <h3 data-i18n="feat6.title">Live thumbnail preview</h3>
                     <p data-i18n="feat6.desc">Click a live streamer's card to see their current thumbnail, category, and viewer count without leaving the popup.</p>
+                </div>
+
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"></path><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path><line x1="2" y1="2" x2="22" y2="22"></line></svg>
+                    </div>
+                    <h3 data-i18n="feat7.title">Per-streamer snooze</h3>
+                    <p data-i18n="feat7.desc">Pause notifications for a single streamer for an hour, the rest of the day, or until tomorrow morning, without removing them from your list.</p>
+                </div>
+
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    </div>
+                    <h3 data-i18n="feat8.title">Upcoming stream schedule</h3>
+                    <p data-i18n="feat8.desc">See when an offline streamer is scheduled to go live next, pulled directly from their Twitch schedule.</p>
+                </div>
+
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                    </div>
+                    <h3 data-i18n="feat9.title">Usage statistics</h3>
+                    <p data-i18n="feat9.desc">Streams caught this week, your most-watched streamer, and your top game, all from the options page.</p>
                 </div>
             </div>
         </section>
@@ -1087,7 +1161,7 @@
     <footer>
         <div class="container">
             <div class="footer-content">
-                <div class="footer-left" data-i18n="footer.made">Made by qyrn.</div>
+                <div class="footer-left"><span data-i18n="footer.made_prefix">Made by</span> <a href="https://github.com/qyrn" target="_blank" class="footer-author-link">qyrn</a>.</div>
                 <div class="footer-links">
                     <a href="privacy.html" data-i18n="footer.privacy">Privacy Policy</a>
                     <a href="https://github.com/qyrn/nowtify" target="_blank">GitHub</a>
@@ -1116,12 +1190,13 @@
                 "mock.add": "+ Add",
                 "mock.all": "All",
                 "mock.live": "Live",
-                "mock.recent": "Recent",
-                "mock.seen_ago": "Seen 2h ago",
-                "mock.offline": "Offline",
+                "mock.ago": "2h ago",
+                "mock.title_live": "Ranked grind, chill vibes",
+                "mock.title_recent": "Code review, chill stream",
+                "mock.schedule": "Next: tomorrow, 8 PM",
                 "features.eyebrow": "Features",
-                "features.title": "Everything the popup actually does",
-                "features.subtitle": "No filler features. This is what ships in the extension today.",
+                "features.title": "Everything the extension actually does",
+                "features.subtitle": "No filler features. This is what ships today.",
                 "feat1.title": "Background notifications",
                 "feat1.desc": "A native desktop notification fires as soon as Nowtify detects one of your streamers going live. Checked every few minutes, more often once someone's already live.",
                 "feat2.title": "Twitch team import",
@@ -1134,7 +1209,13 @@
                 "feat5.desc": "Back up your full configuration as JSON (streamers, history, and settings) and restore it anytime, anywhere.",
                 "feat6.title": "Live thumbnail preview",
                 "feat6.desc": "Click a live streamer's card to see their current thumbnail, category, and viewer count without leaving the popup.",
-                "steps.eyebrow": "How it works",
+                "feat7.title": "Per-streamer snooze",
+                "feat7.desc": "Pause notifications for a single streamer for an hour, the rest of the day, or until tomorrow morning, without removing them from your list.",
+                "feat8.title": "Upcoming stream schedule",
+                "feat8.desc": "See when an offline streamer is scheduled to go live next, pulled directly from their Twitch schedule.",
+                "feat9.title": "Usage statistics",
+                "feat9.desc": "Streams caught this week, your most-watched streamer, and your top game, all from the options page.",
+                "steps.eyebrow": "Steps",
                 "steps.title": "Three steps, then it runs itself",
                 "step1.title": "Connect Twitch",
                 "step1.desc": "Sign in with your Twitch account via Chrome's built-in OAuth flow. Your credentials never touch Nowtify's code.",
@@ -1153,7 +1234,7 @@
                 "cta.desc": "Free, open source, and it stays that way.",
                 "cta.primary": "Get Nowtify",
                 "cta.secondary": "View source",
-                "footer.made": "Made by qyrn.",
+                "footer.made_prefix": "Made by",
                 "footer.privacy": "Privacy Policy"
             },
             fr: {
@@ -1173,11 +1254,12 @@
                 "mock.add": "+ Ajouter",
                 "mock.all": "Tous",
                 "mock.live": "Live",
-                "mock.recent": "Récent",
-                "mock.seen_ago": "Vu il y a 2h",
-                "mock.offline": "Hors ligne",
+                "mock.ago": "il y a 2h",
+                "mock.title_live": "Ranked tranquille, on papote",
+                "mock.title_recent": "Revue de code, stream tranquille",
+                "mock.schedule": "Prochain : demain, 20h",
                 "features.eyebrow": "Fonctionnalités",
-                "features.title": "Tout ce que fait vraiment la popup",
+                "features.title": "Tout ce que fait vraiment l'extension",
                 "features.subtitle": "Pas de fonctionnalités gadget. Voici ce qui est réellement dans l'extension aujourd'hui.",
                 "feat1.title": "Notifications en arrière-plan",
                 "feat1.desc": "Une notification native s'affiche dès que Nowtify détecte qu'un de vos streamers est en direct. Vérifié toutes les quelques minutes, plus souvent une fois que quelqu'un est déjà en live.",
@@ -1191,7 +1273,13 @@
                 "feat5.desc": "Sauvegardez toute votre configuration en JSON (streamers, historique et paramètres) et restaurez-la n'importe quand, n'importe où.",
                 "feat6.title": "Aperçu du stream en direct",
                 "feat6.desc": "Cliquez sur la carte d'un streamer en live pour voir sa miniature, sa catégorie et son nombre de viewers sans quitter la popup.",
-                "steps.eyebrow": "Fonctionnement",
+                "feat7.title": "Snooze par streamer",
+                "feat7.desc": "Mettez en pause les notifications d'un streamer précis pendant une heure, le reste de la journée, ou jusqu'à demain matin, sans le retirer de votre liste.",
+                "feat8.title": "Horaire du prochain live",
+                "feat8.desc": "Voyez quand un streamer hors ligne est prévu pour son prochain live, directement depuis son planning Twitch.",
+                "feat9.title": "Statistiques d'utilisation",
+                "feat9.desc": "Lives détectés cette semaine, streamer le plus suivi et jeu le plus regardé, le tout depuis la page des paramètres.",
+                "steps.eyebrow": "Étapes",
                 "steps.title": "Trois étapes, puis ça tourne tout seul",
                 "step1.title": "Connectez Twitch",
                 "step1.desc": "Connectez-vous avec votre compte Twitch via le flux OAuth natif de Chrome. Vos identifiants ne passent jamais par le code de Nowtify.",
@@ -1210,7 +1298,7 @@
                 "cta.desc": "Gratuit, open source, et ça le restera.",
                 "cta.primary": "Télécharger Nowtify",
                 "cta.secondary": "Voir le code source",
-                "footer.made": "Fait par qyrn.",
+                "footer.made_prefix": "Fait par",
                 "footer.privacy": "Politique de confidentialité"
             }
         };
