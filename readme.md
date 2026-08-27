@@ -5,11 +5,14 @@
   <p><em>Never miss a stream again.</em></p>
 
   <p>
+    <a href="https://chromewebstore.google.com/detail/nowtify/emjhkfephckipmmlecbkmpjphfjalkhg"><img src="https://img.shields.io/badge/Chrome%20Web%20Store-Install-FCD34D?style=flat-square&logo=googlechrome&logoColor=1A1305" alt="Install from the Chrome Web Store"/></a>
     <img src="https://img.shields.io/badge/Manifest-V3-5CFFE0?style=flat-square" alt="Manifest V3"/>
     <img src="https://img.shields.io/badge/License-MIT-7B5CFF?style=flat-square" alt="MIT License"/>
   </p>
 
   <p>
+    <a href="https://chromewebstore.google.com/detail/nowtify/emjhkfephckipmmlecbkmpjphfjalkhg"><strong>Chrome Web Store</strong></a>
+    &nbsp;&middot;&nbsp;
     <a href="https://nowtify.qyrn.dev"><strong>nowtify.qyrn.dev</strong></a>
   </p>
 
@@ -45,6 +48,10 @@ No account, no backend, no analytics. Everything stays on your machine.
 - English and French, follows your browser's language automatically
 
 ## Installation
+
+Install it from the [Chrome Web Store](https://chromewebstore.google.com/detail/nowtify/emjhkfephckipmmlecbkmpjphfjalkhg).
+
+### From source
 
 1. Download or clone this repository.
 2. Open `chrome://extensions` in Chrome.

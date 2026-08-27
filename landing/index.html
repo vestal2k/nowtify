@@ -861,6 +861,7 @@
 
         @media (max-width: 640px) {
             .nav-links a.text-link { display: none; }
+            .nav-github { display: none; }
             .hero { padding: 128px 0 72px; }
             .features-grid { grid-template-columns: 1fr; }
             .footer-content { flex-direction: column; align-items: flex-start; }
@@ -878,11 +879,21 @@
             <div class="nav-links">
                 <a href="#features" class="text-link" data-i18n="nav.features">Features</a>
                 <a href="#how-it-works" class="text-link" data-i18n="nav.how">How it works</a>
-                <a href="https://github.com/qyrn/nowtify" target="_blank" class="btn btn-secondary">
+                <a href="https://github.com/qyrn/nowtify" target="_blank" class="btn btn-secondary nav-github">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
                     </svg>
                     GitHub
+                </a>
+                <a href="https://chromewebstore.google.com/detail/nowtify/emjhkfephckipmmlecbkmpjphfjalkhg" target="_blank" class="btn btn-primary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="12" r="4"></circle>
+                        <line x1="21.17" y1="8" x2="12" y2="8"></line>
+                        <line x1="3.95" y1="6.06" x2="8.54" y2="14"></line>
+                        <line x1="10.88" y1="21.94" x2="15.46" y2="14"></line>
+                    </svg>
+                    <span data-i18n="nav.store">Chrome Web Store</span>
                 </a>
             </div>
         </div>
@@ -895,13 +906,15 @@
                 <h1 data-i18n="hero.title">Never miss a stream.</h1>
                 <p class="hero-subtitle" data-i18n="hero.subtitle">Nowtify watches your favorite Twitch streamers in the background and sends a native desktop notification shortly after one goes live. No backend, no tracking, nothing leaves your machine.</p>
                 <div class="hero-buttons">
-                    <a href="https://github.com/qyrn/nowtify/releases" class="btn btn-primary">
+                    <a href="https://chromewebstore.google.com/detail/nowtify/emjhkfephckipmmlecbkmpjphfjalkhg" class="btn btn-primary">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="7 10 12 15 17 10"></polyline>
-                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <circle cx="12" cy="12" r="4"></circle>
+                            <line x1="21.17" y1="8" x2="12" y2="8"></line>
+                            <line x1="3.95" y1="6.06" x2="8.54" y2="14"></line>
+                            <line x1="10.88" y1="21.94" x2="15.46" y2="14"></line>
                         </svg>
-                        <span data-i18n="hero.cta_primary">Get Nowtify</span>
+                        <span data-i18n="hero.cta_primary">Add to Chrome</span>
                     </a>
                     <a href="#how-it-works" class="btn btn-secondary" data-i18n="hero.cta_secondary">See how it works</a>
                 </div>
@@ -1120,13 +1133,15 @@
                 <h2 data-i18n="cta.title">Ready to never miss a stream?</h2>
                 <p data-i18n="cta.desc">Free, open source, and it stays that way.</p>
                 <div class="cta-buttons">
-                    <a href="https://github.com/qyrn/nowtify/releases" class="btn btn-primary">
+                    <a href="https://chromewebstore.google.com/detail/nowtify/emjhkfephckipmmlecbkmpjphfjalkhg" class="btn btn-primary">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="7 10 12 15 17 10"></polyline>
-                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <circle cx="12" cy="12" r="4"></circle>
+                            <line x1="21.17" y1="8" x2="12" y2="8"></line>
+                            <line x1="3.95" y1="6.06" x2="8.54" y2="14"></line>
+                            <line x1="10.88" y1="21.94" x2="15.46" y2="14"></line>
                         </svg>
-                        <span data-i18n="cta.primary">Get Nowtify</span>
+                        <span data-i18n="cta.primary">Add to Chrome</span>
                     </a>
                     <a href="https://github.com/qyrn/nowtify" target="_blank" class="btn btn-secondary" data-i18n="cta.secondary">View source</a>
                 </div>
@@ -1140,6 +1155,7 @@
                 <div class="footer-left"><span data-i18n="footer.made_prefix">Made by</span> <a href="https://github.com/qyrn" target="_blank" class="footer-author-link">qyrn</a>.</div>
                 <div class="footer-links">
                     <a href="privacy.html" data-i18n="footer.privacy">Privacy Policy</a>
+                    <a href="https://chromewebstore.google.com/detail/nowtify/emjhkfephckipmmlecbkmpjphfjalkhg" target="_blank" data-i18n="footer.store">Chrome Web Store</a>
                     <a href="https://github.com/qyrn/nowtify" target="_blank">GitHub</a>
                     <a href="https://ko-fi.com/qyrnsec" target="_blank">Ko-fi</a>
                 </div>
@@ -1154,10 +1170,11 @@
                 "doc.description": "Nowtify is a Chrome extension that notifies you when your favorite Twitch streamers go live. No account, no backend, no data leaves your device.",
                 "nav.features": "Features",
                 "nav.how": "How it works",
+                "nav.store": "Chrome Web Store",
                 "hero.badge": "Manifest V3 · No account required",
                 "hero.title": "Never miss a stream.",
                 "hero.subtitle": "Nowtify watches your favorite Twitch streamers in the background and sends a native desktop notification shortly after one goes live. No backend, no tracking, nothing leaves your machine.",
-                "hero.cta_primary": "Get Nowtify",
+                "hero.cta_primary": "Add to Chrome",
                 "hero.cta_secondary": "See how it works",
                 "hero.trust1": "100% local storage",
                 "hero.trust2": "Zero analytics",
@@ -1202,20 +1219,22 @@
                 "privacy.cta": "Read the full privacy policy",
                 "cta.title": "Ready to never miss a stream?",
                 "cta.desc": "Free, open source, and it stays that way.",
-                "cta.primary": "Get Nowtify",
+                "cta.primary": "Add to Chrome",
                 "cta.secondary": "View source",
                 "footer.made_prefix": "Made by",
-                "footer.privacy": "Privacy Policy"
+                "footer.privacy": "Privacy Policy",
+                "footer.store": "Chrome Web Store"
             },
             fr: {
                 "doc.title": "Nowtify - Ne ratez plus jamais un live",
                 "doc.description": "Nowtify est une extension Chrome qui vous notifie quand vos streamers Twitch favoris passent en live. Pas de compte, pas de serveur, aucune donnée ne quitte votre appareil.",
                 "nav.features": "Fonctionnalités",
                 "nav.how": "Étapes",
+                "nav.store": "Chrome Web Store",
                 "hero.badge": "Manifest V3 · Aucun compte requis",
                 "hero.title": "Ne ratez plus jamais un live.",
                 "hero.subtitle": "Nowtify surveille vos streamers Twitch favoris en arrière-plan et envoie une notification native peu après le début d'un live. Pas de serveur, pas de pistage, rien ne quitte votre machine.",
-                "hero.cta_primary": "Télécharger Nowtify",
+                "hero.cta_primary": "Ajouter à Chrome",
                 "hero.cta_secondary": "Voir comment ça marche",
                 "hero.trust1": "Stockage 100% local",
                 "hero.trust2": "Zéro analytique",
@@ -1260,10 +1279,11 @@
                 "privacy.cta": "Lire la politique de confidentialité complète",
                 "cta.title": "Prêt à ne plus rater un live ?",
                 "cta.desc": "Gratuit, open source, et ça le restera.",
-                "cta.primary": "Télécharger Nowtify",
+                "cta.primary": "Ajouter à Chrome",
                 "cta.secondary": "Voir le code source",
                 "footer.made_prefix": "Fait par",
-                "footer.privacy": "Politique de confidentialité"
+                "footer.privacy": "Politique de confidentialité",
+                "footer.store": "Chrome Web Store"
             }
         };
 
